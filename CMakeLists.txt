@@ -30,7 +30,9 @@ file (
 	"agl/include/*.inl"
 )
 
-add_library(
+
+# add_library( # to be changed later, the derived program will take the executable responsibility
+add_executable(
 	AGL_LIB 
 	${AGL_LIB_SOURCES}
 	${AGL_LIB_HEADERS}
@@ -64,24 +66,24 @@ if(AGL_BUILD_TESTS)
 
 	add_executable(
 		AGL_LOGGER_TEST
-		${AGL_LOGGER_TEST_SOURCES}
+		${AGL_LIB_TEST_SOURCES}
 	)
 
 	target_link_libraries(
 		AGL_LIB_TEST
 		"agl/test/test.cpp"		
-		PRIVATE AGL_LOGGER
+		PRIVATE AGL_LIB
 		PRIVATE GTest::gtest_main
 	)
 
 	target_include_directories(
-		AGL_LOGGER_TEST
-		PRIVATE "logger/test/"
+		AGL_LIB_TEST
+		PRIVATE "agl/test/"
 	)
 
 	add_test(
-		NAME AGL_LOGGER_TEST
-		COMMAND $<TARGET_FILE:AGL_LOGGER_TEST>
+		NAME AGL_LIB_TEST
+		COMMAND $<TARGET_FILE:AGL_LIB_TEST>
 	)
 
 endif()
