@@ -1,4 +1,4 @@
-#include "agl/application.hpp"
+#include "agl/core/application.hpp"
 
 namespace agl
 {
