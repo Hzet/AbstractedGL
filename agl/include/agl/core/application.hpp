@@ -5,6 +5,10 @@ int main(int, char**);
 
 namespace agl
 {
+	class application;
+
+	extern std::unique_ptr<application> create_application();
+
 	class application
 	{
 	public: 
@@ -33,6 +37,4 @@ namespace agl
 	private:
 		properties m_properties;
 	};
-
-	extern std::unique_ptr<application> create_application();
 }

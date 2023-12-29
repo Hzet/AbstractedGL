@@ -30,18 +30,16 @@ file (
 	"agl/include/*.inl"
 )
 
-
-# add_library( # to be changed later, the derived program will take the executable responsibility
-add_executable(
+add_library(
 	AGL_LIB 
 	${AGL_LIB_SOURCES}
 	${AGL_LIB_HEADERS}
 )
 
-target_include_directories(
-	AGL_LIB
-	PUBLIC "agl/include/"
-)
+#target_include_directories(
+#	AGL_LIB
+#	PUBLIC "agl/include/"
+#)
 
 if(AGL_BUILD_TESTS)
 	enable_testing()
@@ -55,30 +53,32 @@ if(AGL_BUILD_TESTS)
 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 	FetchContent_MakeAvailable(googletest)
 
-	# AGL_LIB #
+	# AGL_LIB_TEST #
 
 	file (
 		GLOB_RECURSE 
-		AGL_LIB_TEST_SOURCES #
+		AGL_LIB_UTIL_TEST_SOURCES #
 		CONFIGURE_DEPENDS 
-		"agl/test/*.cpp" 
+		"agl/test/*.cpp"
+		"agl/test/*.hpp"
+		"agl/test/*.inl"
 	)
 
 	add_executable(
-		AGL_LOGGER_TEST
-		${AGL_LIB_TEST_SOURCES}
+		AGL_LIB_TEST
+		${AGL_LIB_UTIL_TEST_SOURCES}
+	)
+
+	add_dependencies(
+		AGL_LIB_TEST
+		AGL_LIB
+		GTest::gtest_main
 	)
 
 	target_link_libraries(
 		AGL_LIB_TEST
-		"agl/test/test.cpp"		
 		PRIVATE AGL_LIB
 		PRIVATE GTest::gtest_main
-	)
-
-	target_include_directories(
-		AGL_LIB_TEST
-		PRIVATE "agl/test/"
 	)
 
 	add_test(

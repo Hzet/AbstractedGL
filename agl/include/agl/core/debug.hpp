@@ -1,8 +1,5 @@
 #pragma once
 
-#define AGL_FILE __FILE__
-#define AGL_LINE __LINE__
-
 #if defined(__GNUC__) || (defined(__MWERKS__) && (__MWERKS__ >= 0x3000)) || (defined(__ICC) && (__ICC >= 600)) || defined(__ghs__)
 #define AGL_FUNC_NAME __PRETTY_FUNCTION__
 #elif defined(__DMC__) && (__DMC__ >= 0x810)
@@ -21,8 +18,9 @@
 #define AGL_FUNC_NAME "AGL_FUNC_NAME could not be established!"
 #endif
 
+#define AGL_FILE __FILE__
+#define AGL_LINE __LINE__
 #define AGL_CODE_POINT "Filename: " AGL_FILE "\nFunction: " AGL_FUNC_NAME "\nLine: " AGL_LINE
-
 #define AGL_HALT() __debugbreak()
 
 #ifdef AGL_DEBUG
