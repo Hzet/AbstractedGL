@@ -9,7 +9,7 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAGL_DEBUG")
-set(BUILD_SHARED_LIBS false)
+set(BUILD_SHARED_LIBS OFF)
 
 option(AGL_BUILD_TESTS ON) # true for testing reasons
 
@@ -36,10 +36,15 @@ add_library(
 	${AGL_LIB_HEADERS}
 )
 
-#target_include_directories(
-#	AGL_LIB
-#	PUBLIC "agl/include/"
-#)
+target_compile_definitions(
+	AGL_LIB
+	PRIVATE -DAGL_BUILD_MAIN
+)
+
+target_include_directories(
+	AGL_LIB
+	PUBLIC "agl/include/"
+)
 
 if(AGL_BUILD_TESTS)
 	enable_testing()
@@ -53,31 +58,34 @@ if(AGL_BUILD_TESTS)
 	set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
 	FetchContent_MakeAvailable(googletest)
 
-	# AGL_LIB_TEST #
+	add_library(
+		AGL_LIB_NO_MAIN
+		${AGL_LIB_HEADERS}
+		${AGL_LIB_SOURCES}
+	)
+
+	target_include_directories(
+		AGL_LIB_NO_MAIN
+		PUBLIC "agl/include/"
+	)
 
 	file (
 		GLOB_RECURSE 
-		AGL_LIB_UTIL_TEST_SOURCES #
+		AGL_LIB_TEST_SOURCES #
 		CONFIGURE_DEPENDS 
-		"agl/test/*.cpp"
-		"agl/test/*.hpp"
+		"agl/test/*.hpp" 
 		"agl/test/*.inl"
+		"agl/test/*.cpp"
 	)
 
 	add_executable(
 		AGL_LIB_TEST
-		${AGL_LIB_UTIL_TEST_SOURCES}
-	)
-
-	add_dependencies(
-		AGL_LIB_TEST
-		AGL_LIB
-		GTest::gtest_main
+		${AGL_LIB_TEST_SOURCES}
 	)
 
 	target_link_libraries(
 		AGL_LIB_TEST
-		PRIVATE AGL_LIB
+		PRIVATE AGL_LIB_NO_MAIN
 		PRIVATE GTest::gtest_main
 	)
 

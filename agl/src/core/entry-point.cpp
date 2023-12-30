@@ -1,3 +1,5 @@
+#ifdef AGL_BUILD_MAIN
+
 #include "agl/core/application.hpp"
 
 namespace agl
@@ -16,3 +18,5 @@ int main(int argc, char **argv)
 
 	app->run();
 }
+
+#endif
