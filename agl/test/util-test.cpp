@@ -1,6 +1,7 @@
 #include "gtest/gtest.h"
 #include <tuple>
 #include "agl/util/typeid.hpp"
+#include "agl/util/random.hpp"
 
 namespace agl
 {
@@ -40,4 +41,48 @@ TEST(util_type_id, get_name)
 
 	auto const n2 = std::string{ agl::type_id<std::tuple<std::tuple<std::uint64_t>, std::tuple<int, int>>>::get_name()};
 	EXPECT_STREQ(n2.c_str(), typeid(std::tuple<std::tuple<std::uint64_t>, std::tuple<int, int>>).name());
+}
+
+TEST(util_random, random_speed_10k)
+{
+	for (auto i = 0; i < 10000; ++i)
+		agl::simple_rand(0, 1000000);
+}
+
+TEST(util_random, random_correctness)
+{
+	auto const check = [](auto const min, auto const max, auto const v)
+		{
+			EXPECT_TRUE(v > min) << "range(" << min << ", " << max << ") v: " << v;
+			EXPECT_TRUE(v < max) << "range(" << min << ", " << max << ") v: " << v;
+		};
+	for (auto i = 0; i < 2500; ++i)
+	{
+		auto const result = agl::simple_rand(0, 100000);
+
+	}
+}
+
+TEST(util_random, random_example)
+{
+	auto map = std::map<std::uint64_t, std::uint64_t>{};
+	auto min = 10000;
+	auto max = 0;
+	for (auto i = 0; i < 10000; ++i)
+	{
+		auto const rand = agl::simple_rand(0, 10000);
+		++map[rand];
+	}
+
+	for (auto const& e : map)
+	{
+		if (min > e.second)
+			min = e.second;
+		if (max < e.second)
+			max = e.second;
+	}
+
+	//std::cout << "min: " << min << " max: " << max;
+	//for (auto const& e : map)
+	//	std::cout << e.first << ": " << e.second << std::endl;
 }
