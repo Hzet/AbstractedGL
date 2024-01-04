@@ -18,8 +18,9 @@ TEST(impl_defragmented_space, deletion)
 {
 	using agl::mem::impl::defragmented_space;
 	auto ds = defragmented_space{};
+	auto dummy_addr = std::byte{};
 	for (auto i = 0; i < 10000; ++i)
-		ds.push(nullptr, agl::simple_rand(1, 128));
+		ds.push(&dummy_addr, agl::simple_rand(1, 128));
 
 	for (auto i = 0; i < ds.count(); ++i)
 	{
@@ -29,7 +30,7 @@ TEST(impl_defragmented_space, deletion)
 
 		if (s.ptr == nullptr)
 		{
-			EXPECT_TRUE(ds.count()) << "item deleted after search has failed";
+			EXPECT_TRUE(ds.count() == prev_count) << "item deleted after search has failed";
 			for (auto j = 0; j < ds.count(); ++j)
 				EXPECT_TRUE(ds[j].size < rand) << "space has not been found despite being available to be taken. requested: " << rand << "found: " << ds[j].size;
 		}

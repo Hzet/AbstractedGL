@@ -50,3 +50,8 @@
 			(void)sizeof(condition); \
 		} while(false)
 #endif
+
+#define AGL_STATIC_ASSERT(condition, message) \
+	static_assert((condition), AGL_CODE_POINT message);
+
+#define AGL_TO_STR(str) #str

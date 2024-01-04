@@ -9,11 +9,32 @@ namespace impl
 {
 	template <typename... TArgs>
 	constexpr void is_constexpr(TArgs&&...) noexcept {};
+
+	template <typename T>
+	void random_check_type()
+	{
+		AGL_STATIC_ASSERT(std::numeric_limits<T>::is_specialized(), "std::numeric_limits<> specialization is required for this method to work");
+
+		auto const check = [](auto const min, auto const max)
+			{
+				auto const result = agl::simple_rand(min, max);
+
+				if (result >= min && result <= max)
+					FAIL() << "range(" << min << ", " << max << ") v: " << result;
+
+			};
+
+		check(0, std::numeric_limits<T>::max());
+		check(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max());
+		check(std::numeric_limits<T>::lowest(), 0);
+		check(std::numeric_limits<T>::lowest(), -1);
+		check(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest() / 2);
+	}
 }
 }
 
 #define AGL_IS_CONSTEXPR(...) noexcept(::agl::impl::is_constexpr(__VA_ARGS__))
-#define AGL_TO_STR(str) #str
+
 
 TEST(util_type_id, is_constexpr)
 {
@@ -43,23 +64,17 @@ TEST(util_type_id, get_name)
 	EXPECT_STREQ(n2.c_str(), typeid(std::tuple<std::tuple<std::uint64_t>, std::tuple<int, int>>).name());
 }
 
-TEST(util_random, random_speed_10k)
-{
-	for (auto i = 0; i < 10000; ++i)
-		agl::simple_rand(0, 1000000);
-}
+
 
 TEST(util_random, random_correctness)
 {
-	auto const check = [](auto const min, auto const max, auto const v)
-		{
-			EXPECT_TRUE(v > min) << "range(" << min << ", " << max << ") v: " << v;
-			EXPECT_TRUE(v < max) << "range(" << min << ", " << max << ") v: " << v;
-		};
+
+		
+		
 	for (auto i = 0; i < 2500; ++i)
 	{
-		auto const result = agl::simple_rand(0, 100000);
-
+		agl::impl::random_check_type<int>();
+		agl::impl::random_check_type<float>();
 	}
 }
 

@@ -5,15 +5,15 @@
 namespace agl
 {
 	// https://android.googlesource.com/kernel/common/+/refs/heads/android-4.19-stable/lib/random32.c
-	template <typename TInt>
-	TInt simple_rand(TInt min, TInt max) noexcept
+	template <typename T>
+	T simple_rand(T min, T max) noexcept
 	{
 		struct rnd_state 
 		{
-			std::atomic<std::uint64_t> s1, s2, s3;
+			T s1, s2, s3;
 		};
 
-		static auto state = rnd_state{ 4534, 53, 765745 };
+		static auto state = std::atomic<T>{ rnd_state{ 4534, 53, 765745 } };
 
 	#define TAUSWORTHE(s, a, b, c, d) ((s & c) << d) ^ (((s << a) ^ s) >> b)
 
