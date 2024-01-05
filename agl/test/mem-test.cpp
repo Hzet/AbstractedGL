@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <agl/util/mem/pool.hpp>
+#include <agl/util/memory/pool.hpp>
 #include <agl/util/random.hpp>
 
-TEST(impl_defragmented_space, insertion)
+TEST(impl_memory_defragmented_space, insertion)
 {
 	using agl::mem::impl::defragmented_space;
 	auto ds = defragmented_space{};
@@ -14,7 +14,7 @@ TEST(impl_defragmented_space, insertion)
 	}
 }
 
-TEST(impl_defragmented_space, deletion)
+TEST(impl_memory_defragmented_space, deletion)
 {
 	using agl::mem::impl::defragmented_space;
 	auto ds = defragmented_space{};
@@ -42,7 +42,7 @@ TEST(impl_defragmented_space, deletion)
 	}
 }
 
-TEST(impl_defragmented_space, ins_del)
+TEST(impl_memory_defragmented_space, ins_del)
 {
 	using agl::mem::impl::defragmented_space;
 	auto ds = defragmented_space{};
@@ -59,4 +59,12 @@ TEST(impl_defragmented_space, ins_del)
 		for(auto j = 0; j < ds.count() - 1; ++j)
 			EXPECT_TRUE(ds[j].size <= ds[j + 1].size) << "defragmented_space is unsorted";
 	}
+}
+
+TEST(impl_memory_block, create_delete)
+{
+	using agl::mem::impl::block;
+	auto b = block{};
+
+	b.create();
 }
