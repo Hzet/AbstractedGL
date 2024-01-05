@@ -30,11 +30,15 @@ TEST(impl_defragmented_space, deletion)
 
 		if (s.ptr == nullptr)
 		{
-			EXPECT_TRUE(ds.count() == prev_count) << "item deleted after search has failed";
+			if(ds.count() != prev_count)
+				FAIL() << "item deleted after search has failed";
+
 			for (auto j = 0; j < ds.count(); ++j)
-				EXPECT_TRUE(ds[j].size < rand) << "space has not been found despite being available to be taken. requested: " << rand << "found: " << ds[j].size;
+				if(ds[j].size >= rand)
+					FAIL() << "space has not been found despite being available to be taken. requested: " << rand << "found: " << ds[j].size;
 		}
-		EXPECT_TRUE(s.size >= rand) << "requested: >= " << rand << " got: " << s.size;
+		else if(s.size < rand)
+			FAIL() << "requested: >= " << rand << " got: " << s.size;
 	}
 }
 

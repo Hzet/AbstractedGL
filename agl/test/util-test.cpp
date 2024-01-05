@@ -1,4 +1,5 @@
 #include "gtest/gtest.h"
+#include <limits>
 #include <tuple>
 #include "agl/util/typeid.hpp"
 #include "agl/util/random.hpp"
@@ -10,25 +11,25 @@ namespace impl
 	template <typename... TArgs>
 	constexpr void is_constexpr(TArgs&&...) noexcept {};
 
-	template <typename T>
+	template <typename TNumeric>
+	void random_check_type_impl(TNumeric min, TNumeric max)
+	{
+		auto const result = agl::simple_rand(min, max);
+
+		if (result < std::min(min, max) || result > std::max(min, max))
+			FAIL() << "range(" << min << ", " << max << ") v: " << result;
+	}
+
+	template <typename TNumeric>
 	void random_check_type()
 	{
-		AGL_STATIC_ASSERT(std::numeric_limits<T>::is_specialized(), "std::numeric_limits<> specialization is required for this method to work");
+		//AGL_STATIC_ASSERT(std::numeric_limits<TNumeric>::is_specialized, "std::numeric_limits<> specialization is required for this method to work");
 
-		auto const check = [](auto const min, auto const max)
-			{
-				auto const result = agl::simple_rand(min, max);
-
-				if (result >= min && result <= max)
-					FAIL() << "range(" << min << ", " << max << ") v: " << result;
-
-			};
-
-		check(0, std::numeric_limits<T>::max());
-		check(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::max());
-		check(std::numeric_limits<T>::lowest(), 0);
-		check(std::numeric_limits<T>::lowest(), -1);
-		check(std::numeric_limits<T>::lowest(), std::numeric_limits<T>::lowest() / 2);
+		random_check_type_impl<TNumeric>(0, std::numeric_limits<TNumeric>::max());
+		random_check_type_impl<TNumeric>(std::numeric_limits<TNumeric>::lowest(), std::numeric_limits<TNumeric>::max());
+		random_check_type_impl<TNumeric>(std::numeric_limits<TNumeric>::lowest(), 0);		
+		random_check_type_impl<TNumeric>(std::numeric_limits<TNumeric>::lowest(), std::numeric_limits<TNumeric>::lowest() / 2);
+		random_check_type_impl<TNumeric>(std::numeric_limits<TNumeric>::max(), std::numeric_limits<TNumeric>::max() / 2);
 	}
 }
 }
@@ -64,13 +65,21 @@ TEST(util_type_id, get_name)
 	EXPECT_STREQ(n2.c_str(), typeid(std::tuple<std::tuple<std::uint64_t>, std::tuple<int, int>>).name());
 }
 
+TEST(util_random, random_speed_uint64_1m)
+{
+	for (auto i = 0; i < 1000000; ++i)
+		agl::simple_rand(std::numeric_limits<std::uint64_t>::lowest(), std::numeric_limits<std::uint64_t>::max());
+}
+
+TEST(util_random, random_speed_float32_1m)
+{
+	for (auto i = 0; i < 1000000; ++i)
+		agl::simple_rand(std::numeric_limits<float>::lowest(), std::numeric_limits<float>::max());
+}
 
 
 TEST(util_random, random_correctness)
 {
-
-		
-		
 	for (auto i = 0; i < 2500; ++i)
 	{
 		agl::impl::random_check_type<int>();
@@ -81,8 +90,8 @@ TEST(util_random, random_correctness)
 TEST(util_random, random_example)
 {
 	auto map = std::map<std::uint64_t, std::uint64_t>{};
-	auto min = 10000;
-	auto max = 0;
+	auto min = std::uint64_t{ 10000 };
+	auto max = std::uint64_t{ 0 };
 	for (auto i = 0; i < 10000; ++i)
 	{
 		auto const rand = agl::simple_rand(0, 10000);

@@ -1,21 +1,28 @@
 #pragma once
 #include <cstdint>
-#include <atomic>
+#include <cmath>
+#include <glm/glm.hpp>
+
+#define TAUSWORTHE(s, a, b, c, d) ((s & c) << d) ^ (((s << a) ^ s) >> b)
 
 namespace agl
 {
 	// https://android.googlesource.com/kernel/common/+/refs/heads/android-4.19-stable/lib/random32.c
-	template <typename T>
-	T simple_rand(T min, T max) noexcept
+namespace impl
+{
+	struct rnd_state
 	{
-		struct rnd_state 
-		{
-			T s1, s2, s3;
-		};
+		std::uint64_t s1;
+		std::uint64_t s2;
+		std::uint64_t s3;
+	};
+}
 
-		static auto state = std::atomic<T>{ rnd_state{ 4534, 53, 765745 } };
+	template <typename TNumeric>
+	TNumeric simple_rand(TNumeric min, TNumeric max) noexcept
+	{
+		static auto state = impl::rnd_state{ 53452u, 432u, 252543u };
 
-	#define TAUSWORTHE(s, a, b, c, d) ((s & c) << d) ^ (((s << a) ^ s) >> b)
 
 		if (min == max)
 			return min;
@@ -26,7 +33,17 @@ namespace agl
 		state.s2 = TAUSWORTHE(state.s2, 2U, 27U, 4294967288U, 2U);
 		state.s3 = TAUSWORTHE(state.s3, 13U, 21U, 4294967280U, 7U);
 		
-		auto const rand = (state.s1 ^ state.s2 ^ state.s3);
-		return rand % (max - min) - min;
+		auto rand = (TNumeric)(state.s1 ^ state.s2 ^ state.s3);
+		auto result = max - min;
+
+		if constexpr (std::is_floating_point_v<TNumeric>)
+			result = std::fmod(std::fabs(rand), std::fabs(result));
+		else if constexpr (std::is_signed_v<TNumeric>)
+			result = std::abs(rand) % std::abs(result);
+		else if constexpr (std::is_unsigned_v<TNumeric>)
+			result = rand % result;
+
+
+		return max - result;
 	}
 }
