@@ -60,3 +60,5 @@ TEST(impl_memory_defragmented_space, ins_del)
 			EXPECT_TRUE(ds[j].size <= ds[j + 1].size) << "defragmented_space is unsorted";
 	}
 }
+
+// TODO: pool tests

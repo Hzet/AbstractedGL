@@ -38,7 +38,7 @@ public:
 	bool align(std::byte* buffer, std::uint64_t count) noexcept
 	{
 		std::uint64_t space = 0;
-		std::align(alignof(T), count * sizeof(T), buffer, space);
+		std::align(alignof(T), count * sizeof(T), (void*&)buffer, space);
 	}
 };
 }
