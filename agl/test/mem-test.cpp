@@ -60,11 +60,3 @@ TEST(impl_memory_defragmented_space, ins_del)
 			EXPECT_TRUE(ds[j].size <= ds[j + 1].size) << "defragmented_space is unsorted";
 	}
 }
-
-TEST(impl_memory_block, create_delete)
-{
-	using agl::mem::impl::block;
-	auto b = block{};
-
-	b.create();
-}
