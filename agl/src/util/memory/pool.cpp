@@ -52,6 +52,16 @@ namespace impl
 	}
 }
 
+	pool::generic_allocator::generic_allocator(pool* ptr) noexcept
+		: m_block{ ptr }
+	{
+	}
+
+	constexpr pool::generic_allocator::generic_allocator(generic_allocator const& other)
+		: m_block{ other.m_block }
+	{
+	}
+
 	pool::pool() noexcept
 		: m_buffer{ nullptr }
 		, m_occupancy{ 0 }
@@ -102,6 +112,12 @@ namespace impl
 		m_size = 0; 
 	}
 
+	pool::generic_allocator pool::make_generic_allocator() noexcept
+	{
+		return generic_allocator{ this };
+	}
+
+
 	std::uint64_t pool::occupancy() const noexcept
 	{
 		return m_occupancy;
@@ -110,6 +126,17 @@ namespace impl
 	std::uint64_t pool::size() const noexcept
 	{
 		return m_size;
+	}
+
+
+	bool operator==(pool::generic_allocator const& lhs, pool::generic_allocator const& rhs) noexcept
+	{
+		return lhs.m_block == rhs.m_block;
+	}
+
+	bool operator!=(pool::generic_allocator const& lhs, pool::generic_allocator const& rhs) noexcept
+	{
+		return lhs.m_block != rhs.m_block;
 	}
 }
 }

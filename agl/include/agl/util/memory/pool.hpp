@@ -83,6 +83,27 @@ namespace impl
 			pool* m_block;
 		};
 
+		class generic_allocator
+		{
+		public:
+			generic_allocator(pool* ptr = nullptr) noexcept;
+			constexpr generic_allocator(generic_allocator const& other);
+			~generic_allocator() noexcept = default;
+
+			template <typename T>
+			[[nodiscard]] T* allocate(std::uint64_t count) noexcept;
+
+			template <typename T>
+			void deallocate(T* ptr, std::uint64_t count) noexcept;
+
+		private:
+			friend bool operator==(generic_allocator const&, generic_allocator const&) noexcept;
+			friend bool operator!=(generic_allocator const&, generic_allocator const&) noexcept;
+
+		private:
+			pool* m_block;
+		};
+
 	public:
 		pool() noexcept;
 		pool(pool&&) noexcept = default;
@@ -97,6 +118,7 @@ namespace impl
 		void deallocate(std::byte* ptr, std::uint64_t size) noexcept;
 		template <typename T>
 		allocator<T> make_allocator() noexcept;
+		generic_allocator make_generic_allocator() noexcept;
 		std::uint64_t occupancy() const noexcept;
 		std::uint64_t size() const noexcept;
 		

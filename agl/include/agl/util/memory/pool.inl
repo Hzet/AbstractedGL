@@ -39,3 +39,15 @@ bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) no
 {
 	return lhs.m_block != rhs.m_block;
 }
+
+template <typename T>
+T* pool::generic_allocator::allocate(std::uint64_t count) noexcept
+{
+	return reinterpret_cast<T*>(m_block->allocate(count * sizeof(T)));
+}
+
+template <typename T>
+void pool::generic_allocator::deallocate(T* ptr, std::uint64_t count) noexcept
+{
+	m_block->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
+}
