@@ -66,9 +66,13 @@ namespace impl
 			constexpr allocator(allocator<U> const& other);
 			~allocator() noexcept = default;
 
-			[[nodiscard]] T* allocate(std::uint64_t count) noexcept;
+			[[nodiscard]] T* allocate(std::uint64_t count = 1) noexcept;
+
+			template <typename... TArgs>
+			T* construct(T* buffer, TArgs&&... args) const noexcept;
 			void deallocate(T* ptr, std::uint64_t count) noexcept;
 
+			void destruct(T* ptr) const noexcept;
 		private:
 			template <typename U>
 			friend class allocator;
@@ -78,27 +82,6 @@ namespace impl
 
 			template <typename U, typename W>
 			friend bool operator!=(allocator<U> const&, allocator<W> const&) noexcept;
-
-		private:
-			pool* m_block;
-		};
-
-		class generic_allocator
-		{
-		public:
-			generic_allocator(pool* ptr = nullptr) noexcept;
-			constexpr generic_allocator(generic_allocator const& other);
-			~generic_allocator() noexcept = default;
-
-			template <typename T>
-			[[nodiscard]] T* allocate(std::uint64_t count) noexcept;
-
-			template <typename T>
-			void deallocate(T* ptr, std::uint64_t count) noexcept;
-
-		private:
-			friend bool operator==(generic_allocator const&, generic_allocator const&) noexcept;
-			friend bool operator!=(generic_allocator const&, generic_allocator const&) noexcept;
 
 		private:
 			pool* m_block;
@@ -118,7 +101,6 @@ namespace impl
 		void deallocate(std::byte* ptr, std::uint64_t size) noexcept;
 		template <typename T>
 		allocator<T> make_allocator() noexcept;
-		generic_allocator make_generic_allocator() noexcept;
 		std::uint64_t occupancy() const noexcept;
 		std::uint64_t size() const noexcept;
 		

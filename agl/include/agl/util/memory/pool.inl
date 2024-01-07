@@ -17,9 +17,22 @@ T* pool::allocator<T>::allocate(std::uint64_t count) noexcept
 }
 
 template <typename T>
+template <typename... TArgs>
+T* pool::allocator<T>::construct(T* buffer, TArgs&&... args) const noexcept
+{
+	return new (&buffer) T(std::forward<TArgs>(args...));
+}
+
+template <typename T>
 void pool::allocator<T>::deallocate(T* ptr, std::uint64_t count) noexcept
 {
 	m_block->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
+}
+
+template <typename T>
+void pool::allocator<T>::destruct(T* ptr) const noexcept
+{
+	ptr->~T();
 }
 
 template <typename T>
@@ -38,16 +51,4 @@ template <typename U, typename W>
 bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) noexcept
 {
 	return lhs.m_block != rhs.m_block;
-}
-
-template <typename T>
-T* pool::generic_allocator::allocate(std::uint64_t count) noexcept
-{
-	return reinterpret_cast<T*>(m_block->allocate(count * sizeof(T)));
-}
-
-template <typename T>
-void pool::generic_allocator::deallocate(T* ptr, std::uint64_t count) noexcept
-{
-	m_block->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
 }

@@ -25,16 +25,6 @@ private:
 	agl::mem::unordered_map<std::uint64_t, agl::mem::vector<std::byte*>> m_components;
 };
 
-class component_array
-{
-public:
-	template <typename T>
-	T* add(T&& value);
-	std::uint64_t size() const noexcept;
-
-private:
-	agl::mem::vector<std::byte> m_ptrs;
-};
 
 class organizer
 {
