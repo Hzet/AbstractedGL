@@ -12,7 +12,7 @@ namespace impl
 {
 	// deque
 	template <typename T>
-	class component_buffer
+	class storage
 	{
 	public:
 		class block
@@ -21,15 +21,16 @@ namespace impl
 			block(mem::pool::allocator<T> const& allocator = mem::pool::allocator<T>{}) noexcept
 				: m_allocator{ allocator }
 				, m_data{ nullptr }
-				, m_occupancy{ 0 }
 				, m_size{ 0 }
+				, m_block_size{ 0 }
 			{
 			}
 
 			block(block&& other) noexcept
-				: m_data{ other.m_data }
-				, m_occupancy{ other.m_occupancy }
+				: m_allocator{other.m_allocator}
+				, m_data{ other.m_data }
 				, m_size{ other.m_size }
+				, m_block_size{ other.m_block_size }
 			{
 			}
 
@@ -37,8 +38,8 @@ namespace impl
 			{
 				m_allocator = other.m_allocator;
 				m_data = other.m_data;
-				m_occupancy = other.m_occupancy;
 				m_size = other.m_size;
+				m_block_size = other.m_block_size;
 			}
 
 			~block() noexcept
@@ -167,18 +168,18 @@ namespace impl
 		};
 	
 	public:
-		component_buffer(mem::pool::allocator<T> const& allocator, std::uint64_t block_size = 1024) noexcept
+		storage(mem::pool::allocator<T> const& allocator, std::uint64_t block_size = 1024) noexcept
 			: m_allocator{ allocator }
 			, m_size{ 0 }
 			, m_block_size{ block_size }
 		{
 		}
 
-		component_buffer(component_buffer&&) noexcept = default;
-		component_buffer(component_buffer const&) noexcept = delete;
-		component_buffer& operator=(component_buffer&&) noexcept = default;
-		component_buffer& operator=(component_buffer const&) noexcept = delete;
-		~component_buffer() noexcept = default;
+		storage(storage&&) noexcept = default;
+		storage(storage const&) noexcept = delete;
+		storage& operator=(storage&&) noexcept = default;
+		storage& operator=(storage const&) noexcept = delete;
+		~storage() noexcept = default;
 
 		template <typename... TArgs>
 		T* push(TArgs&&... args) noexcept

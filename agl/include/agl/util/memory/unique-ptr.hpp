@@ -9,9 +9,15 @@ template <typename T>
 class unique_ptr
 {
 public:
-	unique_ptr(pool::allocator<T> allocator = pool::allocator<T>{})
+	unique_ptr(pool::allocator<T> allocator = pool::allocator<T>{}) noexcept;
 		: m_allocator{ allocator }
 		, m_data{ nullptr }
+	{
+	}
+
+	unique_ptr(pool::allocator<T> allocator, T* ptr) noexcept
+		: m_allocator{ allocator }
+		, m_data{ ptr }
 	{
 	}
 
@@ -62,6 +68,7 @@ public:
 
 	void swap(unique_ptr& other) noexcept
 	{
+		std::swap(m_allocator, other.m_allocator);
 		std::swap(m_data, other.m_data);
 	}
 
@@ -100,7 +107,6 @@ public:
 		return m_data;
 	}
 
-
 private:
 	pool::allocator<T> m_allocator;
 	T* m_data;
@@ -110,7 +116,7 @@ template <typename T, typename... TArgs>
 unique_ptr<T> make_unique(pool::allocator<T> const& allocator, TArgs&&... args) noexcept
 {
 	auto* ptr = allocator.allocate();
-	allocator.construct(ptr, std::forward<TArgs>(args));
+	return unique_ptr{ allocator, allocator.construct(ptr, std::forward<TArgs>(args)) };
 }
 }
 }

@@ -62,8 +62,10 @@ namespace impl
 			using value_type = T;
 
 			allocator(pool* ptr = nullptr) noexcept;
-			template <typename U>
-			constexpr allocator(allocator<U> const& other);
+			allocator(allocator&& other);
+			allocator& operator=(allocator&& other);
+			allocator(allocator const& other);
+			allocator& operator=(allocator const& other);
 			~allocator() noexcept = default;
 
 			[[nodiscard]] T* allocate(std::uint64_t count = 1) noexcept;
@@ -84,7 +86,7 @@ namespace impl
 			friend bool operator!=(allocator<U> const&, allocator<W> const&) noexcept;
 
 		private:
-			pool* m_block;
+			pool* m_pool;
 		};
 
 	public:
