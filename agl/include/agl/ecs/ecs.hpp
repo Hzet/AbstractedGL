@@ -1,31 +1,11 @@
 #pragma once
-#include <cstddef>
-
-#include "agl/util/memory/pool.hpp"
-#include "agl/util/memory/containers.hpp"
+#include "agl/ecs/storage.hpp"
+#include "agl/ecs/entity.hpp"
 
 namespace agl
 {
 namespace ecs
 {
-class entity
-{
-public:
-	template <typename T>
-	bool has_component() const noexcept;
-
-	bool has_component(std::uint64_t id) const noexcept;
-
-	std::vector<std::uint64_t> get_component_ids() const noexcept;
-
-	template <typename T>
-	agl::mem::vector<std::byte> const& get_components() const noexcept;
-
-private:
-	agl::mem::unordered_map<std::uint64_t, agl::mem::vector<std::byte*>> m_components;
-};
-
-
 class organizer
 {
 public:
@@ -35,9 +15,7 @@ public:
 
 
 private:
-	agl::mem::vector<
-	agl::mem::vector<entity> m_entities;
-	agl::mem::vector<int> m_vec;
+	impl::storage<impl::entity_data> m_entities;
 };
 }
 }

@@ -27,7 +27,7 @@ namespace impl
 			}
 
 			block(block&& other) noexcept
-				: m_allocator{other.m_allocator}
+				: m_allocator{ other.m_allocator }
 				, m_data{ other.m_data }
 				, m_size{ other.m_size }
 				, m_block_size{ other.m_block_size }
@@ -169,7 +169,7 @@ namespace impl
 	
 	public:
 		storage(mem::pool::allocator<T> const& allocator, std::uint64_t block_size = 1024) noexcept
-			: m_allocator{ allocator }
+			: m_blocks{ allocator }
 			, m_size{ 0 }
 			, m_block_size{ block_size }
 		{
@@ -189,7 +189,7 @@ namespace impl
 				if (block.size() != block.block_size())
 					return block.push(std::forward<TArgs>(args...));
 
-			m_blocks.push_back(block{ m_allocator });
+			m_blocks.push_back(block{ m_blocks.get_allocator() });
 			m_blocks.back().create(block_size());
 			return m_blocks.back().push(std::forward<TArgs>(args...));
 		}
@@ -240,7 +240,6 @@ namespace impl
 		}
 
 	private:
-		mem::pool::allocator<T> m_allocator;
 		std::uint64_t m_block_size;
 		std::uint64_t m_size;
 		mem::vector<block> m_blocks;

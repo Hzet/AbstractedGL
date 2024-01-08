@@ -5,7 +5,7 @@
 
 namespace agl
 {
-	template <class C>
+	template <typename T>
 	class type_id
 	{
 	public:
