@@ -9,7 +9,7 @@ template <typename T>
 class unique_ptr
 {
 public:
-	unique_ptr(pool::allocator<T> allocator = pool::allocator<T>{}) noexcept;
+	unique_ptr(pool::allocator<T> allocator = pool::allocator<T>{}) noexcept
 		: m_allocator{ allocator }
 		, m_data{ nullptr }
 	{

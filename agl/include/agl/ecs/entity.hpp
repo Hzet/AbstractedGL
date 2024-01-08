@@ -121,6 +121,8 @@ namespace impl
 			return m_data->size<T>();
 		}
 
+	private:
+		friend class organizer;
 
 	private:
 		impl::entity_data* m_data;

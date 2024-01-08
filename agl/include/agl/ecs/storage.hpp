@@ -10,9 +10,24 @@ namespace ecs
 {
 namespace impl
 {
+	class storage_base
+	{
+	public:
+		storage_base() noexcept = default;
+		storage_base(storage_base&&) noexcept = default;
+		storage_base(storage_base const&) noexcept = delete;
+		storage_base& operator=(storage_base&&) noexcept = default;
+		storage_base& operator=(storage_base const&) noexcept = delete;
+		virtual ~storage_base() noexcept = default;
+
+	protected:
+		virtual void dummy() const noexcept = 0;
+	};
+
 	// deque
 	template <typename T>
 	class storage
+		: public storage_base
 	{
 	public:
 		class block
@@ -229,15 +244,18 @@ namespace impl
 			return m_blocks.size();
 		}
 
-		block& operator[](std::uint64_t index) noexcept
+		T& operator[](std::uint64_t index) noexcept
 		{
-			return m_blocks[index];
+			return m_blocks[index / block_size()][index % block_size()];
 		}
 
-		block const& operator[](std::uint64_t index) const noexcept
+		T const& operator[](std::uint64_t index) const noexcept
 		{
-			return m_blocks[index];
+			return m_blocks[index / block_size()][index % block_size()];
 		}
+
+	private:
+		virtual void dummy() const noexcept override {}
 
 	private:
 		std::uint64_t m_block_size;
