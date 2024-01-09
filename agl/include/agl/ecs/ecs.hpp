@@ -37,6 +37,19 @@ public:
 		ent.m_data->pop_component<T>(ptr);
 	}
 
+	template <typename... TArgs>
+	mem::vector<entity> view() const noexcept
+	{
+		auto result = mem::vector<entity>{};
+		for (auto const& e : m_entities)
+			if (e.has_component<TArgs...>())
+				result.push_back(entity{ e });
+
+		return result;
+	}
+
+	
+
 private:
 	impl::storage<impl::entity_data> m_entities;
 	std::unordered_map<type_id_t, mem::unique_ptr<impl::storage_base>> m_storage;

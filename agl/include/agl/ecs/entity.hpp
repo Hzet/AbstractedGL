@@ -32,10 +32,16 @@ namespace impl
 				m_components.at(type_id<T>::get_id()).erase();
 		}
 
-		template <typename T>
+		template <typename... TArgs>
 		bool has_component() const noexcept
 		{
-			return m_components.find(type_id<T>::get_id()) != m_components.cend();
+			return has_component<std::tuple<TArgs...>>(std::make_index_sequence<sizeof...(TArgs)>{});
+		}
+
+		template <typename TTuple, std::uint64_t... TSequence>
+		void has_component_impl(std::index_sequence<TSequence...>) const noexcept
+		{
+			return (... && (m_components.find(type_id<std::tuple_element_t<TSequence, TTuple>>::get_id()) != m_components.cend()));
 		}
 
 		bool has_component(std::uint64_t id) const noexcept
