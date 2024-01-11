@@ -141,6 +141,23 @@ public:
 	{
 		return const_iterator{ m_memory + m_size };
 	}
+
+	reverse_iterator rbegin() noexcept
+	{
+		return reverse_iterator{ m_memory };
+	}
+	reverse_const_iterator crbegin() const noexcept
+	{
+		return reverse_const_iterator{ m_memory };
+	}
+	reverse_iterator rend() noexcept
+	{
+		return reverse_iterator{ m_memory + m_size };
+	}
+	reverse_const_iterator crend() const noexcept
+	{
+		return reverse_const_iterator{ m_memory + m_size };
+	}
 	T& operator[](std::uint64_t index) noexcept
 	{
 		return *(m_memory + index);
@@ -177,6 +194,12 @@ public:
 	{
 		return m_size == 0;
 	}
+
+	TAlloc get_allocator() const noexcept
+	{
+		return m_allocator;
+	}
+
 	std::uint64_t size() const noexcept
 	{
 		return m_size;
