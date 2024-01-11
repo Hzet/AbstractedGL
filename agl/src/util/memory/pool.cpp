@@ -83,6 +83,7 @@ namespace impl
 
 	bool pool::create(std::uint64_t size) noexcept
 	{
+		m_size = size;
 		m_buffer = reinterpret_cast<std::byte*>(std::malloc(size));
 		return m_buffer != nullptr;
 	}

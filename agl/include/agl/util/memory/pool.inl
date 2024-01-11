@@ -5,31 +5,17 @@ pool::allocator<T>::allocator(pool* ptr) noexcept
 }
 
 template <typename T>
-pool::allocator<T>::allocator(allocator&& other)
+template <typename U>
+pool::allocator<T>::allocator(allocator<U> const& other) noexcept
 	: m_pool{ other.m_pool }
 {
-	AGL_ASSERT(*this == other, "allocators are not equal");
 }
 
 template <typename T>
-pool::allocator<T>& pool::allocator<T>::operator=(allocator&& other)
+template <typename U>
+pool::allocator<T>& pool::allocator<T>::operator=(allocator<U> const& other) noexcept
 {
-	AGL_ASSERT(*this == other, "allocators are not equal");
-
-	m_pool = other.m_pool;
-}
-
-template <typename T>
-pool::allocator<T>::allocator(allocator const& other)
-	: m_pool{ other.m_pool }
-{
-	AGL_ASSERT(*this == other, "allocators are not equal");
-}
-
-template <typename T>
-pool::allocator<T>& pool::allocator<T>::operator=(allocator const& other)
-{
-	AGL_ASSERT(*this == other, "allocators are not equal");
+	AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
 
 	m_pool = other.m_pool;
 }
@@ -37,25 +23,35 @@ pool::allocator<T>& pool::allocator<T>::operator=(allocator const& other)
 template <typename T>
 T* pool::allocator<T>::allocate(std::uint64_t count) noexcept
 {
+	AGL_ASSERT( m_pool != nullptr, "pool handle is nullptr");
+
 	return reinterpret_cast<T*>(m_pool->allocate(count * sizeof(T)));
 }
 
 template <typename T>
 template <typename... TArgs>
-T* pool::allocator<T>::construct(T* buffer, TArgs&&... args) const noexcept
+T* pool::allocator<T>::construct(T* buffer, TArgs&&... args) noexcept
 {
-	return new (&buffer) T(std::forward<TArgs>(args...));
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+	AGL_ASSERT(buffer != nullptr, "buffer handle is nullptr");
+
+	return new (buffer) T(std::forward<TArgs>(args)...);
 }
 
 template <typename T>
 void pool::allocator<T>::deallocate(T* ptr, std::uint64_t count) noexcept
 {
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+
 	m_pool->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
 }
 
 template <typename T>
-void pool::allocator<T>::destruct(T* ptr) const noexcept
+void pool::allocator<T>::destruct(T* ptr) noexcept
 {
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+	AGL_ASSERT(ptr != nullptr, "ptr handle is nullptr");
+	
 	ptr->~T();
 }
 
@@ -68,11 +64,11 @@ pool::allocator<T> pool::make_allocator() noexcept
 template <typename U, typename W>
 bool operator==(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) noexcept
 {
-	return lhs.m_pool == rhs.m_pool;
+	return lhs.m_pool == nullptr || lhs.m_pool == rhs.m_pool;
 }
 
 template <typename U, typename W>
 bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) noexcept
 {
-	return lhs.m_pool != rhs.m_pool;
+	return lhs.m_pool != nullptr && lhs.m_pool != rhs.m_pool;
 }

@@ -1,4 +1,5 @@
 #pragma once
+#include <iostream>
 #include <cstddef>
 #include <vector>
 
@@ -62,19 +63,17 @@ namespace impl
 			using value_type = T;
 
 			allocator(pool* ptr = nullptr) noexcept;
-			allocator(allocator&& other);
-			allocator& operator=(allocator&& other);
-			allocator(allocator const& other);
-			allocator& operator=(allocator const& other);
+			template <typename U> allocator(allocator<U> const& other) noexcept;
+			template <typename U> allocator& operator=(allocator<U> const& other) noexcept;
 			~allocator() noexcept = default;
 
 			[[nodiscard]] T* allocate(std::uint64_t count = 1) noexcept;
 
 			template <typename... TArgs>
-			T* construct(T* buffer, TArgs&&... args) const noexcept;
-			void deallocate(T* ptr, std::uint64_t count) noexcept;
+			T* construct(T* buffer, TArgs&&... args) noexcept;
+			void deallocate(T* ptr, std::uint64_t count = 1) noexcept;
+			void destruct(T* ptr) noexcept;
 
-			void destruct(T* ptr) const noexcept;
 		private:
 			template <typename U>
 			friend class allocator;

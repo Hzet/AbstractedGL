@@ -6,16 +6,10 @@ namespace agl
 namespace mem
 {
 template <typename T>
-class unique_ptr
+class unique_ptr final
 {
 public:
-	unique_ptr(pool::allocator<T> allocator = pool::allocator<T>{}) noexcept
-		: m_allocator{ allocator }
-		, m_data{ nullptr }
-	{
-	}
-
-	unique_ptr(pool::allocator<T> allocator, T* ptr) noexcept
+	unique_ptr(pool::allocator<T> allocator = {}, T* ptr = nullptr) noexcept
 		: m_allocator{ allocator }
 		, m_data{ ptr }
 	{
@@ -33,6 +27,14 @@ public:
 		m_allocator = other.m_allocator;
 		m_data = other.m_data;
 		other.m_data = nullptr;
+
+		return *this;
+	}
+
+	unique_ptr& operator=(std::nullptr_t) noexcept
+	{
+		reset();
+		return *this;
 	}
 
 	unique_ptr(unique_ptr const&) noexcept = delete;
@@ -57,13 +59,14 @@ public:
 		if(m_data != nullptr)
 			m_allocator.destruct(m_data);
 
-		m_data = m_allocator.construct<T>(std::forward<T>(arg), std::forward<TArgs>(args...));
+		m_data = m_allocator.construct(std::forward<T>(arg), std::forward<TArgs>(args...));
 	}
 
 	void reset(std::nullptr_t = nullptr) noexcept
 	{
 		if (m_data != nullptr)
 			m_allocator.destruct(m_data);
+		m_data = nullptr;
 	}
 
 	void swap(unique_ptr& other) noexcept
@@ -72,7 +75,7 @@ public:
 		std::swap(m_data, other.m_data);
 	}
 
-	T* const get() const noexcept
+	T* const get() noexcept
 	{
 		return m_data;
 	}
@@ -107,16 +110,22 @@ public:
 		return m_data;
 	}
 
+	bool operator==(std::nullptr_t) const noexcept
+	{
+		return m_data == nullptr;
+	}
+
 private:
 	pool::allocator<T> m_allocator;
 	T* m_data;
 };
 
-template <typename T, typename... TArgs>
-unique_ptr<T> make_unique(pool::allocator<T> const& allocator, TArgs&&... args) noexcept
+template <typename T, typename U>
+unique_ptr<T> make_unique(pool::allocator<T> const& allocator, U&& value) noexcept
 {
-	auto* ptr = allocator.allocate();
-	return unique_ptr{ allocator, allocator.construct(ptr, std::forward<TArgs>(args)) };
+	auto alloc = pool::allocator<U>{ allocator };
+	auto* ptr = alloc.allocate();
+	return unique_ptr<T>{ allocator, alloc.construct(ptr, std::forward<U>(value)) };
 }
 }
 }

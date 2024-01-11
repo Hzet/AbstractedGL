@@ -8,33 +8,38 @@ namespace agl
 	class type_id_t
 	{
 	public:
-		type_id_t(std::uint64_t* const id = nullptr) noexcept
+		constexpr explicit type_id_t(std::uint64_t id = 0) noexcept
 			: m_id{ id }
 		{
 		}
+
+		constexpr type_id_t(type_id_t const& other) noexcept
+			: m_id{ other.m_id }
+		{
+		}
 		
-		bool is_valid() const noexcept
+		constexpr bool is_valid() const noexcept
 		{
-			return m_id != nullptr;
+			return m_id != 0;
 		}
 
-		bool operator==(type_id_t other) const noexcept
+		constexpr bool operator==(type_id_t other) const noexcept
 		{
 			return m_id == other.m_id;
 		}
 
-		bool operator!=(type_id_t other) const noexcept
+		constexpr bool operator!=(type_id_t other) const noexcept
 		{
 			return m_id == other.m_id;
 		}
 
-		std::uint64_t get_value() const noexcept
+		constexpr std::uint64_t get_value() const noexcept
 		{
-			return reinterpret_cast<std::uint64_t>(m_id);
+			return m_id;
 		}
 
 	private:
-		std::uint64_t* const m_id;
+		std::uint64_t m_id;
 	};
 
 	template <typename T>
@@ -43,7 +48,7 @@ namespace agl
 	public:
 		static constexpr type_id_t get_id() noexcept
 		{
-			return type_id_t{ &m_id };
+			return type_id_t{ (std::uint64_t)&m_id };
 		}
 
 		static constexpr std::string_view get_name() noexcept
@@ -59,7 +64,7 @@ namespace agl
 		}
 
 	private:
-		static std::uint64_t constexpr m_id{};
+		static constexpr std::uint64_t m_id{};
 	};
 }
 
@@ -71,9 +76,9 @@ namespace std
 template <>
 struct hash<agl::type_id_t>
 {
-	size_t operator()(agl::type_id_t& const uid) const noexcept
+	size_t operator()(agl::type_id_t uid) const noexcept
 	{
-		return hash<uint64_t>{}(static_cast<const uint64_t>(uid));
+		return hash<uint64_t>{}(uid.get_value());
 	}
 };
 }

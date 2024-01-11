@@ -16,13 +16,21 @@ namespace impl
 		{
 		}
 
+		entity_data(entity_data&&) = default;
+		entity_data& operator=(entity_data&&) = default;
+
 		template <typename T>
 		void push_component(T* ptr) noexcept
 		{
-			if (m_components.find(type_id<T>::get_id()) == m_components.cend())
-				m_components[type_id<T>::get_id()] = mem::vector<std::byte*>(m_components.get_allocator());
+			auto& components = m_components[type_id<T>::get_id()];
+			
+			if (components.empty())
+			{
+				auto alloc = mem::pool::allocator<std::byte*>{ m_components.get_allocator() };
+				components = mem::vector<std::byte*>{ alloc };
+			}
 
-			m_components[type_id<T>::get_id()].push_back(ptr);
+			m_components[type_id<T>::get_id()].push_back(reinterpret_cast<std::byte*>(ptr));
 		}
 
 		template <typename T>
@@ -44,14 +52,14 @@ namespace impl
 			return (... && (m_components.find(type_id<std::tuple_element_t<TSequence, TTuple>>::get_id()) != m_components.cend()));
 		}
 
-		bool has_component(std::uint64_t id) const noexcept
+		bool has_component(type_id_t id) const noexcept
 		{
 			return m_components.find(id) != m_components.cend();
 		}
 
-		std::vector<std::uint64_t> get_component_ids() const noexcept
+		std::vector<type_id_t> get_component_ids() const noexcept
 		{
-			auto result = std::vector<std::uint64_t>{};
+			auto result = std::vector<type_id_t>{};
 			result.reserve(m_components.size());
 
 			for (auto const& pair : m_components)
@@ -80,7 +88,7 @@ namespace impl
 
 
 	private:
-		mem::unordered_map<std::uint64_t, mem::vector<std::byte*>> m_components;
+		mem::unordered_map<type_id_t, mem::vector<std::byte*>> m_components;
 
 	};
 }
@@ -99,12 +107,12 @@ namespace impl
 			return m_data->has_component<T>();
 		}
 
-		bool has_component(std::uint64_t id) const noexcept
+		bool has_component(type_id_t id) const noexcept
 		{
 			return m_data->has_component(id);
 		}
 
-		std::vector<std::uint64_t> get_component_ids() const noexcept
+		std::vector<type_id_t> get_component_ids() const noexcept
 		{
 			return m_data->get_component_ids();
 		}
