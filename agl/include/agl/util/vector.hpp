@@ -5,23 +5,31 @@ namespace agl
 {
 namespace impl
 {
-template <typename T>
+template <typename T, typename TVec>
 class vector_iterator;
-template <typename T>
+template <typename T, typename TVec>
 class vector_const_iterator;
-template <typename T>
+template <typename T, typename TVec>
 class reverse_vector_iterator;
-template <typename T>
+template <typename T, typename TVec>
 class reverse_vector_const_iterator;
 }
 template <typename T, typename TAlloc = mem::allocator<T>>
 class vector
 {
 public:
-	using iterator = impl::vector_iterator<T>;
-	using const_iterator = impl::vector_const_iterator<T>;
-	using reverse_iterator = impl::reverse_vector_iterator<T>;
-	using reverse_const_iterator = impl::reverse_vector_const_iterator<T>;
+	using self = vector<T, TAlloc>;
+	using value_type = typename TAlloc::value_type;
+	using pointer = typename TAlloc::pointer;
+	using const_pointer = typename TAlloc::const_pointer;
+	using reference = typename TAlloc::reference;
+	using const_reference = typename TAlloc::const_reference;
+	using size_type = typename TAlloc::size_type;
+	using difference_type = typename TAlloc::difference_type;
+	using iterator = impl::vector_iterator<T, self>;
+	using const_iterator = impl::vector_const_iterator<T, self>;
+	using reverse_iterator = impl::reverse_vector_iterator<T, self>;
+	using reverse_const_iterator = impl::reverse_vector_const_iterator<T, self>;
 	
 	vector(TAlloc alloc = TAlloc{}) noexcept
 		: m_allocator{ alloc }
@@ -60,8 +68,9 @@ public:
 	}
 	vector& operator=(vector&& other) noexcept
 	{
-		m_allocator = std::move(other.m_allocator);
+		clear();
 
+		m_allocator = std::move(other.m_allocator);
 		m_capacity = other.m_capacity;
 		other.m_capacity = 0;
 		m_memory = other.m_memory;
@@ -72,28 +81,28 @@ public:
 	}
 	vector& operator=(vector const& other) noexcept
 	{
+		clear();
 		m_allocator = other.m_allocator;
-		m_capacity = other.m_capacity;
-		other.m_capacity = 0;
-		m_memory = other.m_memory;
-		other.m_memory = nullptr;
-		m_size = other.m_size;
-		other.m_size = 0;
+
+		reserve(other.m_capacity);
+		for (auto const& v : other)
+			this->push_back(v);
+	
 		return *this;
 	}
 	~vector()
 	{
 		clear();
 	}
-	T& at(std::uint64_t index) noexcept
+	reference at(size_type index) noexcept
 	{
 		return *(m_memory + index);
 	}
-	T const& at() const noexcept
+	const_reference at() const noexcept
 	{
 		return *(m_memory + index);
 	}
-	void assign(std::uint64_t count, T const& value) noexcept
+	void assign(size_type count, const_reference value) noexcept
 	{
 		if (count != capacity())
 		{
@@ -125,7 +134,7 @@ public:
 	//			*(m_memory + i) = *first;
 	//	}
 	//}
-	iterator begin() noexcept
+	iterator begin() const noexcept
 	{
 		return iterator{ m_memory };
 	}
@@ -133,7 +142,7 @@ public:
 	{
 		return const_iterator{ m_memory };
 	}
-	iterator end() noexcept
+	iterator end() const noexcept
 	{
 		return iterator{ m_memory + m_size };
 	}
@@ -142,7 +151,7 @@ public:
 		return const_iterator{ m_memory + m_size };
 	}
 
-	reverse_iterator rbegin() noexcept
+	reverse_iterator rbegin() const noexcept
 	{
 		return reverse_iterator{ m_memory };
 	}
@@ -150,7 +159,7 @@ public:
 	{
 		return reverse_const_iterator{ m_memory };
 	}
-	reverse_iterator rend() noexcept
+	reverse_iterator rend() const noexcept
 	{
 		return reverse_iterator{ m_memory + m_size };
 	}
@@ -158,35 +167,35 @@ public:
 	{
 		return reverse_const_iterator{ m_memory + m_size };
 	}
-	T& operator[](std::uint64_t index) noexcept
+	reference operator[](size_type index) noexcept
 	{
 		return *(m_memory + index);
 	}
-	T const& operator[](std::uint64_t index) const noexcept
+	const_reference operator[](size_type index) const noexcept
 	{
 		return *(m_memory + index);
 	}
-	T& front() noexcept
+	reference front() noexcept
 	{
 		return *m_memory;
 	}
-	T const& front() const noexcept
+	const_reference front() const noexcept
 	{
 		return *m_memory;
 	}
-	T& back() noexcept
+	reference back() noexcept
 	{
 		return *(m_memory + m_size - 1);
 	}
-	T const& back() const noexcept
+	const_reference back() const noexcept
 	{
 		return *(m_memory + m_size - 1);
 	}
-	T* const data() noexcept
+	pointer data() noexcept
 	{
 		return m_memory;
 	}
-	T const* const data() const noexcept
+	const_pointer data() const noexcept
 	{
 		return m_memory
 	}
@@ -200,17 +209,17 @@ public:
 		return m_allocator;
 	}
 
-	std::uint64_t size() const noexcept
+	size_type size() const noexcept
 	{
 		return m_size;
 	}
-	void resize(std::uint64_t n) noexcept
+	void resize(size_type n) noexcept
 	{
 		if (n > capacity())
 			reserve(n);
 		m_size = n;
 	}
-	std::uint64_t capacity() const noexcept
+	size_type capacity() const noexcept
 	{
 		return m_capacity;
 	}
@@ -222,14 +231,17 @@ public:
 	}
 	void clear() noexcept
 	{
-		for (auto i = std::uint64_t{}; i < size(); ++i)
-			m_allocator.destruct<T>(m_memory + i);
-		m_allocator.deallocate(reinterpret_cast<std::byte*>(m_memory), m_capacity);
+		if (m_memory == nullptr)
+			return;
+
+		for (auto i = difference_type{ 0 }; i < size(); ++i)
+			m_allocator.destruct(m_memory + i);
+		m_allocator.deallocate(m_memory, m_capacity);
 		m_memory = nullptr;
 		m_size = 0;
 		m_capacity = 0;
 	}
-	iterator insert(const_iterator pos, T const& value) noexcept
+	iterator insert(const_iterator pos, const_reference value) noexcept
 	{
 		if (pos == cend())
 		{
@@ -243,11 +255,11 @@ public:
 		++m_size;
 		return iterator{ m_memory + index };
 	}
-	iterator insert(const_iterator pos, T&& value) noexcept
+	iterator insert(const_iterator pos, value_type&& value) noexcept
 	{
 		if (pos == cend())
 		{
-			push_back(value);
+			push_back(std::move(value));
 			return iterator{ m_memory + m_size - 1 };
 		}
 		auto const index = pos - begin();
@@ -271,45 +283,46 @@ public:
 		}
 		reserve(size() + insert_size);
 		move_elements(cbegin() + index, insert_size);
-		for (auto i = 0; i < insert_size; ++i)
+		for (auto i = difference_type{ 0 }; i < insert_size; ++i)
 			*(m_memory + index + i) = first++;
 		m_size += insert_size;
 		return iterator{ m_memory + index };
 	}
 	iterator erase(const_iterator pos) noexcept
 	{
-		m_allocator.destruct<T>(m_memory + pos - begin());
+		m_allocator.destruct(m_memory + (pos - begin()));
 		move_elements(pos + 1, -1);
 		--m_size;
-		return iterator{ m_memory + pos };
+		return iterator{ m_memory + (pos - begin()) };
 	}
 	iterator erase(const_iterator first, const_iterator last) noexcept
 	{
 		auto const erase_size = last - first;
 		auto const offset = first - begin();
-		for (auto i = 0; i < erase_size; ++i)
-			m_allocator.destruct<T>(m_memory + offset + i);
+		for (auto i = difference_type{ 0 }; i < erase_size; ++i)
+			m_allocator.destruct(m_memory + offset + i);
 		m_size -= erase_size;
 		return iterator{ m_memory + offset };
 	}
-	void push_back(T&& value) noexcept
+	template <typename TEnable = std::enable_if_t<std::is_move_assignable_v<T>>>
+	void push_back(value_type&& value) noexcept
 	{
 		resize(size() + 1);
-		*(m_memory + size()) = std::move(value);
-		++m_size;
+		*(m_memory + size() - 1) = std::move(value);
 	}
-	void push_back(T const& value) noexcept
+
+	template <typename TEnable = std::enable_if_t<std::is_copy_assignable_v<T>>>
+	void push_back(const_reference value) noexcept
 	{
 		resize(size() + 1);
-		*(m_memory + size()) = value;
-		++m_size;
+		*(m_memory + size() - 1) = value;
 	}
 	void pop_back() noexcept
 	{
-		m_allocator.destruct<T>(m_memory + size() - 1);
+		m_allocator.destruct(m_memory + size() - 1);
 		--m_size;
 	}
-	void reserve(std::uint64_t n) noexcept
+	void reserve(size_type n) noexcept
 	{
 		if (n <= capacity())
 			return;
@@ -317,44 +330,54 @@ public:
 	}
 private:
 	/// <summary>
-	///
+	/// Moves element under 'pos' and all the elements on it's right 'count' spaces in given direction.
 	/// </summary>
 	/// <param name="pos">position where to start moving items from</param>
 	/// <param name="count">how many spaces will items be moved. if negative, items right to pos will be moved towards the beginning of the array</param>
-	void move_elements(const_iterator pos, std::int64_t count) noexcept
+	void move_elements(const_iterator pos, size_type count) noexcept
 	{
 		auto const size = pos - begin();
-		for (auto i = 0; i < size; ++i)
-			*(m_memory + pos + i) = *(m_memory + m_size - 1 + count + i);
-		for(auto i = )
+		for (auto i = difference_type{ 0 }; i < size; ++i)
+			*(m_memory + size + i) = std::move(*(m_memory + m_size - 1 + count + i));
 	}
-	void realloc(std::uint64_t n) noexcept
+	void realloc(size_type n) noexcept
 	{
-		auto* tmp_buffer = m_allocator.allocate(n * sizeof(T));
-		m_allocator.align<T>(tmp_buffer, n);
+		auto* tmp_buffer = m_allocator.allocate(n);
 		// move current content to new buffer
-		for (auto i = std::uint64_t{}; i < capacity(); ++i)
-			m_allocator.construct<T>(tmp_buffer + i, *(m_memory + i));
-		m_allocator.deallocate(reinterpret_cast<std::byte*>(m_memory), m_capacity);
-		m_memory = reinterpret_cast<T*>(tmp_buffer);
+		for (auto i = difference_type{ 0 }; i < static_cast<difference_type>(size()); ++i)
+			m_allocator.construct(tmp_buffer + i, std::move(*(m_memory + i)));
+
+		for (auto i = size(); i < n; ++i)
+			m_allocator.construct(tmp_buffer + i);
+
+		m_allocator.deallocate(m_memory, m_capacity);
+		m_memory = tmp_buffer;
 		m_capacity = n;
 	}
 private:
 	TAlloc m_allocator;
-	std::uint64_t m_capacity;
-	T *m_memory;
-	std::uint64_t m_size;
+	size_type m_capacity;
+	pointer m_memory;
+	size_type m_size;
 };
 namespace impl
 {
-template <typename T>
+template <typename T, typename TVec>
 class reverse_iterator
 {
 public:
+	using value_type = typename TVec::value_type;
+	using pointer = typename TVec::pointer;
+	using const_pointer = typename TVec::const_pointer;
+	using reference = typename TVec::reference;
+	using const_reference = typename TVec::const_reference;
+	using size_type = typename TVec::size_type;
+	using difference_type = typename TVec::difference_type;
+
 	reverse_iterator() noexcept
 		: m_ptr{ nullptr }
 	{}
-	reverse_iterator(T* ptr) noexcept
+	reverse_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
 	reverse_iterator(reverse_iterator&& other) noexcept = default;
@@ -372,11 +395,11 @@ public:
 		auto result = reverse_iterator{ *this };
 		return --result;
 	}
-	reverse_iterator operator+(std::uint64_t offset) const noexcept
+	reverse_iterator operator+(difference_type offset) const noexcept
 	{
 		return reverse_iterator{ m_ptr - offset };
 	}
-	reverse_iterator& operator+=(std::uint64_t offset) const noexcept
+	reverse_iterator& operator+=(difference_type offset) const noexcept
 	{
 		m_ptr -= offset;
 		return *this;
@@ -391,32 +414,32 @@ public:
 		auto result = reverse_iterator{ *this };
 		return ++result;
 	}
-	std::uint64_t operator-(reverse_iterator rhs) const noexcept
+	difference_type operator-(reverse_iterator rhs) const noexcept
 	{
 		return std::abs(*reinterpret_cast<std::int64_t*>(m_ptr) - *reinterpret_cast<std::int64_t*>(rhs.m_ptr));
 	}
-	reverse_iterator operator-(std::uint64_t offset) const noexcept
+	reverse_iterator operator-(difference_type offset) const noexcept
 	{
 		return reverse_iterator{ m_ptr + offset };
 	}
-	reverse_iterator& operator-=(std::uint64_t offset) const noexcept
+	reverse_iterator& operator-=(difference_type offset) const noexcept
 	{
 		m_ptr += offset;
 		return *this;
 	}
-	T& operator*() noexcept
+	reference operator*() noexcept
 	{
 		return *m_ptr;
 	}
-	T const& operator*() const noexcept
+	const_reference operator*() const noexcept
 	{
 		return *m_ptr;
 	}
-	T* const operator->() noexcept
+	pointer const operator->() noexcept
 	{
 		return m_ptr;
 	}
-	T const* const operator->() const noexcept
+	const_pointer operator->() const noexcept
 	{
 		return m_ptr;
 	}
@@ -429,25 +452,33 @@ public:
 		return m_ptr == other.m_ptr;
 	}
 private:
-	template <typename U>
+	template <typename U, typename W>
 	friend class reverse_const_iterator;
 private:
-	T* m_ptr;
+	pointer m_ptr;
 };
-template <typename T>
+template <typename T, typename TVec>
 class reverse_const_iterator
 {
 public:
+	using value_type = typename TVec::value_type;
+	using pointer = typename TVec::pointer;
+	using const_pointer = typename TVec::const_pointer;
+	using reference = typename TVec::reference;
+	using const_reference = typename TVec::const_reference;
+	using size_type = typename TVec::size_type;
+	using difference_type = typename TVec::difference_type;
+
 	reverse_const_iterator() noexcept
 		: m_ptr{ nullptr }
 	{}
-	reverse_const_iterator(T* ptr) noexcept
+	reverse_const_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
-	reverse_const_iterator(reverse_iterator<T>&& other) noexcept
+	reverse_const_iterator(reverse_iterator<T, TVec>&& other) noexcept
 		: m_ptr{ other.m_ptr }
 	{}
-	reverse_const_iterator(reverse_iterator<T> const&) noexcept
+	reverse_const_iterator(reverse_iterator<T, TVec> const&) noexcept
 		: m_ptr{ other.m_ptr }
 	{}
 	reverse_const_iterator(reverse_const_iterator&& other) noexcept = default;
@@ -465,11 +496,11 @@ public:
 		auto result = reverse_const_iterator{ *this };
 		return --result;
 	}
-	reverse_const_iterator operator+(std::uint64_t offset) const noexcept
+	reverse_const_iterator operator+(difference_type offset) const noexcept
 	{
 		return reverse_const_iterator{ m_ptr - offset };
 	}
-	reverse_const_iterator& operator+=(std::uint64_t offset) const noexcept
+	reverse_const_iterator& operator+=(difference_type offset) const noexcept
 	{
 		m_ptr -= offset;
 		return *this;
@@ -484,32 +515,24 @@ public:
 		auto result = reverse_const_iterator{ *this };
 		return ++result;
 	}
-	std::uint64_t operator-(reverse_const_iterator rhs) const noexcept
+	difference_type operator-(reverse_const_iterator rhs) const noexcept
 	{
 		return std::abs(*reinterpret_cast<std::int64_t*>(m_ptr) - *reinterpret_cast<std::int64_t*>(rhs.m_ptr));
 	}
-	reverse_const_iterator operator-(std::uint64_t offset) const noexcept
+	reverse_const_iterator operator-(difference_type offset) const noexcept
 	{
 		return reverse_const_iterator{ m_ptr + offset };
 	}
-	reverse_const_iterator& operator-=(std::uint64_t offset) const noexcept
+	reverse_const_iterator& operator-=(difference_type offset) const noexcept
 	{
 		m_ptr += offset;
 		return *this;
 	}
-	T& operator*() noexcept
+	const_reference operator*() const noexcept
 	{
 		return *m_ptr;
 	}
-	T const& operator*() const noexcept
-	{
-		return *m_ptr;
-	}
-	T* const operator->() noexcept
-	{
-		return m_ptr;
-	}
-	T const* const operator->() const noexcept
+	const_pointer operator->() const noexcept
 	{
 		return m_ptr;
 	}
@@ -522,16 +545,24 @@ public:
 		return m_ptr == other.m_ptr;
 	}
 private:
-	T* m_ptr;
+	pointer m_ptr;
 };
-template <typename T>
+template <typename T, typename TVec>
 class vector_iterator
 {
 public:
+	using value_type = typename TVec::value_type;
+	using pointer = typename TVec::pointer;
+	using const_pointer = typename TVec::const_pointer;
+	using reference = typename TVec::reference;
+	using const_reference = typename TVec::const_reference;
+	using size_type = typename TVec::size_type;
+	using difference_type = typename TVec::difference_type;
+
 	vector_iterator() noexcept
 		: m_ptr{ nullptr }
 	{}
-	vector_iterator(T* ptr) noexcept
+	vector_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
 	vector_iterator(vector_iterator&& other) noexcept = default;
@@ -549,11 +580,11 @@ public:
 		auto result = vector_iterator{ *this };
 		return ++result;
 	}
-	vector_iterator operator+(std::uint64_t offset) const noexcept
+	vector_iterator operator+(difference_type offset) const noexcept
 	{
 		return vector_iterator{ m_ptr + offset };
 	}
-	vector_iterator& operator+=(std::uint64_t offset) const noexcept
+	vector_iterator& operator+=(difference_type offset) noexcept
 	{
 		m_ptr += offset;
 		return *this;
@@ -568,32 +599,32 @@ public:
 		auto result = vector_iterator{ *this };
 		return --result;
 	}
-	std::uint64_t operator-(vector_iterator rhs) const noexcept
+	difference_type operator-(vector_iterator rhs) const noexcept
 	{
-		return *reinterpret_cast<std::uint64_t*>(m_ptr - rhs.m_ptr);
+		return m_ptr - rhs.m_ptr;
 	}
-	vector_iterator operator-(std::uint64_t offset) const noexcept
+	vector_iterator operator-(difference_type offset) const noexcept
 	{
 		return vector_iterator{ m_ptr - offset };
 	}
-	vector_iterator& operator-=(std::uint64_t offset) const noexcept
+	vector_iterator& operator-=(difference_type offset) noexcept
 	{
 		m_ptr -= offset;
 		return *this;
 	}
-	T& operator*() noexcept
+	reference operator*() noexcept
 	{
 		return *m_ptr;
 	}
-	T const& operator*() const noexcept
+	const_reference operator*() const noexcept
 	{
 		return *m_ptr;
 	}
-	T* const operator->() noexcept
+	pointer operator->() noexcept
 	{
 		return m_ptr;
 	}
-	T const* const operator->() const noexcept
+	const_pointer operator->() const noexcept
 	{
 		return m_ptr;
 	}
@@ -603,30 +634,38 @@ public:
 	}
 	bool operator!=(vector_iterator const& other) const noexcept
 	{
-		return m_ptr == other.m_ptr;
+		return m_ptr != other.m_ptr;
 	}
 private:
-	template <typename U>
+	template <typename U, typename W>
 	friend class vector_const_iterator;
 private:
-	T* m_ptr;
+	pointer m_ptr;
 };
-template <typename T>
+template <typename T, typename TVec>
 class vector_const_iterator
 {
 public:
+	using value_type = typename TVec::value_type;
+	using pointer = typename TVec::pointer;
+	using const_pointer = typename TVec::const_pointer;
+	using reference = typename TVec::reference;
+	using const_reference = typename TVec::const_reference;
+	using size_type = typename TVec::size_type;
+	using difference_type = typename TVec::difference_type;
+
 	vector_const_iterator() noexcept
 		: m_ptr{ nullptr }
 		, m_size{ 0 }
 	{}
-	vector_const_iterator(T* ptr) noexcept
+	vector_const_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
-	vector_const_iterator(vector_iterator<T> const& other) noexcept
+	vector_const_iterator(vector_iterator<T, TVec> const& other) noexcept
 		: m_ptr{ other.m_ptr }
 	{
 	}
-	vector_const_iterator(vector_iterator<T>&& other) noexcept
+	vector_const_iterator(vector_iterator<T, TVec>&& other) noexcept
 		: m_ptr{ other.m_ptr }
 	{
 	}
@@ -645,11 +684,11 @@ public:
 		auto result = vector_iterator{ *this };
 		return ++result;
 	}
-	vector_const_iterator operator+(std::uint64_t offset) const noexcept
+	vector_const_iterator operator+(difference_type offset) const noexcept
 	{
 		return vector_const_iterator{ m_ptr + offset };
 	}
-	vector_const_iterator& operator+=(std::uint64_t offset) const noexcept
+	vector_const_iterator& operator+=(difference_type offset) noexcept
 	{
 		m_ptr += offset;
 		return *this;
@@ -664,24 +703,24 @@ public:
 		auto result = vector_iterator{ *this };
 		return --result;
 	}
-	std::uint64_t operator-(vector_const_iterator rhs) const noexcept
+	difference_type operator-(vector_const_iterator rhs) const noexcept
 	{
-		return *reinterpret_cast<std::uint64_t*>(m_ptr - rhs.m_ptr);
+		return m_ptr - rhs.m_ptr;
 	}
-	vector_const_iterator operator-(std::uint64_t offset) const noexcept
+	vector_const_iterator operator-(difference_type offset) const noexcept
 	{
 		return vector_const_iterator{ m_ptr - offset };
 	}
-	vector_const_iterator& operator-=(std::uint64_t offset) const noexcept
+	vector_const_iterator& operator-=(difference_type offset) noexcept
 	{
 		m_ptr -= offset;
 		return *this;
 	}
-	T const& operator*() const noexcept
+	const_reference operator*() const noexcept
 	{
 		return *m_ptr;
 	}
-	T const* const operator->() const noexcept
+	const_pointer operator->() const noexcept
 	{
 		return m_ptr;
 	}
@@ -694,7 +733,31 @@ public:
 		return m_ptr == other.m_ptr;
 	}
 private:
-	T* m_ptr;
+	pointer m_ptr;
 };
 }
+}
+
+namespace std
+{
+template <typename T, typename TVec>
+struct iterator_traits<agl::impl::vector_iterator<T, TVec>>
+{
+	using value_type = typename TVec::value_type;
+	using pointer = typename TVec::pointer;
+	using reference = typename TVec::reference;
+	using difference_type = typename TVec::difference_type;
+	using iterator_category = random_access_iterator_tag;
+
+};
+
+template <typename T, typename TVec>
+struct iterator_traits<agl::impl::vector_const_iterator<T, TVec>>
+{
+	using value_type = typename TVec::value_type;
+	using pointer = typename TVec::const_pointer;
+	using reference = typename TVec::const_reference;
+	using difference_type = typename TVec::difference_type;
+	using iterator_category = random_access_iterator_tag;
+};
 }

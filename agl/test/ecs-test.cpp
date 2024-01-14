@@ -40,7 +40,7 @@ TEST(ECS, ecs)
 	{
 		ecs.push_component<int>(entities[i], i);
 		ecs.push_component<int>(entities[i], i + 1);
-		ecs.push_component<float>(entities[i], i);
+		ecs.push_component<float>(entities[i], static_cast<float>(i));
 	}
 
 	for (auto i = 0; i < entities.size(); ++i)

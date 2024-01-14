@@ -61,18 +61,24 @@ namespace impl
 		{
 		public:
 			using value_type = T;
+			using pointer = T*;
+			using const_pointer = T const*;
+			using reference = T&;
+			using const_reference = T const&;
+			using size_type = std::uint64_t;
+			using difference_type = std::ptrdiff_t;
 
 			allocator(pool* ptr = nullptr) noexcept;
 			template <typename U> allocator(allocator<U> const& other) noexcept;
 			template <typename U> allocator& operator=(allocator<U> const& other) noexcept;
 			~allocator() noexcept = default;
 
-			[[nodiscard]] T* allocate(std::uint64_t count = 1) noexcept;
+			[[nodiscard]] pointer allocate(size_type count = 1) noexcept;
 
 			template <typename... TArgs>
-			T* construct(T* buffer, TArgs&&... args) noexcept;
-			void deallocate(T* ptr, std::uint64_t count = 1) noexcept;
-			void destruct(T* ptr) noexcept;
+			void construct(pointer buffer, TArgs&&... args) noexcept;
+			void deallocate(pointer ptr, size_type count = 1) noexcept;
+			void destruct(pointer ptr) noexcept;
 
 		private:
 			template <typename U>
@@ -113,7 +119,6 @@ namespace impl
 		std::uint64_t m_size;
 	};
 
-	
 #include "agl/util/memory/pool.inl"
 }
 }

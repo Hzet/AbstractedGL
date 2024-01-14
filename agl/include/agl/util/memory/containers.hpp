@@ -1,18 +1,16 @@
 #pragma once
-#include <memory>
-#include <unordered_map>
-#include <vector>
-
+#include "agl/util/dictionary.hpp"
 #include "agl/util/memory/pool.hpp"
+#include "agl/util/vector.hpp"
 
 namespace agl
 {
 namespace mem
 {
-template <typename TKey, typename T>
-using unordered_map = std::unordered_map<TKey, T, std::hash<TKey>, std::equal_to<TKey>, pool::allocator<std::pair<const TKey, T>>>;
+template <typename TKey, typename TValue>
+using dictionary = agl::dictionary<TKey, TValue, pool::allocator<pair<TKey, TValue>>>;
 
 template <typename T>
-using vector = std::vector<T, pool::allocator<T>>;
+using vector = agl::vector<T, pool::allocator<T>>;
 }
 }

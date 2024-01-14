@@ -1,61 +1,71 @@
 #pragma once
 #include <algorithm>
 #include "agl/util/pair.hpp"
+#include "agl/util/memory/allocator.hpp"
 #include "agl/util/vector.hpp"
 
 namespace agl
 {
-template <typename TKey, typename TValue, typename TAlloc>
+template <typename TKey, typename TValue, typename TAlloc = mem::allocator<pair<TKey, TValue>>>
 class dictionary
 {
 public:
-	using data_type = pair<TKey, TValue>;
-	using vector_type = vector<data_type, TAlloc>;
-	using iterator = vector_type::iterator;
-	using const_iterator = vector_type::const_iterator;
-	using reverse_iterator = vector_type::reverse_iterator;
-	using reverse_const_iterator = vector_type::reverse_const_iterator;
+	using allocator_type = TAlloc;
+	using key_type = TKey;
+	using mapped_type = TValue;
+	using value_type = pair<key_type, mapped_type>;
+	using pointer = typename allocator_type::pointer;
+	using const_pointer = typename allocator_type::const_pointer;
+	using reference = typename allocator_type::reference;
+	using const_reference = typename allocator_type::const_reference;
+	using size_type = typename allocator_type::size_type;
+	using difference_type = typename allocator_type::difference_type;
+	using vector_type = typename vector<value_type, allocator_type>;
+	using iterator = typename vector_type::iterator;
+	using const_iterator = typename vector_type::const_iterator;
+	using reverse_iterator = typename vector_type::reverse_iterator;
+	using reverse_const_iterator = typename vector_type::reverse_const_iterator;
 
-	dictionary(TAlloc alloc = {}) noexcept
+	dictionary(allocator_type alloc = {}) noexcept
 		: m_data{ alloc }
 	{
 	}
 
-	iterator begin() noexcept
+	iterator begin() const noexcept
 	{
 		return m_data.begin();
 	}
-	iterator rbegin() noexcept
+	iterator rbegin() const noexcept
 	{
 		return m_data.rbegin();
 	}
 
-	const_iterator cbegin() noexcept
+	const_iterator cbegin() const noexcept
 	{
 		return m_data.cbegin();
 	}
 
-	const_iterator crbegin() noexcept
+	const_iterator crbegin() const noexcept
 	{
 		return m_data.crbegin();
 	}
 
-	iterator end() noexcept
+	iterator end() const noexcept
 	{
 		return m_data.end();
 	}
 
-	iterator rend() noexcept
+	iterator rend() const noexcept
 	{
 		return m_data.rend();
 	}
 
-	const_iterator cend() noexcept
+	const_iterator cend() const noexcept
 	{
 		return m_data.cend();
 	}
 
-	const_iterator crend() noexcept
+	const_iterator crend() const noexcept
 	{
 		return m_data.crend();
 	}
@@ -65,15 +75,15 @@ public:
 		m_data.clear();
 	}
 
-	iterator find(TKey key) noexcept
+	iterator find(key_type key) noexcept
 	{
-		auto const comparator = [](data_type const& data, TKey const& key) { return data.first < key; };
+		auto const comparator = [](value_type const& data, key_type const& key) { return data.first < key; };
 		return std::lower_bound(m_data.begin(), m_data.end(), key, comparator);
 	}
 
-	const_iterator find(TKey key) const noexcept
+	const_iterator find(key_type key) const noexcept
 	{
-		auto const comparator = [](data_type const& data, TKey const& key) { return data.first < key; };
+		auto const comparator = [](value_type const& data, key_type const& key) { return data.first < key; };
 		return std::lower_bound(m_data.cbegin(), m_data.cend(), key, comparator);
 	}
 
@@ -87,36 +97,36 @@ public:
 		return m_data.erase(first, last);
 	}
 
-	iterator emplace(TKey key, TValue value = {}) noexcept
+	iterator emplace(key_type key, mapped_type value = {}) noexcept
 	{
 		auto const it = find(key);
-		return m_data.insert(it, value);
+		return m_data.insert(it, std::move(value_type{ std::move(key), std::move(value) }));
 	}
 	bool empty() const noexcept
 	{
 		return m_data.empty();
 	}
 
-	TValue& at(TKey key) const noexcept
+	mapped_type& at(key_type key) noexcept
 	{
-		return *find(key)->second;
+		return find(key)->second;
 	}
 
-	TValue const& at(TKey key) const noexcept
+	mapped_type const& at(key_type key) const noexcept
 	{
-		return *find(key)->second;
+		return find(key)->second;
 	}
 
-	TValue& operator[](TKey key) noexcept
+	mapped_type& operator[](key_type key) noexcept
 	{
 		auto found = find(key);
 		if (found == end())
-			return emplace(key);
+			return emplace(key)->second;
 
 		return found->second;
 	}
 
-	TValue const& operator[](TKey key) const noexcept
+	mapped_type const& operator[](key_type key) const noexcept
 	{
 		auto found = find(key);
 		if (found == cend())
@@ -125,12 +135,12 @@ public:
 		return found->second;
 	}
 
-	std::uint64_t size() const noexcept
+	size_type size() const noexcept
 	{
 		return m_data.size();
 	}
 
-	TAlloc get_allocator() const noexcept
+	allocator_type get_allocator() const noexcept
 	{
 		return m_data.get_allocator();
 	}

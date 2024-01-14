@@ -88,7 +88,7 @@ namespace impl
 
 
 	private:
-		mem::unordered_map<type_id_t, mem::vector<std::byte*>> m_components;
+		mem::dictionary<type_id_t, mem::vector<std::byte*>> m_components;
 
 	};
 }

@@ -14,11 +14,13 @@ namespace impl
 	class block
 	{
 	public:
-		block(mem::pool::allocator<T> const& allocator = mem::pool::allocator<T>{}) noexcept
+		block(mem::pool::allocator<T> const& allocator = {}) noexcept
 			: m_allocator{ allocator }
 			, m_block_size{ 0 }
+			, m_free_indexes{ allocator }
 			, m_data{ nullptr }
 			, m_size{ 0 }
+			, m_peak{ 0 }
 		{
 		}
 
@@ -28,6 +30,7 @@ namespace impl
 			, m_data{ other.m_data }
 			, m_free_indexes{ std::move(other.m_free_indexes) }
 			, m_size{ other.m_size }
+			, m_peak{ other.m_peak}
 		{
 			other.m_data = nullptr;
 			other.m_size = 0;
@@ -40,6 +43,7 @@ namespace impl
 			m_free_indexes = std::move(other.m_free_indexes);
 			m_data = other.m_data;
 			m_size = other.m_size;
+			m_peak = other.m_peak;
 
 			return *this;
 		}
@@ -232,9 +236,8 @@ namespace impl
 				if (block.size() != block.block_size())
 					return block.push(std::forward<TArgs>(args)...);
 			
-			m_blocks.push_back({});
+			m_blocks.push_back(std::move(block<T>{ m_blocks.get_allocator() }));
 			auto& b = m_blocks.back();
-			b = block<T>{ m_blocks.get_allocator() };
 			b.create(block_size());
 			return b.push(std::forward<TArgs>(args)...);
 		}

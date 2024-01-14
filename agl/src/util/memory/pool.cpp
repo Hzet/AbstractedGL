@@ -31,14 +31,17 @@ namespace impl
 		if (found == m_defragmented.end())
 			return membuf{ nullptr, 0 };
 
+		auto ds = *found;
+		m_defragmented.erase(found);
+
 		// push excess space back to the collection
-		if (found->size > minimal_size)
+		if (ds.size > minimal_size)
 		{
-			push(found->ptr + minimal_size, found->size - minimal_size);
-			found->size = minimal_size;
+			push(ds.ptr + minimal_size, ds.size - minimal_size);
+			ds.size = minimal_size;
 		}
 
-		return *m_defragmented.erase(found);
+		return ds;
 	}
 
 	membuf const defragmented_space::operator[](std::uint64_t index) const noexcept
@@ -90,6 +93,9 @@ namespace impl
 
 	void pool::deallocate(std::byte* ptr, std::uint64_t size) noexcept
 	{
+		if (ptr == nullptr)
+			return;
+
 		m_defragmented.push(ptr, size);
 		m_occupancy -= size;
 	}

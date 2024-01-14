@@ -89,7 +89,7 @@ public:
 	}
 
 private:
-	mem::unordered_map<type_id_t, mem::unique_ptr<impl::storage_base>> m_components;
+	mem::dictionary<type_id_t, mem::unique_ptr<impl::storage_base>> m_components;
 	impl::storage<impl::entity_data> m_entities;
 	mem::vector<system> m_systems;
 };

@@ -9,20 +9,30 @@ template <typename T>
 class unique_ptr final
 {
 public:
+	//using value_type = typename TAlloc::value_type;
+	//using pointer = typename TAlloc::pointer;
+	//using const_pointer = typename TAlloc::const_pointer;
+	//using reference = typename TAlloc::reference;
+	//using const_reference = typename TAlloc::const_reference;
+	//using size_type = typename TAlloc::size_type;
+	//using difference_type = typename TAlloc::difference_type;
+
 	unique_ptr(pool::allocator<T> allocator = {}, T* ptr = nullptr) noexcept
 		: m_allocator{ allocator }
 		, m_data{ ptr }
 	{
 	}
 
-	unique_ptr(unique_ptr&& other) noexcept
+	template <typename U, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
+	unique_ptr(unique_ptr<U>&& other) noexcept
 		: m_allocator{ other.m_allocator }
 		, m_data{ other.m_data }
 	{
 		other.m_data = nullptr;
 	}
 
-	unique_ptr& operator=(unique_ptr&& other) noexcept
+	template <typename U, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
+	unique_ptr& operator=(unique_ptr<U>&& other) noexcept
 	{
 		m_allocator = other.m_allocator;
 		m_data = other.m_data;
@@ -125,7 +135,8 @@ unique_ptr<T> make_unique(pool::allocator<T> const& allocator, U&& value) noexce
 {
 	auto alloc = pool::allocator<U>{ allocator };
 	auto* ptr = alloc.allocate();
-	return unique_ptr<T>{ allocator, alloc.construct(ptr, std::forward<U>(value)) };
+	alloc.construct(ptr, std::move(value));
+	return unique_ptr<T>{ allocator, ptr };
 }
 }
 }

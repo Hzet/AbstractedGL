@@ -21,25 +21,25 @@ pool::allocator<T>& pool::allocator<T>::operator=(allocator<U> const& other) noe
 }
 
 template <typename T>
-T* pool::allocator<T>::allocate(std::uint64_t count) noexcept
+typename pool::allocator<T>::pointer pool::allocator<T>::allocate(size_type count) noexcept
 {
-	AGL_ASSERT( m_pool != nullptr, "pool handle is nullptr");
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 
-	return reinterpret_cast<T*>(m_pool->allocate(count * sizeof(T)));
+	return reinterpret_cast<pointer>(m_pool->allocate(count * sizeof(T)));
 }
 
 template <typename T>
 template <typename... TArgs>
-T* pool::allocator<T>::construct(T* buffer, TArgs&&... args) noexcept
+void pool::allocator<T>::construct(pointer buffer, TArgs&&... args) noexcept
 {
 	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 	AGL_ASSERT(buffer != nullptr, "buffer handle is nullptr");
 
-	return new (buffer) T(std::forward<TArgs>(args)...);
+	new (buffer) T(std::forward<TArgs>(args)...);
 }
 
 template <typename T>
-void pool::allocator<T>::deallocate(T* ptr, std::uint64_t count) noexcept
+void pool::allocator<T>::deallocate(pointer ptr, size_type count) noexcept
 {
 	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 
@@ -47,11 +47,11 @@ void pool::allocator<T>::deallocate(T* ptr, std::uint64_t count) noexcept
 }
 
 template <typename T>
-void pool::allocator<T>::destruct(T* ptr) noexcept
+void pool::allocator<T>::destruct(pointer ptr) noexcept
 {
 	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 	AGL_ASSERT(ptr != nullptr, "ptr handle is nullptr");
-	
+
 	ptr->~T();
 }
 

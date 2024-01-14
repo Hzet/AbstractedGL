@@ -33,6 +33,11 @@ namespace agl
 			return m_id == other.m_id;
 		}
 
+		constexpr operator std::uint64_t() const noexcept
+		{
+			return m_id;
+		}
+
 		constexpr std::uint64_t get_value() const noexcept
 		{
 			return m_id;
