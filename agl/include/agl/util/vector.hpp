@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 #include "agl/util/memory/allocator.hpp"
+#include "agl/core/debug.hpp"
+
 namespace agl
 {
 namespace impl
@@ -363,7 +365,7 @@ private:
 namespace impl
 {
 template <typename T, typename TVec>
-class reverse_iterator
+class vector_reverse_iterator
 {
 public:
 	using value_type = typename TVec::value_type;
@@ -374,55 +376,55 @@ public:
 	using size_type = typename TVec::size_type;
 	using difference_type = typename TVec::difference_type;
 
-	reverse_iterator() noexcept
+	vector_reverse_iterator() noexcept
 		: m_ptr{ nullptr }
 	{}
-	reverse_iterator(pointer ptr) noexcept
+	vector_reverse_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
-	reverse_iterator(reverse_iterator&& other) noexcept = default;
-	reverse_iterator(reverse_iterator const& other) noexcept = default;
-	reverse_iterator& operator=(reverse_iterator&& other) noexcept = default;
-	reverse_iterator& operator=(reverse_iterator const& other) noexcept = default;
-	~reverse_iterator() noexcept = default;
-	reverse_iterator& operator++() noexcept
+	vector_reverse_iterator(vector_reverse_iterator&& other) noexcept = default;
+	vector_reverse_iterator(vector_reverse_iterator const& other) noexcept = default;
+	vector_reverse_iterator& operator=(vector_reverse_iterator&& other) noexcept = default;
+	vector_reverse_iterator& operator=(vector_reverse_iterator const& other) noexcept = default;
+	~vector_reverse_iterator() noexcept = default;
+	vector_reverse_iterator& operator++() noexcept
 	{
 		m_ptr -= 1;
 		return *this;
 	}
-	reverse_iterator operator++(int) const noexcept
+	vector_reverse_iterator operator++(int) const noexcept
 	{
-		auto result = reverse_iterator{ *this };
+		auto result = vector_reverse_iterator{ *this };
 		return --result;
 	}
-	reverse_iterator operator+(difference_type offset) const noexcept
+	vector_reverse_iterator operator+(difference_type offset) const noexcept
 	{
-		return reverse_iterator{ m_ptr - offset };
+		return vector_reverse_iterator{ m_ptr - offset };
 	}
-	reverse_iterator& operator+=(difference_type offset) const noexcept
+	vector_reverse_iterator& operator+=(difference_type offset) const noexcept
 	{
 		m_ptr -= offset;
 		return *this;
 	}
-	reverse_iterator& operator--() noexcept
+	vector_reverse_iterator& operator--() noexcept
 	{
 		m_ptr += 1;
 		return *this;
 	}
-	reverse_iterator operator--(int) const noexcept
+	vector_reverse_iterator operator--(int) const noexcept
 	{
-		auto result = reverse_iterator{ *this };
+		auto result = vector_reverse_iterator{ *this };
 		return ++result;
 	}
-	difference_type operator-(reverse_iterator rhs) const noexcept
+	difference_type operator-(vector_reverse_iterator rhs) const noexcept
 	{
 		return std::abs(*reinterpret_cast<std::int64_t*>(m_ptr) - *reinterpret_cast<std::int64_t*>(rhs.m_ptr));
 	}
-	reverse_iterator operator-(difference_type offset) const noexcept
+	vector_reverse_iterator operator-(difference_type offset) const noexcept
 	{
-		return reverse_iterator{ m_ptr + offset };
+		return vector_reverse_iterator{ m_ptr + offset };
 	}
-	reverse_iterator& operator-=(difference_type offset) const noexcept
+	vector_reverse_iterator& operator-=(difference_type offset) const noexcept
 	{
 		m_ptr += offset;
 		return *this;
@@ -443,11 +445,11 @@ public:
 	{
 		return m_ptr;
 	}
-	bool operator==(reverse_iterator const& other) const noexcept
+	bool operator==(vector_reverse_iterator const& other) const noexcept
 	{
 		return m_ptr == other.m_ptr;
 	}
-	bool operator!=(reverse_iterator const& other) const noexcept
+	bool operator!=(vector_reverse_iterator const& other) const noexcept
 	{
 		return m_ptr == other.m_ptr;
 	}
@@ -458,7 +460,7 @@ private:
 	pointer m_ptr;
 };
 template <typename T, typename TVec>
-class reverse_const_iterator
+class vector_reverse_const_iterator
 {
 public:
 	using value_type = typename TVec::value_type;
@@ -469,61 +471,61 @@ public:
 	using size_type = typename TVec::size_type;
 	using difference_type = typename TVec::difference_type;
 
-	reverse_const_iterator() noexcept
+	vector_reverse_const_iterator() noexcept
 		: m_ptr{ nullptr }
 	{}
-	reverse_const_iterator(pointer ptr) noexcept
+	vector_reverse_const_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
-	reverse_const_iterator(reverse_iterator<T, TVec>&& other) noexcept
+	vector_reverse_const_iterator(vector_reverse_iterator<T, TVec>&& other) noexcept
 		: m_ptr{ other.m_ptr }
 	{}
-	reverse_const_iterator(reverse_iterator<T, TVec> const&) noexcept
+	vector_reverse_const_iterator(vector_reverse_iterator<T, TVec> const&) noexcept
 		: m_ptr{ other.m_ptr }
 	{}
-	reverse_const_iterator(reverse_const_iterator&& other) noexcept = default;
-	reverse_const_iterator(reverse_const_iterator const& other) noexcept = default;
-	reverse_const_iterator& operator=(reverse_const_iterator&& other) noexcept = default;
-	reverse_const_iterator& operator=(reverse_const_iterator const& other) noexcept = default;
-	~reverse_const_iterator() noexcept = default;
-	reverse_const_iterator& operator++() noexcept
+	vector_reverse_const_iterator(vector_reverse_const_iterator&& other) noexcept = default;
+	vector_reverse_const_iterator(vector_reverse_const_iterator const& other) noexcept = default;
+	vector_reverse_const_iterator& operator=(vector_reverse_const_iterator&& other) noexcept = default;
+	vector_reverse_const_iterator& operator=(vector_reverse_const_iterator const& other) noexcept = default;
+	~vector_reverse_const_iterator() noexcept = default;
+	vector_reverse_const_iterator& operator++() noexcept
 	{
 		m_ptr -= 1;
 		return *this;
 	}
-	reverse_const_iterator operator++(int) const noexcept
+	vector_reverse_const_iterator operator++(int) const noexcept
 	{
-		auto result = reverse_const_iterator{ *this };
+		auto result = vector_reverse_const_iterator{ *this };
 		return --result;
 	}
-	reverse_const_iterator operator+(difference_type offset) const noexcept
+	vector_reverse_const_iterator operator+(difference_type offset) const noexcept
 	{
-		return reverse_const_iterator{ m_ptr - offset };
+		return vector_reverse_const_iterator{ m_ptr - offset };
 	}
-	reverse_const_iterator& operator+=(difference_type offset) const noexcept
+	vector_reverse_const_iterator& operator+=(difference_type offset) const noexcept
 	{
 		m_ptr -= offset;
 		return *this;
 	}
-	reverse_const_iterator& operator--() noexcept
+	vector_reverse_const_iterator& operator--() noexcept
 	{
 		m_ptr += 1;
 		return *this;
 	}
-	reverse_const_iterator operator--(int) const noexcept
+	vector_reverse_const_iterator operator--(int) const noexcept
 	{
-		auto result = reverse_const_iterator{ *this };
+		auto result = vector_reverse_const_iterator{ *this };
 		return ++result;
 	}
-	difference_type operator-(reverse_const_iterator rhs) const noexcept
+	difference_type operator-(vector_reverse_const_iterator rhs) const noexcept
 	{
 		return std::abs(*reinterpret_cast<std::int64_t*>(m_ptr) - *reinterpret_cast<std::int64_t*>(rhs.m_ptr));
 	}
-	reverse_const_iterator operator-(difference_type offset) const noexcept
+	vector_reverse_const_iterator operator-(difference_type offset) const noexcept
 	{
-		return reverse_const_iterator{ m_ptr + offset };
+		return vector_reverse_const_iterator{ m_ptr + offset };
 	}
-	reverse_const_iterator& operator-=(difference_type offset) const noexcept
+	vector_reverse_const_iterator& operator-=(difference_type offset) const noexcept
 	{
 		m_ptr += offset;
 		return *this;
@@ -536,11 +538,11 @@ public:
 	{
 		return m_ptr;
 	}
-	bool operator==(reverse_const_iterator const& other) const noexcept
+	bool operator==(vector_reverse_const_iterator const& other) const noexcept
 	{
 		return m_ptr == other.m_ptr;
 	}
-	bool operator!=(reverse_const_iterator const& other) const noexcept
+	bool operator!=(vector_reverse_const_iterator const& other) const noexcept
 	{
 		return m_ptr == other.m_ptr;
 	}
