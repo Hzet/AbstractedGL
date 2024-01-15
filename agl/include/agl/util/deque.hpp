@@ -1,6 +1,5 @@
 #pragma once
 #include "agl/util/vector.hpp"
-#include "agl/util/memory/containers.hpp"
 
 namespace agl
 {
@@ -9,19 +8,19 @@ namespace impl
 template <typename T, typename TAlloc>
 class block
 {
-	using allocator_type = typename TAlloc;
-	using value_type = typename TAlloc::value_type;
-	using pointer = typename TAlloc::pointer;
-	using const_pointer = typename TAlloc::const_pointer;
-	using reference = typename TAlloc::reference;
-	using const_reference = typename TAlloc::const_reference;
-	using size_type = typename TAlloc::size_type;
-	using difference_type = typename TAlloc::difference_type;
+	using allocator_type = typename TAlloc::template rebind<T>;
+	using value_type = typename type_traits<T>::value_type;
+	using pointer = typename type_traits<T>::pointer;
+	using const_pointer = typename type_traits<T>::const_pointer;
+	using reference = typename type_traits<T>::reference;
+	using const_reference = typename type_traits<T>::const_reference;
+	using size_type = typename type_traits<T>::size_type;
+	using difference_type = typename type_traits<T>::difference_type;
 
 public:
 	block(std::uint64_t block_size, allocator_type const& allocator) noexcept
-		: m_data{ allocator }
-		, m_free_indexes{ allocator }
+		: m_data{ allocator_type{ allocator } }
+		, m_free_indexes{ index_allocator{ allocator } }
 		, m_size{ 0 }
 		, m_block_size{ block_size }
 	{
@@ -32,7 +31,7 @@ public:
 	}
 	const_pointer cend() const noexcept
 	{
-		return &m_data[0];
+		return &m_data[block_size() - 1];
 	}
 	void clear() noexcept
 	{
@@ -117,43 +116,47 @@ public:
 	}
 
 private:
-	mem::vector<T, TAlloc> m_data;
-	mem::vector<std::uint16_t, TAlloc> m_free_indexes;
+	using data_vector = vector<T, allocator_type>;
+	using index_allocator = typename allocator_type::template rebind<std::uint16_t>;
+	using index_vector = vector<std::uint16_t, index_allocator>;
+private:
+	data_vector m_data;
+	index_vector m_free_indexes;
 	size_type m_size;
 	size_type m_block_size;
 };
-template <typename T, typename TTraits>
+template <typename T>
 class deque_iterator;
-template <typename T, typename TTraits>
+template <typename T>
 class deque_const_iterator;
-template <typename T, typename TTraits>
+template <typename T>
 class deque_reverse_iterator;
-template <typename T, typename TTraits>
+template <typename T>
 class deque_reverse_const_iterator;
 }
 template <typename T, typename TAlloc = agl::mem::allocator<T>>
 class deque
 {
 public:
-	using self = typename deque<T, TAlloc>;
-	using allocator_type = typename TAlloc;
-	using value_type = typename TAlloc::value_type;
-	using pointer = typename TAlloc::pointer;
-	using const_pointer = typename TAlloc::const_pointer;
-	using reference = typename TAlloc::reference;
-	using const_reference = typename TAlloc::const_reference;
-	using size_type = typename TAlloc::size_type;
-	using difference_type = typename TAlloc::difference_type;
-	using iterator = typename impl::deque_iterator<T, self>;
-	using const_iterator = typename impl::deque_const_iterator<T, self>;
-	using reverse_iterator = typename impl::deque_reverse_iterator<T, self>;
-	using reverse_const_iterator = typename impl::deque_reverse_const_iterator<T, self>;
+	using allocator_type = typename TAlloc::template rebind<T>;
+	using value_type = typename type_traits<T>::value_type;
+	using pointer = typename type_traits<T>::pointer;
+	using const_pointer = typename type_traits<T>::const_pointer;
+	using reference = typename type_traits<T>::reference;
+	using const_reference = typename type_traits<T>::const_reference;
+	using size_type = typename type_traits<T>::size_type;
+	using difference_type = typename type_traits<T>::difference_type;
+
+	using iterator = typename impl::deque_iterator<T>;
+	using const_iterator = typename impl::deque_const_iterator<T>;
+	using reverse_iterator = typename impl::deque_reverse_iterator<T>;
+	using reverse_const_iterator = typename impl::deque_reverse_const_iterator<T>;
 
 public:
 	deque(std::uint64_t block_size = 1024, allocator_type const& allocator = {}) noexcept
-		: m_blocks{ allocator }
+		: m_blocks{ block_allocator( allocator ) }
+		, m_indexes{ index_allocator{ allocator } }
 		, m_block_size{ block_size }
-		, m_size{ 0 }
 	{
 	}
 	allocator_type get_allocator() const noexcept
@@ -188,6 +191,10 @@ public:
 		AGL_ASSERT(!empty(), "Index out of range");
 
 		return at(0);
+	}
+	bool empty() const noexcept
+	{
+		return size() == 0;
 	}
 	void erase(const_iterator pos) noexcept
 	{
@@ -276,6 +283,11 @@ public:
 	{
 		return *m_indexes[index];
 	}
+private:
+	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
+	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
+	using index_allocator = typename allocator_type::template rebind<T*>;
+	using index_vector = vector<T*, index_allocator>;
 
 private:
 	/// <summary>
@@ -283,7 +295,7 @@ private:
 	/// </summary>
 	/// <param name="value_index"></param>
 	/// <returns></returns>
-	impl::block<T, TAlloc>& find_block(const_iterator pos) const noexcept
+	impl::block<T, allocator_type>& find_block(const_iterator pos) const noexcept
 	{
 		for (auto& block : m_blocks)
 			if (block.cbegin() <= &(*pos) && block.cend() <= &(*pos))
@@ -293,25 +305,24 @@ private:
 	}
 
 private:
-	mem::vector<impl::block<T, TAlloc>, TAlloc> m_blocks;
+	block_vector m_blocks;
 	size_type m_block_size;
-	//vector<T*, TAlloc> m_indexes;
-	mem::vector<T*> m_indexes;
+	index_vector m_indexes;
 };
 namespace impl
 {
-template <typename T, typename TTraits>
+template <typename T>
 class deque_reverse_iterator
 {
 public:
-	using iterator = vector_reverse_iterator<T, TTraits>;
-	using value_type = typename TTraits::value_type;
-	using pointer = typename TTraits::pointer;
-	using const_pointer = typename TTraits::const_pointer;
-	using reference = typename TTraits::reference;
-	using const_reference = typename TTraits::const_reference;
-	using size_type = typename TTraits::size_type;
-	using difference_type = typename TTraits::difference_type;
+	using iterator = vector_reverse_iterator<T>;
+	using value_type = typename iterator::value_type;
+	using pointer = typename iterator::pointer;
+	using const_pointer = typename iterator::const_pointer;
+	using reference = typename iterator::reference;
+	using const_reference = typename iterator::const_reference;
+	using size_type = typename iterator::size_type;
+	using difference_type = typename iterator::difference_type;
 
 public:
 	deque_reverse_iterator() noexcept
@@ -390,23 +401,23 @@ public:
 		return m_it == other.m_it;
 	}
 private:
-	template <typename U, typename W>
+	template <typename U>
 	friend class deque_reverse_const_iterator;
 private:
 	iterator m_it;
 };
-template <typename T, typename TTraits>
+template <typename T>
 class deque_reverse_const_iterator
 {
 public:
-	using iterator = vector_reverse_const_iterator<T, TTraits>;
-	using value_type = typename TTraits::value_type;
-	using pointer = typename TTraits::pointer;
-	using const_pointer = typename TTraits::const_pointer;
-	using reference = typename TTraits::reference;
-	using const_reference = typename TTraits::const_reference;
-	using size_type = typename TTraits::size_type;
-	using difference_type = typename TTraits::difference_type;
+	using iterator = vector_reverse_const_iterator<T>;
+	using value_type = typename iterator::value_type;
+	using pointer = typename iterator::pointer;
+	using const_pointer = typename iterator::const_pointer;
+	using reference = typename iterator::reference;
+	using const_reference = typename iterator::const_reference;
+	using size_type = typename iterator::size_type;
+	using difference_type = typename iterator::difference_type;
 
 	deque_reverse_const_iterator() noexcept
 		: m_it{ nullptr }
@@ -414,10 +425,10 @@ public:
 	deque_reverse_const_iterator(iterator it) noexcept
 		: m_it{ it }
 	{}
-	deque_reverse_const_iterator(deque_reverse_iterator<T, TTraits>&& other) noexcept
+	deque_reverse_const_iterator(deque_reverse_iterator<T>&& other) noexcept
 		: m_it{ other.m_it }
 	{}
-	deque_reverse_const_iterator(deque_reverse_iterator<T, TTraits> const&) noexcept
+	deque_reverse_const_iterator(deque_reverse_iterator<T> const&) noexcept
 		: m_it{ other.m_it }
 	{}
 	deque_reverse_const_iterator(deque_reverse_const_iterator&& other) noexcept = default;
@@ -484,18 +495,18 @@ public:
 private:
 	iterator m_it;
 };
-template <typename T, typename TTraits>
+template <typename T>
 class deque_iterator
 {
 public:
-	using iterator = typename vector_iterator<T, TTraits>;
-	using value_type = typename TTraits::value_type;
-	using pointer = typename TTraits::pointer;
-	using const_pointer = typename TTraits::const_pointer;
-	using reference = typename TTraits::reference;
-	using const_reference = typename TTraits::const_reference;
-	using size_type = typename TTraits::size_type;
-	using difference_type = typename TTraits::difference_type;
+	using iterator = vector_iterator<T>;
+	using value_type = typename iterator::value_type;
+	using pointer = typename iterator::pointer;
+	using const_pointer = typename iterator::const_pointer;
+	using reference = typename iterator::reference;
+	using const_reference = typename iterator::const_reference;
+	using size_type = typename iterator::size_type;
+	using difference_type = typename iterator::difference_type;
 
 	deque_iterator() noexcept
 		: m_it{ nullptr }
@@ -575,23 +586,23 @@ public:
 		return m_it != other.m_it;
 	}
 private:
-	template <typename U, typename W>
+	template <typename U>
 	friend class deque_const_iterator;
 private:
 	iterator m_it;
 };
-template <typename T, typename TTraits>
+template <typename T>
 class deque_const_iterator
 {
 public:
-	using iterator = typename vector_const_iterator<T, TTraits>;
-	using value_type = typename TTraits::value_type;
-	using pointer = typename TTraits::pointer;
-	using const_pointer = typename TTraits::const_pointer;
-	using reference = typename TTraits::reference;
-	using const_reference = typename TTraits::const_reference;
-	using size_type = typename TTraits::size_type;
-	using difference_type = typename TTraits::difference_type;
+	using iterator = vector_const_iterator<T>;
+	using value_type = typename iterator::value_type;
+	using pointer = typename iterator::pointer;
+	using const_pointer = typename iterator::const_pointer;
+	using reference = typename iterator::reference;
+	using const_reference = typename iterator::const_reference;
+	using size_type = typename iterator::size_type;
+	using difference_type = typename iterator::difference_type;
 
 	deque_const_iterator() noexcept
 		: m_it{ nullptr }
@@ -600,11 +611,11 @@ public:
 	deque_const_iterator(iterator it) noexcept
 		: m_it{ it }
 	{}
-	deque_const_iterator(deque_iterator<T, TTraits> const& other) noexcept
+	deque_const_iterator(deque_iterator<T> const& other) noexcept
 		: m_it{ other.m_it }
 	{
 	}
-	deque_const_iterator(deque_iterator<T, TTraits>&& other) noexcept
+	deque_const_iterator(deque_iterator<T>&& other) noexcept
 		: m_it{ other.m_it }
 	{
 	}
@@ -679,24 +690,24 @@ private:
 
 namespace std
 {
-template <typename T, typename TTraits>
-struct iterator_traits<agl::impl::deque_iterator<T, TTraits>>
+template <typename T>
+struct iterator_traits<agl::impl::deque_iterator<T>>
 {
-	using value_type = typename TTraits::value_type;
-	using pointer = typename TTraits::pointer;
-	using reference = typename TTraits::reference;
-	using difference_type = typename TTraits::difference_type;
+	using value_type = typename ::agl::type_traits<T>::value_type;
+	using pointer = typename ::agl::type_traits<T>::pointer;
+	using reference = typename ::agl::type_traits<T>::reference;
+	using difference_type = typename ::agl::type_traits<T>::difference_type;
 	using iterator_category = random_access_iterator_tag;
 
 };
 
-template <typename T, typename TTraits>
-struct iterator_traits<agl::impl::deque_const_iterator<T, TTraits>>
+template <typename T>
+struct iterator_traits<agl::impl::deque_const_iterator<T>>
 {
-	using value_type = typename TTraits::value_type;
-	using pointer = typename TTraits::const_pointer;
-	using reference = typename TTraits::const_reference;
-	using difference_type = typename TTraits::difference_type;
+	using value_type = typename ::agl::type_traits<T>::value_type;
+	using pointer = typename ::agl::type_traits<T>::pointer;
+	using reference = typename ::agl::type_traits<T>::reference;
+	using difference_type = typename ::agl::type_traits<T>::difference_type;
 	using iterator_category = random_access_iterator_tag;
 };
 }

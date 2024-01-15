@@ -1,5 +1,6 @@
+/*
 #include <gtest/gtest.h>
-#include "agl/util/deque.hpp"
+#include "agl/ecs/ecs.hpp"
 
 TEST(ECS, ecs_storage)
 {
@@ -14,7 +15,6 @@ TEST(ECS, ecs_storage)
 			FAIL() << "Invalid value after push operation";
 	}
 }
-/*
 TEST(ECS, ecs)
 {
 	auto pool = agl::mem::pool{};

@@ -10,17 +10,17 @@ template <typename TKey, typename TValue, typename TAlloc = mem::allocator<pair<
 class dictionary
 {
 public:
-	using allocator_type = TAlloc;
 	using key_type = TKey;
 	using mapped_type = TValue;
-	using value_type = pair<key_type, mapped_type>;
-	using pointer = typename allocator_type::pointer;
-	using const_pointer = typename allocator_type::const_pointer;
-	using reference = typename allocator_type::reference;
-	using const_reference = typename allocator_type::const_reference;
-	using size_type = typename allocator_type::size_type;
-	using difference_type = typename allocator_type::difference_type;
-	using vector_type = typename vector<value_type, allocator_type>;
+	using allocator_type = typename TAlloc::template rebind<pair<TKey, TValue>>;
+	using value_type = typename type_traits<pair<TKey, TValue>>::value_type;
+	using pointer = typename type_traits<pair<TKey, TValue>>::pointer;
+	using const_pointer = typename type_traits<pair<TKey, TValue>>::const_pointer;
+	using reference = typename type_traits<pair<TKey, TValue>>::reference;
+	using const_reference = typename type_traits<pair<TKey, TValue>>::const_reference;
+	using size_type = std::uint64_t;
+	using difference_type = std::uint64_t;
+	using vector_type = vector<typename value_type, typename allocator_type>;
 	using iterator = typename vector_type::iterator;
 	using const_iterator = typename vector_type::const_iterator;
 	using reverse_iterator = typename vector_type::reverse_iterator;

@@ -1,4 +1,3 @@
-/*
 #pragma once
 #include <any>
 #include "agl/ecs/entity.hpp"
@@ -89,4 +88,3 @@ private:
 };
 }
 }
-*/

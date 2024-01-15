@@ -60,6 +60,13 @@ namespace impl
 		class allocator
 		{
 		public:
+			static_assert(!std::is_const_v<T>, "allocator<const T> is ill-formed");
+			static_assert(!std::is_function_v<T>, "[allocator.requirements]");
+			static_assert(!std::is_reference_v<T>, "[allocator.requirements]");
+
+		public:
+			template <typename U>
+			using rebind = allocator<U>;
 			using value_type = T;
 			using pointer = T*;
 			using const_pointer = T const*;
@@ -77,6 +84,10 @@ namespace impl
 
 			template <typename... TArgs>
 			void construct(pointer buffer, TArgs&&... args) noexcept;
+			void construct_array(pointer buffer) noexcept
+			{
+				new[](buffer) value_type();
+			}
 			void deallocate(pointer ptr, size_type count = 1) noexcept;
 			void destruct(pointer ptr) noexcept;
 
