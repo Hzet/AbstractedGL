@@ -1,4 +1,6 @@
+/*
 #pragma once
+#include <any>
 #include "agl/ecs/entity.hpp"
 #include "agl/ecs/system.hpp"
 #include "agl/util/memory/unique-ptr.hpp"
@@ -43,14 +45,14 @@ public:
 	template <typename T, typename... TArgs>
 	void push_component(entity& ent, TArgs&&... args) noexcept
 	{
-		auto& deq = m_components[type_id<T>::get_id()];
-		
-		if (deq.empty())
-			storage_ptr = mem::make_unique<impl::storage_base>(m_components.get_allocator(), impl::storage<T>{ m_components.get_allocator() });
+		auto& container = m_components[type_id<T>::get_id()];
 
-		auto* storage = reinterpret_cast<impl::storage<T>*>(storage_ptr.get());
-		auto* ptr = storage->push(std::forward<TArgs>(args)...);
-		ent.m_data->push_component<T>(ptr);
+		if (!container.has_value())
+			container = deque<T, mem::pool::allocator<T>>{ sizeof(T) * 500, m_components.get_allocator() };
+
+		auto& deq = std::any_cast<deque<T, mem::pool::allocator<int>>>(container);
+		deq.push_back(T{ std::forward<TArgs>(args)... });
+		ent.m_data->push_component<T>(&deq.back());
 	}
 	template <typename T>
 	void pop_component(entity& ent, T* ptr) noexcept
@@ -81,9 +83,10 @@ public:
 	}
 
 private:
-	mem::dictionary<type_id_t, mem::deque<std::byte>> m_components;
+	mem::dictionary<type_id_t, std::any> m_components;
 	mem::deque<impl::entity_data> m_entities;
 	mem::vector<system> m_systems;
 };
 }
 }
+*/

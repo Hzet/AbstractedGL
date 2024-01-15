@@ -12,9 +12,9 @@ class vector_iterator;
 template <typename T, typename TVec>
 class vector_const_iterator;
 template <typename T, typename TVec>
-class reverse_vector_iterator;
+class vector_reverse_iterator;
 template <typename T, typename TVec>
-class reverse_vector_const_iterator;
+class vector_reverse_const_iterator;
 }
 template <typename T, typename TAlloc = mem::allocator<T>>
 class vector
@@ -30,8 +30,8 @@ public:
 	using difference_type = typename TAlloc::difference_type;
 	using iterator = impl::vector_iterator<T, self>;
 	using const_iterator = impl::vector_const_iterator<T, self>;
-	using reverse_iterator = impl::reverse_vector_iterator<T, self>;
-	using reverse_const_iterator = impl::reverse_vector_const_iterator<T, self>;
+	using reverse_iterator = impl::vector_reverse_iterator<T, self>;
+	using reverse_const_iterator = impl::vector_reverse_const_iterator<T, self>;
 	
 	vector(TAlloc alloc = TAlloc{}) noexcept
 		: m_allocator{ alloc }

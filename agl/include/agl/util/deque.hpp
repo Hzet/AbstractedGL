@@ -1,5 +1,6 @@
 #pragma once
 #include "agl/util/vector.hpp"
+#include "agl/util/memory/containers.hpp"
 
 namespace agl
 {
@@ -116,8 +117,8 @@ public:
 	}
 
 private:
-	vector<T, TAlloc> m_data;
-	vector<std::uint16_t, TAlloc> m_free_indexes;
+	mem::vector<T, TAlloc> m_data;
+	mem::vector<std::uint16_t, TAlloc> m_free_indexes;
 	size_type m_size;
 	size_type m_block_size;
 };
@@ -292,9 +293,10 @@ private:
 	}
 
 private:
-	vector<impl::block<T, TAlloc>, TAlloc> m_blocks;
+	mem::vector<impl::block<T, TAlloc>, TAlloc> m_blocks;
 	size_type m_block_size;
-	vector<T*, TAlloc> m_indexes;
+	//vector<T*, TAlloc> m_indexes;
+	mem::vector<T*> m_indexes;
 };
 namespace impl
 {
@@ -325,44 +327,42 @@ public:
 	~deque_reverse_iterator() noexcept = default;
 	deque_reverse_iterator& operator++() noexcept
 	{
-		m_it -= 1;
+		++m_it;
 		return *this;
 	}
 	deque_reverse_iterator operator++(int) const noexcept
 	{
-		auto result = deque_reverse_iterator{ *this };
-		return --result;
+		return m_it++;
 	}
 	deque_reverse_iterator operator+(difference_type offset) const noexcept
 	{
-		return deque_reverse_iterator{ m_it - offset };
+		return m_it + offset;
 	}
 	deque_reverse_iterator& operator+=(difference_type offset) const noexcept
 	{
-		m_it -= offset;
+		m_it += offset;
 		return *this;
 	}
 	deque_reverse_iterator& operator--() noexcept
 	{
-		m_it += 1;
+		--m_it;
 		return *this;
 	}
 	deque_reverse_iterator operator--(int) const noexcept
 	{
-		auto result = deque_reverse_iterator{ *this };
-		return ++result;
+		return m_it--;
 	}
 	difference_type operator-(deque_reverse_iterator rhs) const noexcept
 	{
-		return std::abs(*reinterpret_cast<std::int64_t*>(m_it) - *reinterpret_cast<std::int64_t*>(rhs.m_it));
+		return m_it - rhs;
 	}
 	deque_reverse_iterator operator-(difference_type offset) const noexcept
 	{
-		return deque_reverse_iterator{ m_it + offset };
+		return m_it - offset;
 	}
 	deque_reverse_iterator& operator-=(difference_type offset) const noexcept
 	{
-		m_it += offset;
+		m_it -= offset;
 		return *this;
 	}
 	reference operator*() noexcept
@@ -427,44 +427,42 @@ public:
 	~deque_reverse_const_iterator() noexcept = default;
 	deque_reverse_const_iterator& operator++() noexcept
 	{
-		m_it -= 1;
+		++m_it;
 		return *this;
 	}
 	deque_reverse_const_iterator operator++(int) const noexcept
 	{
-		auto result = deque_reverse_const_iterator{ *this };
-		return --result;
+		return m_it++;
 	}
 	deque_reverse_const_iterator operator+(difference_type offset) const noexcept
 	{
-		return deque_reverse_const_iterator{ m_it - offset };
+		return m_it + offset;
 	}
 	deque_reverse_const_iterator& operator+=(difference_type offset) const noexcept
 	{
-		m_it -= offset;
+		m_it += offset;
 		return *this;
 	}
 	deque_reverse_const_iterator& operator--() noexcept
 	{
-		m_it += 1;
+		--m_it;
 		return *this;
 	}
 	deque_reverse_const_iterator operator--(int) const noexcept
 	{
-		auto result = deque_reverse_const_iterator{ *this };
-		return ++result;
+		return m_it--;
 	}
 	difference_type operator-(deque_reverse_const_iterator rhs) const noexcept
 	{
-		return std::abs(*reinterpret_cast<std::int64_t*>(m_it) - *reinterpret_cast<std::int64_t*>(rhs.m_it));
+		return m_it - rhs;
 	}
 	deque_reverse_const_iterator operator-(difference_type offset) const noexcept
 	{
-		return deque_reverse_const_iterator{ m_it + offset };
+		return m_it - offset;
 	}
 	deque_reverse_const_iterator& operator-=(difference_type offset) const noexcept
 	{
-		m_it += offset;
+		m_it -= offset;
 		return *this;
 	}
 	const_reference operator*() const noexcept
@@ -483,101 +481,6 @@ public:
 	{
 		return m_it == other.m_it;
 	}
-private:
-	iterator m_it;
-};template <typename T, typename TTraits>
-class deque_reverse_iterator
-{
-public:
-	using iterator = typename vector_reverse_iterator<T, TTraits>;
-	using value_type = typename TTraits::value_type;
-	using pointer = typename TTraits::pointer;
-	using const_pointer = typename TTraits::const_pointer;
-	using reference = typename TTraits::reference;
-	using const_reference = typename TTraits::const_reference;
-	using size_type = typename TTraits::size_type;
-	using difference_type = typename TTraits::difference_type;
-
-	deque_reverse_iterator() noexcept
-		: m_it{ nullptr }
-	{}
-	deque_reverse_iterator(iterator it) noexcept
-		: m_it{ it }
-	{}
-	deque_reverse_iterator(deque_reverse_iterator&& other) noexcept = default;
-	deque_reverse_iterator(deque_reverse_iterator const& other) noexcept = default;
-	deque_reverse_iterator& operator=(deque_reverse_iterator&& other) noexcept = default;
-	deque_reverse_iterator& operator=(deque_reverse_iterator const& other) noexcept = default;
-	~deque_reverse_iterator() noexcept = default;
-	deque_reverse_iterator& operator++() noexcept
-	{
-		m_it -= 1;
-		return *this;
-	}
-	deque_reverse_iterator operator++(int) const noexcept
-	{
-		auto result = deque_reverse_iterator{ *this };
-		return --result;
-	}
-	deque_reverse_iterator operator+(difference_type offset) const noexcept
-	{
-		return deque_reverse_iterator{ m_it - offset };
-	}
-	deque_reverse_iterator& operator+=(difference_type offset) const noexcept
-	{
-		m_it -= offset;
-		return *this;
-	}
-	deque_reverse_iterator& operator--() noexcept
-	{
-		m_it += 1;
-		return *this;
-	}
-	deque_reverse_iterator operator--(int) const noexcept
-	{
-		auto result = deque_reverse_iterator{ *this };
-		return ++result;
-	}
-	difference_type operator-(deque_reverse_iterator rhs) const noexcept
-	{
-		return std::abs(*reinterpret_cast<std::int64_t*>(m_it) - *reinterpret_cast<std::int64_t*>(rhs.m_it));
-	}
-	deque_reverse_iterator operator-(difference_type offset) const noexcept
-	{
-		return deque_reverse_iterator{ m_it + offset };
-	}
-	deque_reverse_iterator& operator-=(difference_type offset) const noexcept
-	{
-		m_it += offset;
-		return *this;
-	}
-	reference operator*() noexcept
-	{
-		return *(*m_it);
-	}
-	const_reference operator*() const noexcept
-	{
-		return *(*m_it);
-	}
-	pointer const operator->() noexcept
-	{
-		return *m_it;
-	}
-	const_pointer operator->() const noexcept
-	{
-		return *m_it;
-	}
-	bool operator==(deque_reverse_iterator const& other) const noexcept
-	{
-		return m_it == other.m_it;
-	}
-	bool operator!=(deque_reverse_iterator const& other) const noexcept
-	{
-		return m_it == other.m_it;
-	}
-private:
-	template <typename U, typename W>
-	friend class deque_reverse_const_iterator;
 private:
 	iterator m_it;
 };

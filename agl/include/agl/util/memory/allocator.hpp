@@ -3,6 +3,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <memory>
+#include "agl/core/debug.hpp"
 
 namespace agl
 {
@@ -11,6 +12,11 @@ namespace mem
 template <typename T>
 class allocator
 {
+public:
+	AGL_STATIC_ASSERT(!std::is_const_v<T>, "allocator<const T> is ill-formed");
+	AGL_STATIC_ASSERT(!std::is_function_v<T>, "[allocator.requirements]");
+	AGL_STATIC_ASSERT(!std::is_reference_v<T>, "[allocator.requirements]");
+
 public:
 	using value_type = T;
 	using pointer = T*;
