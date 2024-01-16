@@ -84,10 +84,6 @@ namespace impl
 
 			template <typename... TArgs>
 			void construct(pointer buffer, TArgs&&... args) noexcept;
-			void construct_array(pointer buffer) noexcept
-			{
-				new[](buffer) value_type();
-			}
 			void deallocate(pointer ptr, size_type count = 1) noexcept;
 			void destruct(pointer ptr) noexcept;
 

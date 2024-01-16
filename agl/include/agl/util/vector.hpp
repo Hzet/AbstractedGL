@@ -34,7 +34,15 @@ public:
 	using reverse_iterator = impl::vector_reverse_iterator<T>;
 	using reverse_const_iterator = impl::vector_reverse_const_iterator<T>;
 	
-	vector(allocator_type alloc = {}) noexcept
+	vector() noexcept
+		: m_allocator{ }
+		, m_capacity{ 0 }
+		, m_memory{ nullptr }
+		, m_size{ 0 }
+	{
+	}
+
+	explicit vector(allocator_type const& alloc) noexcept
 		: m_allocator{ alloc }
 		, m_capacity{ 0 }
 		, m_memory{ nullptr }
@@ -47,12 +55,10 @@ public:
 	{
 		assign(first, last);
 	}
-
 	vector(std::initializer_list<T> list) noexcept
 	{
 		assign(list.begin(), list.end());
 	}
-
 	vector(vector&& other) noexcept
 		: m_allocator{ std::move(other.m_allocator) }
 		, m_capacity{ other.m_capacity }
@@ -155,19 +161,19 @@ public:
 	}
 	reverse_iterator rbegin() const noexcept
 	{
-		return reverse_iterator{ m_memory + m_size };
+		return reverse_iterator{ m_memory + m_size - 1 };
 	}
 	reverse_const_iterator crbegin() const noexcept
 	{
-		return reverse_const_iterator{ m_memory + m_size };
+		return reverse_const_iterator{ m_memory + m_size - 1 };
 	}
 	reverse_iterator rend() const noexcept
 	{
-		return reverse_iterator{ m_memory };
+		return reverse_iterator{ m_memory - 1 };
 	}
 	reverse_const_iterator crend() const noexcept
 	{
-		return reverse_const_iterator{ m_memory };
+		return reverse_const_iterator{ m_memory - 1 };
 	}
 	reference operator[](size_type index) noexcept
 	{
@@ -345,7 +351,6 @@ private:
 	void realloc(size_type n) noexcept
 	{
 		auto* tmp_buffer = m_allocator.allocate(n);
-		m_allocator.construct_array(tmp_buffer);
 
 		// move current content to new buffer
 		for (auto i = difference_type{ 0 }; i < static_cast<difference_type>(size()); ++i)
@@ -546,7 +551,7 @@ public:
 	}
 	bool operator!=(vector_reverse_const_iterator const& other) const noexcept
 	{
-		return m_ptr == other.m_ptr;
+		return m_ptr != other.m_ptr;
 	}
 private:
 	pointer m_ptr;
@@ -734,7 +739,7 @@ public:
 	}
 	bool operator!=(vector_const_iterator const& other) const noexcept
 	{
-		return m_ptr == other.m_ptr;
+		return m_ptr != other.m_ptr;
 	}
 private:
 	pointer m_ptr;

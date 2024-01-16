@@ -18,6 +18,7 @@ class block
 	using difference_type = typename type_traits<T>::difference_type;
 
 public:
+	block() = default;
 	block(std::uint64_t block_size, allocator_type const& allocator) noexcept
 		: m_data{ allocator_type{ allocator } }
 		, m_free_indexes{ index_allocator{ allocator } }
@@ -153,8 +154,8 @@ public:
 	using reverse_const_iterator = typename impl::deque_reverse_const_iterator<T>;
 
 public:
-	deque(std::uint64_t block_size = 1024, allocator_type const& allocator = {}) noexcept
-		: m_blocks{ block_allocator( allocator ) }
+	deque(size_type block_size = 1024, allocator_type const& allocator = {}) noexcept
+		: m_blocks{ block_allocator{ allocator } }
 		, m_indexes{ index_allocator{ allocator } }
 		, m_block_size{ block_size }
 	{
@@ -199,7 +200,7 @@ public:
 	void erase(const_iterator pos) noexcept
 	{
 		auto& block = find_block(pos);
-		block.erase(pos);
+		block.erase(pos - cbegin());
 	}
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
@@ -211,6 +212,9 @@ public:
 	}
 	void push_back(value_type&& value) noexcept
 	{
+		if (m_blocks.empty())
+			m_blocks.push_back(impl::block<T, allocator_type>{block_size(), get_allocator()});
+		
 		for (auto& block : m_blocks)
 			if (!block.full())
 			{
@@ -220,6 +224,9 @@ public:
 	}
 	void push_back(value_type const& value) noexcept
 	{
+		if (m_blocks.empty())
+			m_blocks.push_back(impl::block<T, allocator_type>{block_size(), get_allocator()});
+
 		for (auto& block : m_blocks)
 			if (!block.full())
 			{
@@ -283,11 +290,6 @@ public:
 	{
 		return *m_indexes[index];
 	}
-private:
-	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
-	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
-	using index_allocator = typename allocator_type::template rebind<T*>;
-	using index_vector = vector<T*, index_allocator>;
 
 private:
 	/// <summary>
@@ -305,6 +307,12 @@ private:
 	}
 
 private:
+	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
+	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
+	using index_allocator = typename allocator_type::template rebind<T*>;
+	using index_vector = vector<T*, index_allocator>;
+
+private:
 	block_vector m_blocks;
 	size_type m_block_size;
 	index_vector m_indexes;
@@ -315,12 +323,12 @@ template <typename T>
 class deque_reverse_iterator
 {
 public:
-	using iterator = vector_reverse_iterator<T>;
-	using value_type = typename iterator::value_type;
-	using pointer = typename iterator::pointer;
-	using const_pointer = typename iterator::const_pointer;
-	using reference = typename iterator::reference;
-	using const_reference = typename iterator::const_reference;
+	using iterator = vector_reverse_iterator<T*>;
+	using value_type = typename type_traits<T>::value_type;
+	using pointer = typename type_traits<T>::pointer;
+	using const_pointer = typename type_traits<T>::const_pointer;
+	using reference = typename type_traits<T>::reference;
+	using const_reference = typename type_traits<T>::const_reference;
 	using size_type = typename iterator::size_type;
 	using difference_type = typename iterator::difference_type;
 
@@ -410,12 +418,12 @@ template <typename T>
 class deque_reverse_const_iterator
 {
 public:
-	using iterator = vector_reverse_const_iterator<T>;
-	using value_type = typename iterator::value_type;
-	using pointer = typename iterator::pointer;
-	using const_pointer = typename iterator::const_pointer;
-	using reference = typename iterator::reference;
-	using const_reference = typename iterator::const_reference;
+	using iterator = vector_reverse_const_iterator<T*>;
+	using value_type = typename type_traits<T>::value_type;
+	using pointer = typename type_traits<T>::pointer;
+	using const_pointer = typename type_traits<T>::const_pointer;
+	using reference = typename type_traits<T>::reference;
+	using const_reference = typename type_traits<T>::const_reference;
 	using size_type = typename iterator::size_type;
 	using difference_type = typename iterator::difference_type;
 
@@ -499,12 +507,12 @@ template <typename T>
 class deque_iterator
 {
 public:
-	using iterator = vector_iterator<T>;
-	using value_type = typename iterator::value_type;
-	using pointer = typename iterator::pointer;
-	using const_pointer = typename iterator::const_pointer;
-	using reference = typename iterator::reference;
-	using const_reference = typename iterator::const_reference;
+	using iterator = vector_iterator<T*>;
+	using value_type = typename type_traits<T>::value_type;
+	using pointer = typename type_traits<T>::pointer;
+	using const_pointer = typename type_traits<T>::const_pointer;
+	using reference = typename type_traits<T>::reference;
+	using const_reference = typename type_traits<T>::const_reference;
 	using size_type = typename iterator::size_type;
 	using difference_type = typename iterator::difference_type;
 
@@ -595,12 +603,12 @@ template <typename T>
 class deque_const_iterator
 {
 public:
-	using iterator = vector_const_iterator<T>;
-	using value_type = typename iterator::value_type;
-	using pointer = typename iterator::pointer;
-	using const_pointer = typename iterator::const_pointer;
-	using reference = typename iterator::reference;
-	using const_reference = typename iterator::const_reference;
+	using iterator = vector_const_iterator<T*>;
+	using value_type = typename type_traits<T>::value_type;
+	using pointer = typename type_traits<T>::pointer;
+	using const_pointer = typename type_traits<T>::const_pointer;
+	using reference = typename type_traits<T>::reference;
+	using const_reference = typename type_traits<T>::const_reference;
 	using size_type = typename iterator::size_type;
 	using difference_type = typename iterator::difference_type;
 

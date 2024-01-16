@@ -1,5 +1,6 @@
 #include <gtest/gtest.h>
 #include "agl/util/vector.hpp"
+#include "agl/util/deque.hpp"
 
 TEST(vector, vector)
 {
@@ -58,30 +59,26 @@ TEST(vector, vector)
 		FAIL() << "Invalid vector iteration count [ 1 ]";
 
 	// reverse iterators
+	vec.clear();
+	vec.reserve(10000);
+	for (auto i = 0; i < 10000; ++i)
+		vec.push_back(i);
+
+	count = vec.size();
+	for (auto it = vec.rbegin(); it != vec.rend(); ++it)
 	{
-		vec.clear();
-		vec.reserve(10000);
-		for (auto i = 0; i < 10000; ++i)
-			vec.push_back(i);
-
-		count = vec.size() - 1;
-		auto const rbegin = vec.rbegin();
-		auto const rend = vec.rend();
-		for (auto it = rbegin; it != rend; ++it)
-		{
-			if (*it != count)
-				FAIL() << "Invalid vector value [ 4 ]";
-			--count;
-		}
-
-		if (count != 0)
-			FAIL() << "Invalid vector iteration count [ 2 ]";
+		if (*it != count - 1)
+			FAIL() << "Invalid vector value [ 4 ]";
+		--count;
 	}
 
-	count = vec.size() - 1;
+	if (count != 0)
+		FAIL() << "Invalid vector iteration count [ 2 ]";
+
+	count = vec.size();
 	for (auto it = vec.crbegin(); it != vec.crend(); ++it)
 	{
-		if (*it != count)
+		if (*it != count - 1)
 			FAIL() << "Invalid vector value [ 5 ]";
 		--count;
 	}
@@ -102,7 +99,7 @@ TEST(vector, vector)
 		FAIL() << "Invalid vector size [ 3 ]";
 
 	// push_back
-	for (auto i = 0; i < vec.capacity(); ++i)
+	for (auto i = 0; i < 10000; ++i)
 		vec.push_back(i);
 
 	for (auto i = 0; i < vec.size(); ++i)
@@ -110,13 +107,244 @@ TEST(vector, vector)
 			FAIL() << "Invalid vector value [ 6 ]";
 
 	// pop_back
-	for (auto i = 0; i < vec.capacity(); ++i)
+	for (auto i = 0; i < 10000; ++i)
 	{
-		vec.pop_back();
-		if(vec.size() != 10000 - i - 1)
+		if(vec.size() != 10000 - i)
 			FAIL() << "Invalid vector size [ 4 ]";
 
-		if(vec.back() != 10000 - i - 1)
+		auto expected = 10000 - i - 1;
+		if(vec.back() != expected)
 			FAIL() << "Invalid vector value [ 7 ]";
+
+		vec.pop_back();
+	}
+}
+
+TEST(vector, vector_ptr)
+{
+	auto vec = agl::vector<int*>{};
+	auto integer = 0;
+
+	// empty
+	if (!vec.empty())
+		FAIL() << "Invalid vector size [ 0 ]";
+
+	// assign
+	vec.assign(10000, nullptr);
+
+	// size
+	if (vec.size() != 10000)
+		FAIL() << "Invalid vector size [ 1 ]";
+
+	// at 
+	for (auto i = 0; i < vec.size(); ++i)
+		if (vec.at(i) != nullptr)
+			FAIL() << "Invalid vector value [ 0 ]";
+
+	// []
+	for (auto i = 0; i < vec.size(); ++i)
+		vec[i] = &integer;
+
+	auto const_bracket_method = [&](agl::vector<int*> const& vec)
+		{
+			for (auto i = 0; i < vec.size(); ++i)
+				if (vec[i] != &integer)
+					FAIL() << "Invalid vector value [ const_bracket_method ]";
+		};
+
+	const_bracket_method(vec);
+
+	// iterators
+	auto count = 0;
+	for (auto& v : vec)
+	{
+		if (v != &integer)
+			FAIL() << "Invalid vector value [ 2 ]";
+		++count;
+	}
+
+	if (count != 10000)
+		FAIL() << "Invalid vector iteration count [ 0 ]";
+
+	count = 0;
+	for (auto const& v : vec)
+	{
+		if (v != &integer)
+			FAIL() << "Invalid vector value [ 3 ]";
+		++count;
+	}
+
+	if (count != 10000)
+		FAIL() << "Invalid vector iteration count [ 1 ]";
+
+	// reverse iterators
+	vec.clear();
+	vec.reserve(10000);
+	for (auto i = 0; i < 10000; ++i)
+		vec.push_back(nullptr);
+
+	count = vec.size();
+	for (auto it = vec.rbegin(); it != vec.rend(); ++it)
+	{
+		if (*it != nullptr)
+			FAIL() << "Invalid vector value [ 4 ]";
+		--count;
+	}
+
+	if (count != 0)
+		FAIL() << "Invalid vector iteration count [ 2 ]";
+
+	count = vec.size();
+	for (auto it = vec.crbegin(); it != vec.crend(); ++it)
+	{
+		if (*it != nullptr)
+			FAIL() << "Invalid vector value [ 5 ]";
+		--count;
+	}
+
+	if (count != 0)
+		FAIL() << "Invalid vector iteration count [ 3 ]";
+
+	// clear
+	vec.clear();
+	if (!vec.empty())
+		FAIL() << "Invalid vector size [ 2 ]";
+
+	// reserve 
+	vec.reserve(10000);
+	if (vec.capacity() < 10000)
+		FAIL() << "Invalid vector capacity [ 0 ]";
+	if (!vec.empty())
+		FAIL() << "Invalid vector size [ 3 ]";
+
+	// push_back
+	for (auto i = 0; i < 10000; ++i)
+		vec.push_back(nullptr);
+
+	for (auto i = 0; i < vec.size(); ++i)
+		if (vec[i] != nullptr)
+			FAIL() << "Invalid vector value [ 6 ]";
+
+	// pop_back
+	for (auto i = 0; i < 10000; ++i)
+	{
+		if (vec.size() != 10000 - i)
+			FAIL() << "Invalid vector size [ 4 ]";
+
+		if (vec.back() != nullptr)
+			FAIL() << "Invalid vector value [ 7 ]";
+
+		vec.pop_back();
+	}
+}
+
+TEST(deque, deque)
+{
+	auto deq = agl::deque<int>{};
+
+	// empty
+	if (!deq.empty())
+		FAIL() << "Invalid deque size [ 0 ]";
+
+	// push_back
+	for (auto i = 0; i < 10000; ++i)
+		deq.push_back(i);
+
+	// size
+	if (deq.size() != 10000)
+		FAIL() << "Invalid deque size [ 1 ]";
+
+	// at 
+	for (auto i = 0; i < deq.size(); ++i)
+		if (deq.at(i) != i)
+			FAIL() << "Invalid deque value [ 0 ]";
+
+	// []
+	for (auto i = 0; i < deq.size(); ++i)
+		deq[i] = i;
+
+	auto const_bracket_method = [](agl::deque<int> const& vec)
+		{
+			for (auto i = 0; i < vec.size(); ++i)
+				if (vec[i] != i)
+					FAIL() << "Invalid deque value [ const_bracket_method ]";
+		};
+
+	const_bracket_method(deq);
+
+	// iterators
+	auto count = 0;
+	for (auto& v : deq)
+	{
+		if (v != count)
+			FAIL() << "Invalid deque value [ 2 ]";
+		++count;
+	}
+
+	if (count != 10000)
+		FAIL() << "Invalid deque iteration count [ 0 ]";
+
+	count = 0;
+	for (auto const& v : deq)
+	{
+		if (v != count)
+			FAIL() << "Invalid deque value [ 3 ]";
+		++count;
+	}
+
+	if (count != 10000)
+		FAIL() << "Invalid deque iteration count [ 1 ]";
+
+	// reverse iterators
+	deq.clear();
+	for (auto i = 0; i < 10000; ++i)
+		deq.push_back(i);
+
+	count = deq.size();
+	for (auto it = deq.rbegin(); it != deq.rend(); ++it)
+	{
+		if (*it != count - 1)
+			FAIL() << "Invalid deque value [ 4 ]";
+		--count;
+	}
+
+	if (count != 0)
+		FAIL() << "Invalid deque iteration count [ 2 ]";
+
+	count = deq.size();
+	for (auto it = deq.crbegin(); it != deq.crend(); ++it)
+	{
+		if (*it != count - 1)
+			FAIL() << "Invalid deque value [ 5 ]";
+		--count;
+	}
+
+	if (count != 0)
+		FAIL() << "Invalid deque iteration count [ 3 ]";
+
+	// clear
+	deq.clear();
+	if (!deq.empty())
+		FAIL() << "Invalid deque size [ 2 ]";
+
+	// push_back
+	for (auto i = 0; i < 10000; ++i)
+		deq.push_back(i);
+
+	for (auto i = 0; i < deq.size(); ++i)
+		if (deq[i] != i)
+			FAIL() << "Invalid deque value [ 6 ]";
+
+	// pop_back
+	for (auto i = 0; i < 10000; ++i)
+	{
+		if (deq.size() != 10000 - i)
+			FAIL() << "Invalid deque size [ 3 ]";
+
+		auto expected = 10000 - i - 1;
+		if (deq.back() != expected)
+			FAIL() << "Invalid deque value [ 7 ]";
+
+		deq.erase(deq.cbegin() + deq.size() - 1);
 	}
 }

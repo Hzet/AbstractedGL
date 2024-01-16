@@ -42,6 +42,13 @@ public:
 	using rebind = allocator<U>;
 
 public:
+	allocator() noexcept {}
+	template <typename U>
+	allocator(allocator<U> const&) noexcept {}
+	template <typename U>
+	allocator& operator=(allocator<U> const&) noexcept {}
+	~allocator() noexcept {}
+
 	[[nodiscard]] pointer allocate(size_type count = 1) noexcept
 	{
 		return reinterpret_cast<pointer>(std::malloc(count * sizeof(value_type)));
@@ -54,10 +61,6 @@ public:
 	void construct(pointer buffer, TArgs&&... args) noexcept
 	{
 		new (buffer) value_type(std::forward<TArgs>(args)...);
-	}
-	void construct_array(pointer buffer) noexcept
-	{
-		new[](buffer) value_type();
 	}
 	void destruct(pointer ptr) noexcept
 	{
