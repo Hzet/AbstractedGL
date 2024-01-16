@@ -11,11 +11,17 @@ namespace ecs
 {
 class organizer
 {
+private:
+	using allocator_type = mem::pool::allocator<organizer>;
+	using component_allocator = typename allocator_type::template rebind<std::pair<type_id_t, std::any>>;
+	using system_allocator = typename allocator_type::template rebind<system>;
+	using entity_allocator = typename allocator_type::template rebind<impl::entity_data>;
+
 public:
 	organizer(mem::pool::allocator<organizer> allocator) noexcept
-		: m_components{ allocator }
-		, m_entities{ 1024, allocator }
-		, m_systems{ allocator }
+		: m_components{ component_allocator{ allocator } }
+		, m_entities{ 1024, entity_allocator{ allocator } }
+		, m_systems{ system_allocator{ allocator } }
 	{
 	}
 	organizer(organizer&& other) noexcept
@@ -49,7 +55,7 @@ public:
 		if (!container.has_value())
 			container = deque<T, mem::pool::allocator<T>>{ sizeof(T) * 500, m_components.get_allocator() };
 
-		auto& deq = std::any_cast<deque<T, mem::pool::allocator<int>>>(container);
+		auto& deq = std::any_cast<deque<T, mem::pool::allocator<T>>>(container);
 		deq.push_back(T{ std::forward<TArgs>(args)... });
 		ent.m_data->push_component<T>(&deq.back());
 	}
@@ -60,12 +66,12 @@ public:
 		ent.m_data->pop_component<T>(ptr);
 	}
 	template <typename... TArgs>
-	mem::vector<entity> view() const noexcept
+	mem::vector<entity> view() noexcept
 	{
 		auto result = mem::vector<entity>{};
-		for (auto const& e : m_entities)
+		for (auto& e : m_entities)
 			if (e.has_component<TArgs...>())
-				result.push_back(entity{ e });
+				result.push_back(entity{ &e });
 
 		return result;
 	}

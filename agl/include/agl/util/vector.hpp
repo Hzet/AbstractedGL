@@ -75,6 +75,7 @@ public:
 		for (auto const& v : other)
 			push_back(v);
 	}
+	template <typename TEnable = std::enable_if_t<std::is_move_assignable_v<T>>>
 	vector& operator=(vector&& other) noexcept
 	{
 		clear();
@@ -88,6 +89,7 @@ public:
 		other.m_size = 0;
 		return *this;
 	}
+	template <typename TEnable = std::enable_if_t<std::is_copy_assignable_v<T>>>
 	vector& operator=(vector const& other) noexcept
 	{
 		clear();
@@ -342,11 +344,11 @@ private:
 	/// </summary>
 	/// <param name="pos">position where to start moving items from</param>
 	/// <param name="count">how many spaces will items be moved. if negative, items right to pos will be moved towards the beginning of the array</param>
-	void move_elements(const_iterator pos, size_type count) noexcept
+	void move_elements(const_iterator pos, std::int64_t count) noexcept
 	{
-		auto const size = pos - begin();
-		for (auto i = difference_type{ 0 }; i < size; ++i)
-			*(m_memory + size + i) = std::move(*(m_memory + m_size - 1 + count + i));
+		auto const offset = std::int64_t{ pos - begin() };
+		for (auto i = std::int64_t{ 0 }; i < count; ++i)
+			*(m_memory + offset + i) = std::move(*(m_memory + offset + count + i));
 	}
 	void realloc(size_type n) noexcept
 	{

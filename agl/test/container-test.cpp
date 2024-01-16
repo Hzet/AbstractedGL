@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "agl/util/vector.hpp"
 #include "agl/util/deque.hpp"
+#include "agl/util/random.hpp"
 
 TEST(vector, vector)
 {
@@ -117,6 +118,16 @@ TEST(vector, vector)
 			FAIL() << "Invalid vector value [ 7 ]";
 
 		vec.pop_back();
+	}
+
+	vec.reserve(10000);
+	for (auto i = 0; i < 10000; ++i)
+		vec.push_back(i);
+
+	while (!vec.empty())
+	{
+		auto index = agl::simple_rand(std::uint64_t{}, vec.size() - 1);
+		vec.erase(vec.cbegin() + index);
 	}
 }
 
@@ -335,7 +346,6 @@ TEST(deque, deque)
 		if (deq[i] != i)
 			FAIL() << "Invalid deque value [ 6 ]";
 
-	// pop_back
 	for (auto i = 0; i < 10000; ++i)
 	{
 		if (deq.size() != 10000 - i)
@@ -343,7 +353,7 @@ TEST(deque, deque)
 
 		auto expected = 10000 - i - 1;
 		if (deq.back() != expected)
-			FAIL() << "Invalid deque value [ 7 ]";
+			FAIL() << "Invalid deque value [ 7 ]" << "i: " << i;
 
 		deq.erase(deq.cbegin() + deq.size() - 1);
 	}

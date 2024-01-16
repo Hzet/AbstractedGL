@@ -16,9 +16,11 @@ class block
 	using const_reference = typename type_traits<T>::const_reference;
 	using size_type = typename type_traits<T>::size_type;
 	using difference_type = typename type_traits<T>::difference_type;
+	using iterator = typename type_traits<T>::pointer;
+	using const_iterator = typename type_traits<T>::const_pointer;
 
 public:
-	block() = default;
+	block() noexcept = default;
 	block(std::uint64_t block_size, allocator_type const& allocator) noexcept
 		: m_data{ allocator_type{ allocator } }
 		, m_free_indexes{ index_allocator{ allocator } }
@@ -26,6 +28,12 @@ public:
 		, m_block_size{ block_size }
 	{
 	}
+	block(block&& other) noexcept = default;
+	block(block const& other) noexcept = default;
+	block& operator=(block&& other) noexcept = default;
+	block& operator=(block const& other) noexcept = default;
+	~block() noexcept = default;
+
 	const_pointer cbegin() const noexcept
 	{
 		return &m_data[0];
@@ -44,9 +52,10 @@ public:
 	{
 		return m_size == 0;
 	}
-	void erase(difference_type index) noexcept
+	void erase(const_iterator it) noexcept
 	{
 		--m_size;
+		auto const index = it - &m_data[0];
 		m_data.erase(m_data.cbegin() + index);
 		m_free_indexes.push_back(index);
 	}
@@ -160,14 +169,20 @@ public:
 		, m_block_size{ block_size }
 	{
 	}
+	deque(deque&& other) noexcept = default;
+	deque(deque const& other) noexcept = default;
+	deque& operator=(deque&& other) noexcept = default;
+	deque& operator=(deque const& other) noexcept = default;
+	~deque() noexcept = default;
+
 	allocator_type get_allocator() const noexcept
 	{
 		return m_blocks.get_allocator();
 	}
 	void clear() noexcept
 	{
-		for (auto& block : m_blocks)
-			block.clear();
+		m_blocks.clear();
+		m_indexes.clear();
 	}
 	reference back() noexcept
 	{
@@ -199,40 +214,52 @@ public:
 	}
 	void erase(const_iterator pos) noexcept
 	{
-		auto& block = find_block(pos);
-		block.erase(pos - cbegin());
+		auto it = find_block(pos);
+		it->erase(&(*pos));
+		if (it->empty())
+			m_blocks.erase(it);
+
+		auto const index = &(*pos) - &(*m_indexes[0]);
+		m_indexes.erase(m_indexes.cbegin() + index);
 	}
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
 		for (auto it = first; it != last; ++it)
 		{
-			auto& block = find_block(pos);
-			block.erase(pos);
+			auto it_block = find_block(pos);
+			it_block->erase(pos);
+
+			if (it_block->empty())
+				m_blocks.erase(it_block);
 		}
 	}
 	void push_back(value_type&& value) noexcept
 	{
-		if (m_blocks.empty())
-			m_blocks.push_back(impl::block<T, allocator_type>{block_size(), get_allocator()});
-		
 		for (auto& block : m_blocks)
 			if (!block.full())
 			{
 				auto* ptr = block.push_back(std::move(value));
 				m_indexes.push_back(ptr);
+				return;
 			}
+
+		m_blocks.push_back(impl::block<T, allocator_type>{ block_size(), get_allocator() });
+		auto* ptr = m_blocks.back().push_back(std::move(value));
+		m_indexes.push_back(ptr);
 	}
 	void push_back(value_type const& value) noexcept
 	{
-		if (m_blocks.empty())
-			m_blocks.push_back(impl::block<T, allocator_type>{block_size(), get_allocator()});
-
 		for (auto& block : m_blocks)
 			if (!block.full())
 			{
 				auto* ptr = block.push_back(value);
 				m_indexes.push_back(ptr);
+				return;
 			}
+
+		m_blocks.push_back(impl::block<T, allocator_type>{ block_size(), get_allocator() });
+		auto* ptr = m_blocks.back().push_back(value);
+		m_indexes.push_back(ptr);
 	}
 	iterator begin() const noexcept
 	{
@@ -292,25 +319,26 @@ public:
 	}
 
 private:
+	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
+	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
+	using index_allocator = typename allocator_type::template rebind<T*>;
+	using index_vector = vector<T*, index_allocator>;
+
+private:
 	/// <summary>
 	/// Finds a block that contains item residing under index 'value_index'.
 	/// </summary>
 	/// <param name="value_index"></param>
 	/// <returns></returns>
-	impl::block<T, allocator_type>& find_block(const_iterator pos) const noexcept
+	typename block_vector::iterator find_block(const_iterator pos) const noexcept
 	{
-		for (auto& block : m_blocks)
-			if (block.cbegin() <= &(*pos) && block.cend() <= &(*pos))
-				return block;
+		for (auto it = m_blocks.begin(); it != m_blocks.end(); ++it)
+			if (it->cbegin() <= &(*pos) && &(*pos) <= it->cend())
+				return it;
 
 		AGL_ASSERT(false, "Index out of range");
+		return m_blocks.end();
 	}
-
-private:
-	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
-	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
-	using index_allocator = typename allocator_type::template rebind<T*>;
-	using index_vector = vector<T*, index_allocator>;
 
 private:
 	block_vector m_blocks;
@@ -406,7 +434,7 @@ public:
 	}
 	bool operator!=(deque_reverse_iterator const& other) const noexcept
 	{
-		return m_it == other.m_it;
+		return m_it != other.m_it;
 	}
 private:
 	template <typename U>
@@ -498,7 +526,7 @@ public:
 	}
 	bool operator!=(deque_reverse_const_iterator const& other) const noexcept
 	{
-		return m_it == other.m_it;
+		return m_it != other.m_it;
 	}
 private:
 	iterator m_it;
@@ -688,7 +716,7 @@ public:
 	}
 	bool operator!=(deque_const_iterator const& other) const noexcept
 	{
-		return m_it == other.m_it;
+		return m_it != other.m_it;
 	}
 private:
 	iterator m_it;
