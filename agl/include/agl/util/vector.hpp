@@ -519,36 +519,62 @@ public:
 
 		return m_ptr;
 	}
-	bool operator==(vector_reverse_iterator const& other) const noexcept
-	{
-		return m_ptr == other.m_ptr;
-	}
-	bool operator!=(vector_reverse_iterator const& other) const noexcept
-	{
-		return m_ptr != other.m_ptr;
-	}
-	bool operator<(vector_reverse_iterator const& other) const noexcept
-	{
-		return m_ptr < other.m_ptr;
-	}
-	bool operator<=(vector_reverse_iterator const& other) const noexcept
-	{
-		return m_ptr <= other.m_ptr;
-	}
-	bool operator>(vector_reverse_iterator const& other) const noexcept
-	{
-		return m_ptr > other.m_ptr;
-	}
-	bool operator>=(vector_reverse_iterator const& other) const noexcept
-	{
-		return m_ptr >= other.m_ptr;
-	}
+
 private:
 	template <typename U>
-	friend class reverse_const_iterator;
+	friend class vector_reverse_const_iterator;
+
+	template <typename U>
+	friend bool operator==(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<=(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>=(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
+
 private:
 	pointer m_ptr;
 };
+template <typename T>
+bool operator==(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr == rhs.m_ptr;
+}
+template <typename T>
+bool operator!=(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr != rhs.m_ptr;
+}
+template <typename T>
+bool operator<(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr < rhs.m_ptr;
+}
+template <typename T>
+bool operator<=(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr <= rhs.m_ptr;
+}
+template <typename T>
+bool operator>(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr > rhs.m_ptr;
+}
+template <typename T>
+bool operator>=(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr >= rhs.m_ptr;
+}
 template <typename T>
 class vector_reverse_const_iterator
 {
@@ -646,33 +672,59 @@ public:
 
 		return m_ptr;
 	}
-	bool operator==(vector_reverse_const_iterator const& other) const noexcept
-	{
-		return m_ptr == other.m_ptr;
-	}
-	bool operator!=(vector_reverse_const_iterator const& other) const noexcept
-	{
-		return m_ptr != other.m_ptr;
-	}
-	bool operator<(vector_reverse_const_iterator const& other) const noexcept
-	{
-		return m_ptr < other.m_ptr;
-	}
-	bool operator<=(vector_reverse_const_iterator const& other) const noexcept
-	{
-		return m_ptr <= other.m_ptr;
-	}
-	bool operator>(vector_reverse_const_iterator const& other) const noexcept
-	{
-		return m_ptr > other.m_ptr;
-	}
-	bool operator>=(vector_reverse_const_iterator const& other) const noexcept
-	{
-		return m_ptr >= other.m_ptr;
-	}
+
+private:
+	template <typename U>
+	friend bool operator==(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<=(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>=(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
+
 private:
 	pointer m_ptr;
 };
+template <typename T>
+bool operator==(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr == rhs.m_ptr;
+}
+template <typename T>
+bool operator!=(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr != rhs.m_ptr;
+}
+template <typename T>
+bool operator<(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr < rhs.m_ptr;
+}
+template <typename T>
+bool operator<=(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr <= rhs.m_ptr;
+}
+template <typename T>
+bool operator>(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr > rhs.m_ptr;
+}
+template <typename T>
+bool operator>=(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr >= rhs.m_ptr;
+}
 template <typename T>
 class vector_iterator
 {
@@ -774,36 +826,61 @@ public:
 
 		return m_ptr;
 	}
-	bool operator==(vector_iterator const& other) const noexcept
-	{
-		return m_ptr == other.m_ptr;
-	}
-	bool operator!=(vector_iterator const& other) const noexcept
-	{
-		return m_ptr != other.m_ptr;
-	}
-	bool operator<(vector_iterator const& other) const noexcept
-	{
-		return m_ptr < other.m_ptr;
-	}
-	bool operator<=(vector_iterator const& other) const noexcept
-	{
-		return m_ptr <= other.m_ptr;
-	}
-	bool operator>(vector_iterator const& other) const noexcept
-	{
-		return m_ptr > other.m_ptr;
-	}
-	bool operator>=(vector_iterator const& other) const noexcept
-	{
-		return m_ptr >= other.m_ptr;
-	}
 private:
 	template <typename U>
 	friend class vector_const_iterator;
+
+	template <typename U>
+	friend bool operator==(vector_iterator<U> const& lhs, vector_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(vector_iterator<U> const& lhs, vector_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<(vector_iterator<U> const& lhs, vector_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<=(vector_iterator<U> const& lhs, vector_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>(vector_iterator<U> const& lhs, vector_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>=(vector_iterator<U> const& lhs, vector_iterator<U> const& rhs) noexcept;
+
 private:
 	pointer m_ptr;
 };
+template <typename T>
+bool operator==(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr == rhs.m_ptr;
+}
+template <typename T>
+bool operator!=(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr != rhs.m_ptr;
+}
+template <typename T>
+bool operator<(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr < rhs.m_ptr;
+}
+template <typename T>
+bool operator<=(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr <= rhs.m_ptr;
+}
+template <typename T>
+bool operator>(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr > rhs.m_ptr;
+}
+template <typename T>
+bool operator>=(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr >= rhs.m_ptr;
+}
 template <typename T>
 class vector_const_iterator
 {
@@ -904,33 +981,59 @@ public:
 
 		return m_ptr;
 	}
-	bool operator==(vector_const_iterator const& other) const noexcept
-	{
-		return m_ptr == other.m_ptr;
-	}
-	bool operator!=(vector_const_iterator const& other) const noexcept
-	{
-		return m_ptr != other.m_ptr;
-	}
-	bool operator<(vector_const_iterator const& other) const noexcept
-	{
-		return m_ptr < other.m_ptr;
-	}
-	bool operator<=(vector_const_iterator const& other) const noexcept
-	{
-		return m_ptr <= other.m_ptr;
-	}
-	bool operator>(vector_const_iterator const& other) const noexcept
-	{
-		return m_ptr > other.m_ptr;
-	}
-	bool operator>=(vector_const_iterator const& other) const noexcept
-	{
-		return m_ptr >= other.m_ptr;
-	}
+
+private:
+	template <typename U>
+	friend bool operator==(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<=(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>=(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
+
 private:
 	pointer m_ptr;
 };
+template <typename T>
+bool operator==(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr == rhs.m_ptr;
+}
+template <typename T>
+bool operator!=(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr != rhs.m_ptr;
+}
+template <typename T>
+bool operator<(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr < rhs.m_ptr;
+}
+template <typename T>
+bool operator<=(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr <= rhs.m_ptr;
+}
+template <typename T>
+bool operator>(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr > rhs.m_ptr;
+}
+template <typename T>
+bool operator>=(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_ptr >= rhs.m_ptr;
+}
 }
 }
 

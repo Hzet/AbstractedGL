@@ -5,6 +5,7 @@ namespace agl
 {
 namespace impl
 {
+// TODO: free_indexes must not store every index, but rather ranges of them. this will decrease amount of memory needed to track free spaces. 
 template <typename T, typename TAlloc>
 class block
 {
@@ -557,20 +558,30 @@ public:
 	{
 		return *m_it;
 	}
-	bool operator==(deque_reverse_iterator const& other) const noexcept
-	{
-		return m_it == other.m_it;
-	}
-	bool operator!=(deque_reverse_iterator const& other) const noexcept
-	{
-		return m_it != other.m_it;
-	}
+
 private:
 	template <typename U>
 	friend class deque_reverse_const_iterator;
+
+	template <typename U>
+	friend bool operator==(deque_reverse_iterator<U> const& lhs, deque_reverse_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(deque_reverse_iterator<U> const& lhs, deque_reverse_iterator<U> const& rhs) noexcept;
+
 private:
 	iterator m_it;
-};
+}; 
+template <typename T>
+bool operator==(deque_reverse_iterator<T> const& lhs, deque_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it == rhs.m_it;
+}
+template <typename T>
+bool operator!=(deque_reverse_iterator<T> const& lhs, deque_reverse_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it != rhs.m_it;
+}
 template <typename T>
 class deque_reverse_const_iterator
 {
@@ -649,17 +660,27 @@ public:
 	{
 		return *m_it;
 	}
-	bool operator==(deque_reverse_const_iterator const& other) const noexcept
-	{
-		return m_it == other.m_it;
-	}
-	bool operator!=(deque_reverse_const_iterator const& other) const noexcept
-	{
-		return m_it != other.m_it;
-	}
+
+private:
+	template <typename U>
+	friend bool operator==(deque_reverse_const_iterator<U> const& lhs, deque_reverse_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(deque_reverse_const_iterator<U> const& lhs, deque_reverse_const_iterator<U> const& rhs) noexcept;
+
 private:
 	iterator m_it;
 };
+template <typename T>
+bool operator==(deque_reverse_const_iterator<T> const& lhs, deque_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it == rhs.m_it;
+}
+template <typename T>
+bool operator!=(deque_reverse_const_iterator<T> const& lhs, deque_reverse_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it != rhs.m_it;
+}
 template <typename T>
 class deque_iterator
 {
@@ -742,21 +763,30 @@ public:
 	{
 		return *m_it;
 	}
-	bool operator==(deque_iterator const& other) const noexcept
-	{
-		return m_it == other.m_it;
-	}
-	bool operator!=(deque_iterator const& other) const noexcept
-	{
-		return m_it != other.m_it;
-	}
+
 private:
 	template <typename U>
 	friend class deque_const_iterator;
 
+	template <typename U>
+	friend bool operator==(deque_iterator<U> const& lhs, deque_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(deque_iterator<U> const& lhs, deque_iterator<U> const& rhs) noexcept;
+
 private:
 	iterator m_it;
 };
+template <typename T>
+bool operator==(deque_iterator<T> const& lhs, deque_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it == rhs.m_it;
+}
+template <typename T>
+bool operator!=(deque_iterator<T> const& lhs, deque_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it != rhs.m_it;
+}
 template <typename T>
 class deque_const_iterator
 {
@@ -841,25 +871,32 @@ public:
 	{
 		return *m_it;
 	}
-	bool operator==(deque_const_iterator const& other) const noexcept
-	{
-		return m_it == other.m_it;
-	}
-	bool operator!=(deque_const_iterator const& other) const noexcept
-	{
-		return m_it != other.m_it;
-	}
 
 private:
 	template <typename U, typename W>
 	friend class deque;
 
+	template <typename U>
+	friend bool operator==(deque_const_iterator<U> const& lhs, deque_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator!=(deque_const_iterator<U> const& lhs, deque_const_iterator<U> const& rhs) noexcept;
+
 private:
 	iterator m_it;
 };
+template <typename T>
+bool operator==(deque_const_iterator<T> const& lhs, deque_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it == rhs.m_it;
+}
+template <typename T>
+bool operator!=(deque_const_iterator<T> const& lhs, deque_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it != rhs.m_it;
 }
 }
-
+}
 namespace std
 {
 template <typename T>
