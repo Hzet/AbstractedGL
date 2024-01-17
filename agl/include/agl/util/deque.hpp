@@ -22,29 +22,84 @@ class block
 public:
 	block() noexcept = default;
 	block(std::uint64_t block_size, allocator_type const& allocator) noexcept
-		: m_data{ allocator_type{ allocator } }
+		: m_allocator{ allocator }
+		, m_block_size{ block_size }
+		, m_memory{ nullptr }
 		, m_free_indexes{ index_allocator{ allocator } }
 		, m_size{ 0 }
-		, m_block_size{ block_size }
 	{
 	}
-	block(block&& other) noexcept = default;
-	block(block const& other) noexcept = default;
-	block& operator=(block&& other) noexcept = default;
-	block& operator=(block const& other) noexcept = default;
-	~block() noexcept = default;
+	block(block&& other) noexcept
+		: m_allocator{ other.m_allocator }
+		, m_block_size{ other.m_block_size }
+		, m_memory{ other.m_memory }
+		, m_free_indexes{ std::move(other.m_free_indexes) }
+		, m_size{ other.m_size }
+	{
+		other.m_memory = nullptr;
+	}
+	block(block const& other) noexcept
+		: m_allocator{ other.m_allocator }
+		, m_block_size{ other.m_block_size }
+		, m_memory{ nullptr }
+		, m_free_indexes{ other.m_free_indexes }
+		, m_size{ other.m_size }
+	{
+		reserve(block_size());
+		for (auto i = 0; i < block_size(); ++i)
+			*(m_memory + i) = *(other.m_memory + i);
+	}
+	block& operator=(block&& other) noexcept
+	{
+		clear();
+
+		m_allocator = other.m_allocator;
+		m_block_size = other.m_block_size;
+		m_free_indexes = std::move(other.m_free_indexes);
+		m_memory = other.m_memory;
+		m_size = other.m_size;
+		other.m_memory = nullptr;
+
+		return *this;
+	}
+	block& operator=(block const& other) noexcept
+	{
+		clear();
+
+		m_allocator = other.m_allocator;
+		m_block_size = other.m_block_size;
+		m_free_indexes = other.m_free_indexes;
+		m_size = other.m_size;
+
+		reserve(block_size());
+		for (auto i = 0; i < block_size(); ++i)
+			*(m_memory + i) = *(other.m_memory + i);
+		return *this;
+
+	}
+	~block() noexcept
+	{
+		clear();
+	}
 
 	const_pointer cbegin() const noexcept
 	{
-		return &m_data[0];
+		return m_memory;
 	}
 	const_pointer cend() const noexcept
 	{
-		return &m_data[block_size() - 1];
+		return m_memory + block_size() - 1;
 	}
 	void clear() noexcept
 	{
-		m_data.clear();
+		if (m_memory == nullptr)
+			return;
+
+		for (auto i = 0; i < block_size(); ++i)
+			m_allocator.destruct(m_memory + i);
+
+		m_allocator.deallocate(m_memory);
+		m_memory = nullptr;
 		m_free_indexes.clear();
 		m_size = 0;
 	}
@@ -55,30 +110,39 @@ public:
 	void erase(const_iterator it) noexcept
 	{
 		--m_size;
-		auto const index = it - &m_data[0];
-		m_data.erase(m_data.cbegin() + index);
+		auto const index = it - cbegin();
+		m_allocator.destruct(m_memory + index);
+		m_allocator.construct(m_memory + index);
 		m_free_indexes.push_back(index);
 	}
-	void erase(difference_type first, difference_type last) noexcept
+	void erase(const_iterator first, const_iterator last) noexcept
 	{
 		auto const erase_size = last - first;
+		auto const index = first - cbegin();
 		m_size -= erase_size;
-		m_data.erase(m_data.cbegin() + first, m_data.cbegin() + last);
-
-		for (auto i = first; i < last; ++i)
-			m_free_indexes.push_back(i);
-
-		m_indexes.resize(size());
+		
+		auto i = 0;
+		for (auto it = first; it != last; ++it, ++i)
+		{
+			m_allocator.destruct(m_memory + index + i);
+			m_allocator.construct(m_memory + index + i);
+			m_free_indexes.push_back(index + i);
+		}
 	}
 	void reserve(std::uint64_t n) noexcept
 	{
-		m_data.resize(n);
-		m_free_indexes.resize(n);
-
-		for (auto i = 0; i < m_free_indexes.size(); ++i)
-			m_free_indexes[i] = i;
+		if (m_memory != nullptr)
+			clear();
 
 		m_block_size = n;
+		m_memory = m_allocator.allocate(block_size());
+		for (auto i = 0; i < block_size(); ++i)
+			m_allocator.construct(m_memory + i);
+		
+		m_free_indexes.resize(n);
+
+		for (auto i = static_cast<std::int64_t>(m_free_indexes.size()); i >= 0; --i)
+			m_free_indexes[i] = i;
 	}
 	pointer push_back(value_type&& value) noexcept
 	{
@@ -87,10 +151,10 @@ public:
 
 		auto const index = m_free_indexes.back();
 		m_free_indexes.pop_back();
-		m_data[index] = std::move(value);
+		*(m_memory + index) = std::move(value);
 		++m_size;
 
-		return &m_data[index];
+		return m_memory + index;
 	}
 	pointer push_back(value_type const& value) noexcept
 	{
@@ -99,10 +163,10 @@ public:
 
 		auto const index = m_free_indexes.back();
 		m_free_indexes.pop_back();
-		m_data[index] = value;
+		*(m_memory + index) = value;
 		++m_size;
 
-		return &m_data[index];
+		return m_memory + index;
 	}
 	bool full() const noexcept
 	{
@@ -118,19 +182,20 @@ public:
 	}
 	reference operator[](size_type index) noexcept
 	{
-		return m_data[index];
+		return *(m_memory + index);
 	}
 	const_reference operator[](size_type index) const noexcept
 	{
-		return m_data[index];
+		return *(m_memory + index);
 	}
 
 private:
-	using data_vector = vector<T, allocator_type>;
 	using index_allocator = typename allocator_type::template rebind<std::uint16_t>;
 	using index_vector = vector<std::uint16_t, index_allocator>;
+
 private:
-	data_vector m_data;
+	allocator_type m_allocator;
+	T* m_memory;
 	index_vector m_free_indexes;
 	size_type m_size;
 	size_type m_block_size;
@@ -188,13 +253,13 @@ public:
 	{
 		AGL_ASSERT(!empty(), "Index out of range");
 
-		return at(size() - 1);
+		return *m_indexes.back();
 	}
 	const_reference back() const noexcept
 	{
 		AGL_ASSERT(!empty(), "Index out of range");
 
-		return at(size() - 1);
+		return *m_indexes.back();
 	}
 	reference front() noexcept
 	{
@@ -215,13 +280,15 @@ public:
 	void erase(const_iterator pos) noexcept
 	{
 		auto it = find_block(pos);
+		auto const index = &(*pos) - it->cbegin();
+		
 		it->erase(&(*pos));
 		if (it->empty())
 			m_blocks.erase(it);
 
-		auto const index = &(*pos) - &(*m_indexes[0]);
-		m_indexes.erase(m_indexes.cbegin() + index);
+		m_indexes.erase(pos.m_it);
 	}
+	/*
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
 		for (auto it = first; it != last; ++it)
@@ -233,6 +300,7 @@ public:
 				m_blocks.erase(it_block);
 		}
 	}
+	*/
 	void push_back(value_type&& value) noexcept
 	{
 		for (auto& block : m_blocks)
@@ -624,6 +692,7 @@ public:
 private:
 	template <typename U>
 	friend class deque_const_iterator;
+
 private:
 	iterator m_it;
 };
@@ -718,6 +787,11 @@ public:
 	{
 		return m_it != other.m_it;
 	}
+
+private:
+	template <typename U, typename W>
+	friend class deque;
+
 private:
 	iterator m_it;
 };

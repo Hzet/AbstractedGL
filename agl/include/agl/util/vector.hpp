@@ -301,6 +301,7 @@ public:
 	iterator erase(const_iterator pos) noexcept
 	{
 		m_allocator.destruct(m_memory + (pos - begin()));
+		m_allocator.construct(m_memory + (pos - begin()));
 		move_elements(pos + 1, -1);
 		--m_size;
 		return iterator{ m_memory + (pos - begin()) };
@@ -310,7 +311,10 @@ public:
 		auto const erase_size = last - first;
 		auto const offset = first - begin();
 		for (auto i = difference_type{ 0 }; i < erase_size; ++i)
+		{
 			m_allocator.destruct(m_memory + offset + i);
+			m_allocator.construct(m_memory + offset + i);
+		}
 		m_size -= erase_size;
 		return iterator{ m_memory + offset };
 	}
@@ -347,8 +351,13 @@ private:
 	void move_elements(const_iterator pos, std::int64_t count) noexcept
 	{
 		auto const offset = std::int64_t{ pos - begin() };
-		for (auto i = std::int64_t{ 0 }; i < count; ++i)
+		auto const size = cend() - pos;
+		for (auto i = std::int64_t{ 0 }; i < size; ++i)
+		{
 			*(m_memory + offset + i) = std::move(*(m_memory + offset + count + i));
+			m_allocator.destruct(m_memory + offset + count + i);
+			m_allocator.construct(m_memory + offset + count + i);
+		}
 	}
 	void realloc(size_type n) noexcept
 	{
