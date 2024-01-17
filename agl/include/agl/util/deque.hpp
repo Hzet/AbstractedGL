@@ -51,6 +51,9 @@ public:
 	}
 	block& operator=(block&& other) noexcept
 	{
+		if (this == &other)
+			return *this;
+
 		clear();
 
 		m_allocator = other.m_allocator;
@@ -64,6 +67,9 @@ public:
 	}
 	block& operator=(block const& other) noexcept
 	{
+		if (this == &other)
+			return *this;
+
 		clear();
 
 		m_allocator = other.m_allocator;
@@ -81,14 +87,17 @@ public:
 	{
 		clear();
 	}
-
 	const_pointer cbegin() const noexcept
 	{
+		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
+
 		return m_memory;
 	}
 	const_pointer cend() const noexcept
 	{
-		return m_memory + block_size() - 1;
+		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
+
+		return m_memory + block_size();
 	}
 	void clear() noexcept
 	{
@@ -107,16 +116,21 @@ public:
 	{
 		return m_size == 0;
 	}
-	void erase(const_iterator it) noexcept
+	void erase(const_iterator pos) noexcept
 	{
+		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");
+
 		--m_size;
-		auto const index = it - cbegin();
+		auto const index = pos - cbegin();
 		m_allocator.destruct(m_memory + index);
 		m_allocator.construct(m_memory + index);
 		m_free_indexes.push_back(index);
 	}
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
+		AGL_ASSERT(cbegin() <= first && first < cend(), "Index out of bounds");
+		AGL_ASSERT(cbegin() <= last && last < cend(), "Index out of bounds");
+
 		auto const erase_size = last - first;
 		auto const index = first - cbegin();
 		m_size -= erase_size;
@@ -182,10 +196,14 @@ public:
 	}
 	reference operator[](size_type index) noexcept
 	{
+		AGL_ASSERT(index < block_size(), "Index out of bounds");
+
 		return *(m_memory + index);
 	}
 	const_reference operator[](size_type index) const noexcept
 	{
+		AGL_ASSERT(index < block_size(), "Index out of bounds");
+
 		return *(m_memory + index);
 	}
 
@@ -248,6 +266,9 @@ public:
 	}
 	deque& operator=(deque&& other) noexcept
 	{
+		if (this == &other)
+			return *this;
+
 		m_blocks = std::move(other.m_blocks);
 		m_indexes = std::move(other.m_indexes);
 		m_block_size = other.m_block_size;
@@ -255,6 +276,9 @@ public:
 	}
 	deque& operator=(deque const& other) noexcept
 	{
+		if (this == &other)
+			return *this;
+
 		m_blocks = other.m_blocks;
 		m_indexes = other.m_indexes;
 		m_block_size = other.m_block_size;
@@ -303,6 +327,8 @@ public:
 	}
 	void erase(const_iterator pos) noexcept
 	{
+		AGL_ASSERT(m_indexes.cbegin() <= pos.m_it && pos.m_it < m_indexes.cend(), "Index out of bounds");
+		
 		auto it = find_block(pos);
 		auto const index = &(*pos) - it->cbegin();
 		
@@ -315,6 +341,9 @@ public:
 	/*
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
+		AGL_ASSERT(cbegin() <= first && first <= cend(), "Index out of bounds");
+		AGL_ASSERT(cbegin() <= last && last <= cend(), "Index out of bounds");
+
 		for (auto it = first; it != last; ++it)
 		{
 			auto it_block = find_block(pos);
@@ -395,18 +424,26 @@ public:
 	}
 	reference at(size_type index) noexcept
 	{
+		AGL_ASSERT(index < size(), "Index out of bounds");
+
 		return *m_indexes[index];
 	}
 	const_reference at(size_type index) const noexcept
 	{
+		AGL_ASSERT(index < size(), "Index out of bounds");
+
 		return *m_indexes[index];
 	}
 	reference operator[](size_type index) noexcept
 	{
+		AGL_ASSERT(index < size(), "Index out of bounds");
+
 		return *m_indexes[index];
 	}
 	const_reference operator[](size_type index) const noexcept
 	{
+		AGL_ASSERT(index < size(), "Index out of bounds");
+
 		return *m_indexes[index];
 	}
 
@@ -733,6 +770,7 @@ public:
 	using size_type = typename iterator::size_type;
 	using difference_type = typename iterator::difference_type;
 
+public:
 	deque_const_iterator() noexcept
 		: m_it{ nullptr }
 		, m_size{ 0 }
@@ -834,7 +872,6 @@ struct iterator_traits<agl::impl::deque_iterator<T>>
 	using iterator_category = random_access_iterator_tag;
 
 };
-
 template <typename T>
 struct iterator_traits<agl::impl::deque_const_iterator<T>>
 {
