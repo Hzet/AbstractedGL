@@ -53,9 +53,11 @@ public:
 		auto& container = m_components[type_id<T>::get_id()];
 
 		if (!container.has_value())
-			container = deque<T, mem::pool::allocator<T>>{ sizeof(T) * 500, m_components.get_allocator() };
-
-		auto& deq = std::any_cast<deque<T, mem::pool::allocator<T>>>(container);
+		{
+			auto deq = mem::deque<T>{ sizeof(T) * 500, mem::pool::allocator<T>{ m_components.get_allocator() }};
+			container = deq;
+		}
+		auto& deq = std::any_cast<mem::deque<T>>(container);
 		deq.push_back(T{ std::forward<TArgs>(args)... });
 		ent.m_data->push_component<T>(&deq.back());
 	}

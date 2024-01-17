@@ -1,4 +1,3 @@
-/*
 #include <gtest/gtest.h>
 #include "agl/ecs/ecs.hpp"
 
@@ -57,4 +56,3 @@ TEST(ECS, ecs)
 
 
 }
-*/

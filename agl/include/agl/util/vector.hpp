@@ -70,12 +70,19 @@ public:
 		other.m_memory = nullptr;
 	}
 	vector(vector const& other) noexcept
+		: m_allocator{ std::move(other.m_allocator) }
+		, m_capacity{ 0 }
+		, m_memory{ nullptr }
+		, m_size{ 0 }
 	{
+		if (other.m_memory == nullptr)
+			return;
+
 		reserve(other.size());
 		for (auto const& v : other)
 			push_back(v);
 	}
-	template <typename TEnable = std::enable_if_t<std::is_move_assignable_v<T>>>
+	//template <typename TEnable = std::enable_if_t<std::is_move_assignable_v<T>>>
 	vector& operator=(vector&& other) noexcept
 	{
 		clear();
@@ -89,7 +96,7 @@ public:
 		other.m_size = 0;
 		return *this;
 	}
-	template <typename TEnable = std::enable_if_t<std::is_copy_assignable_v<T>>>
+	//template <typename TEnable = std::enable_if_t<std::is_copy_assignable_v<T>>>
 	vector& operator=(vector const& other) noexcept
 	{
 		clear();
@@ -318,14 +325,14 @@ public:
 		m_size -= erase_size;
 		return iterator{ m_memory + offset };
 	}
-	template <typename TEnable = std::enable_if_t<std::is_move_assignable_v<T>>>
+	//template <typename TEnable = std::enable_if_t<std::is_move_assignable_v<T>>>
 	void push_back(value_type&& value) noexcept
 	{
 		resize(size() + 1);
 		*(m_memory + size() - 1) = std::move(value);
 	}
 
-	template <typename TEnable = std::enable_if_t<std::is_copy_assignable_v<T>>>
+    //template <typename TEnable = std::enable_if_t<std::is_copy_assignable_v<T>>>
 	void push_back(const_reference value) noexcept
 	{
 		resize(size() + 1);

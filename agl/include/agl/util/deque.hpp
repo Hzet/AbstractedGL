@@ -234,12 +234,36 @@ public:
 		, m_block_size{ block_size }
 	{
 	}
-	deque(deque&& other) noexcept = default;
-	deque(deque const& other) noexcept = default;
-	deque& operator=(deque&& other) noexcept = default;
-	deque& operator=(deque const& other) noexcept = default;
-	~deque() noexcept = default;
-
+	deque(deque&& other) noexcept
+		: m_blocks{ std::move(other.m_blocks) }
+		, m_indexes{ std::move(other.m_indexes) }
+		, m_block_size{ other.m_block_size }
+	{
+	}
+	deque(deque const& other) noexcept
+		: m_blocks{ other.m_blocks }
+		, m_indexes{ other.m_indexes }
+		, m_block_size{ other.m_block_size }
+	{
+	}
+	deque& operator=(deque&& other) noexcept
+	{
+		m_blocks = std::move(other.m_blocks);
+		m_indexes = std::move(other.m_indexes);
+		m_block_size = other.m_block_size;
+		return *this;
+	}
+	deque& operator=(deque const& other) noexcept
+	{
+		m_blocks = other.m_blocks;
+		m_indexes = other.m_indexes;
+		m_block_size = other.m_block_size;
+		return *this;
+	}
+	~deque() noexcept
+	{
+		clear();
+	}
 	allocator_type get_allocator() const noexcept
 	{
 		return m_blocks.get_allocator();
