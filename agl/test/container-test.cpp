@@ -1,6 +1,7 @@
 #include <gtest/gtest.h>
 #include "agl/util/vector.hpp"
 #include "agl/util/deque.hpp"
+#include "agl/util/set.hpp"
 #include "agl/util/random.hpp"
 #include "agl/util/dictionary.hpp"
 
@@ -502,6 +503,68 @@ TEST(dictionary, dictionary)
 
 	for (auto i = 0; i < dict.size(); ++i)
 		if (dict.at(i) != i)
+			FAIL() << "Invalid dictionary value [ 1 ]";
+
+	// erase
+	bool arr[10000];
+	for (auto i = 0; i < 10000; ++i)
+		arr[i] = true;
+
+	/*
+	auto index = agl::simple_rand(0, 10000);
+	while (!dict.empty())
+	{
+		while (!arr[index])
+			index = agl::simple_rand(0, 9999);
+
+		arr[index] = false;
+
+		dict.erase(dict.cbegin() + index);
+
+		if (dict.find(index) != dict.end())
+			FAIL() << "Invalid dictionary erase algorithm [ 0 ]";
+	}
+	*/
+}
+
+TEST(set, set)
+{
+	struct foo 
+	{
+		int x; 
+		operator int()  { return x; }
+	};
+	
+	struct foo_comp { bool operator()(foo l, foo r) const noexcept { return l.x < r.x; } };
+
+	auto set = agl::set<foo, foo_comp>{};
+
+	// emplace 
+	for (auto i = 0; i < 10000; ++i)
+		set.emplace({ i });
+
+	// size
+	if (set.size() != 10000)
+		FAIL() << "Invalid set size [ 0 ]";
+
+	// at
+	for (auto i = 0; i < set.size(); ++i)
+		if (set.at({ i }) != i)
+			FAIL() << "Invalid set value [ 0 ]";
+
+	// clear
+	set.clear();
+
+	// empty
+	if (!set.empty())
+		FAIL() << "Invalid dictionary size [ 1 ]";
+
+	//  emplace
+	for (auto i = 0; i < 10000; ++i)
+		set.emplace({ i });
+
+	for (auto i = 0; i < set.size(); ++i)
+		if (set.at({ i }) != i)
 			FAIL() << "Invalid dictionary value [ 1 ]";
 
 	// erase

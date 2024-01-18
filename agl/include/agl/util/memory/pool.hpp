@@ -121,6 +121,8 @@ namespace impl
 			AGL_ASSERT(it != m_spaces.end(), "No more space available");
 
 			auto* ptr = it->pop();
+
+			return nullptr;
 		}
 
 	private:
