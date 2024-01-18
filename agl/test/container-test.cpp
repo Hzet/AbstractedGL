@@ -179,7 +179,7 @@ TEST(vector, vector_ptr)
 		FAIL() << "Invalid vector iteration count [ 0 ]";
 
 	count = 0;
-	for (auto const& v : vec)
+	for (auto const v : vec)
 	{
 		if (v != &integer)
 			FAIL() << "Invalid vector value [ 3 ]";
@@ -399,7 +399,7 @@ TEST(deque, deque_ptr)
 
 	// iterators
 	auto count = 0;
-	for (auto& v : deq)
+	for (auto v : deq)
 	{
 		if (v != &address)
 			FAIL() << "Invalid deque value [ 2 ]";

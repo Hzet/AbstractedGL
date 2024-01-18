@@ -11,10 +11,6 @@ template <typename T>
 class vector_iterator;
 template <typename T>
 class vector_const_iterator;
-template <typename T>
-class vector_reverse_iterator;
-template <typename T>
-class vector_reverse_const_iterator;
 }
 template <typename T, typename TAlloc = mem::allocator<T>>
 class vector
@@ -31,8 +27,8 @@ public:
 
 	using iterator = impl::vector_iterator<T>;
 	using const_iterator = impl::vector_const_iterator<T>;
-	using reverse_iterator = impl::vector_reverse_iterator<T>;
-	using reverse_const_iterator = impl::vector_reverse_const_iterator<T>;
+	using reverse_iterator = std::reverse_iterator<impl::vector_iterator<T>>;
+	using reverse_const_iterator = std::reverse_iterator<impl::vector_const_iterator<T>>;
 	
 	vector() noexcept
 		: m_allocator{ }
@@ -178,19 +174,19 @@ public:
 	}
 	reverse_iterator rbegin() const noexcept
 	{
-		return reverse_iterator{ m_memory + m_size - 1 };
+		return reverse_iterator{ end()};
 	}
 	reverse_const_iterator crbegin() const noexcept
-	{
-		return reverse_const_iterator{ m_memory + m_size - 1 };
+	{	
+		return reverse_const_iterator{ cend() };
 	}
 	reverse_iterator rend() const noexcept
-	{
-		return reverse_iterator{ m_memory - 1 };
+	{	
+		return reverse_iterator{ begin()};
 	}
 	reverse_const_iterator crend() const noexcept
 	{
-		return reverse_const_iterator{ m_memory - 1 };
+		return reverse_const_iterator{ cbegin() };
 	}
 	reference operator[](size_type index) noexcept
 	{
@@ -417,325 +413,14 @@ private:
 namespace impl
 {
 template <typename T>
-class vector_reverse_iterator
-{
-public:
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename type_traits<T>::size_type;
-	using difference_type = typename type_traits<T>::difference_type;
-
-	vector_reverse_iterator() noexcept
-		: m_ptr{ nullptr }
-	{}
-	vector_reverse_iterator(pointer ptr) noexcept
-		: m_ptr{ ptr }
-	{}
-	vector_reverse_iterator(vector_reverse_iterator&& other) noexcept = default;
-	vector_reverse_iterator(vector_reverse_iterator const& other) noexcept = default;
-	vector_reverse_iterator& operator=(vector_reverse_iterator&& other) noexcept = default;
-	vector_reverse_iterator& operator=(vector_reverse_iterator const& other) noexcept = default;
-	~vector_reverse_iterator() noexcept = default;
-	vector_reverse_iterator& operator++() noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr -= 1;
-		return *this;
-	}
-	vector_reverse_iterator operator++(int) const noexcept
-	{
-		auto result = vector_reverse_iterator{ *this };
-		return --result;
-	}
-	vector_reverse_iterator operator+(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return vector_reverse_iterator{ m_ptr - offset };
-	}
-	vector_reverse_iterator& operator+=(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr -= offset;
-		return *this;
-	}
-	vector_reverse_iterator& operator--() noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr += 1;
-		return *this;
-	}
-	vector_reverse_iterator operator--(int) const noexcept
-	{
-		auto result = vector_reverse_iterator{ *this };
-		return ++result;
-	}
-	difference_type operator-(vector_reverse_iterator rhs) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return std::abs(*reinterpret_cast<std::int64_t*>(m_ptr) - *reinterpret_cast<std::int64_t*>(rhs.m_ptr));
-	}
-	vector_reverse_iterator operator-(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return vector_reverse_iterator{ m_ptr + offset };
-	}
-	vector_reverse_iterator& operator-=(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr += offset;
-		return *this;
-	}
-	reference operator*() noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return *m_ptr;
-	}
-	const_reference operator*() const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return *m_ptr;
-	}
-	pointer const operator->() noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return m_ptr;
-	}
-	const_pointer operator->() const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return m_ptr;
-	}
-
-private:
-	template <typename U>
-	friend class vector_reverse_const_iterator;
-
-	template <typename U>
-	friend bool operator==(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator!=(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator<(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator<=(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator>(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator>=(vector_reverse_iterator<U> const& lhs, vector_reverse_iterator<U> const& rhs) noexcept;
-
-private:
-	pointer m_ptr;
-};
-template <typename T>
-bool operator==(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr == rhs.m_ptr;
-}
-template <typename T>
-bool operator!=(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr != rhs.m_ptr;
-}
-template <typename T>
-bool operator<(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr < rhs.m_ptr;
-}
-template <typename T>
-bool operator<=(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr <= rhs.m_ptr;
-}
-template <typename T>
-bool operator>(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr > rhs.m_ptr;
-}
-template <typename T>
-bool operator>=(vector_reverse_iterator<T> const& lhs, vector_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr >= rhs.m_ptr;
-}
-template <typename T>
-class vector_reverse_const_iterator
-{
-public:
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename type_traits<T>::size_type;
-	using difference_type = typename type_traits<T>::difference_type;
-
-	vector_reverse_const_iterator() noexcept
-		: m_ptr{ nullptr }
-	{}
-	vector_reverse_const_iterator(pointer ptr) noexcept
-		: m_ptr{ ptr }
-	{}
-	vector_reverse_const_iterator(vector_reverse_iterator<T>&& other) noexcept
-		: m_ptr{ other.m_ptr }
-	{}
-	vector_reverse_const_iterator(vector_reverse_iterator<T> const&) noexcept
-		: m_ptr{ other.m_ptr }
-	{}
-	vector_reverse_const_iterator(vector_reverse_const_iterator&& other) noexcept = default;
-	vector_reverse_const_iterator(vector_reverse_const_iterator const& other) noexcept = default;
-	vector_reverse_const_iterator& operator=(vector_reverse_const_iterator&& other) noexcept = default;
-	vector_reverse_const_iterator& operator=(vector_reverse_const_iterator const& other) noexcept = default;
-	~vector_reverse_const_iterator() noexcept = default;
-	vector_reverse_const_iterator& operator++() noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr -= 1;
-		return *this;
-	}
-	vector_reverse_const_iterator operator++(int) const noexcept
-	{
-		auto result = vector_reverse_const_iterator{ *this };
-		return --result;
-	}
-	vector_reverse_const_iterator operator+(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return vector_reverse_const_iterator{ m_ptr - offset };
-	}
-	vector_reverse_const_iterator& operator+=(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr -= offset;
-		return *this;
-	}
-	vector_reverse_const_iterator& operator--() noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr += 1;
-		return *this;
-	}
-	vector_reverse_const_iterator operator--(int) const noexcept
-	{
-		auto result = vector_reverse_const_iterator{ *this };
-		return ++result;
-	}
-	difference_type operator-(vector_reverse_const_iterator rhs) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return std::abs(*reinterpret_cast<std::int64_t*>(m_ptr) - *reinterpret_cast<std::int64_t*>(rhs.m_ptr));
-	}
-	vector_reverse_const_iterator operator-(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return vector_reverse_const_iterator{ m_ptr + offset };
-	}
-	vector_reverse_const_iterator& operator-=(difference_type offset) const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		m_ptr += offset;
-		return *this;
-	}
-	const_reference operator*() const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return *m_ptr;
-	}
-	const_pointer operator->() const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return m_ptr;
-	}
-
-private:
-	template <typename U>
-	friend bool operator==(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator!=(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator<(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator<=(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator>(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator>=(vector_reverse_const_iterator<U> const& lhs, vector_reverse_const_iterator<U> const& rhs) noexcept;
-
-private:
-	pointer m_ptr;
-};
-template <typename T>
-bool operator==(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr == rhs.m_ptr;
-}
-template <typename T>
-bool operator!=(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr != rhs.m_ptr;
-}
-template <typename T>
-bool operator<(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr < rhs.m_ptr;
-}
-template <typename T>
-bool operator<=(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr <= rhs.m_ptr;
-}
-template <typename T>
-bool operator>(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr > rhs.m_ptr;
-}
-template <typename T>
-bool operator>=(vector_reverse_const_iterator<T> const& lhs, vector_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_ptr >= rhs.m_ptr;
-}
-template <typename T>
 class vector_iterator
 {
 public:
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename type_traits<T>::size_type;
-	using difference_type = typename type_traits<T>::difference_type;
+	using traits = std::iterator_traits<vector_iterator<T>>;
+	using value_type = typename traits::value_type;
+	using pointer = typename traits::pointer;
+	using reference = typename traits::reference;
+	using difference_type = typename traits::difference_type;
 
 	vector_iterator() noexcept
 		: m_ptr{ nullptr }
@@ -750,77 +435,71 @@ public:
 	~vector_iterator() noexcept = default;
 	vector_iterator& operator++() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
 
 		m_ptr += 1;
 		return *this;
 	}
 	vector_iterator operator++(int) const noexcept
 	{
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
+
 		auto result = vector_iterator{ *this };
 		return ++result;
 	}
 	vector_iterator operator+(difference_type offset) const noexcept
 	{
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
+
 		return vector_iterator{ m_ptr + offset };
 	}
 	vector_iterator& operator+=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
 
 		m_ptr += offset;
 		return *this;
 	}
 	vector_iterator& operator--() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
 
 		m_ptr -= 1;
 		return *this;
 	}
 	vector_iterator operator--(int) const noexcept
 	{
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
+
 		auto result = vector_iterator{ *this };
 		return --result;
 	}
 	difference_type operator-(vector_iterator rhs) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!((m_ptr == nullptr || rhs.m_ptr == nullptr) && m_ptr != rhs.m_ptr), "Invalid iterator");
 
 		return m_ptr - rhs.m_ptr;
 	}
 	vector_iterator operator-(difference_type offset) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
 
 		return vector_iterator{ m_ptr - offset };
 	}
 	vector_iterator& operator-=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
 
 		m_ptr -= offset;
 		return *this;
 	}
-	reference operator*() noexcept
+	reference operator*() const noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
 
 		return *m_ptr;
 	}
-	const_reference operator*() const noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return *m_ptr;
-	}
-	pointer operator->() noexcept
-	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-
-		return m_ptr;
-	}
-	const_pointer operator->() const noexcept
+	pointer operator->() const noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
 
@@ -885,19 +564,17 @@ template <typename T>
 class vector_const_iterator
 {
 public:
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename type_traits<T>::size_type;
-	using difference_type = typename type_traits<T>::difference_type;
+	using traits = std::iterator_traits<vector_const_iterator<T>>;
+	using value_type = typename traits::value_type;
+	using pointer = typename traits::pointer;
+	using reference = typename traits::reference;
+	using difference_type = typename traits::difference_type;
 
 	vector_const_iterator() noexcept
 		: m_ptr{ nullptr }
 		, m_size{ 0 }
 	{}
-	vector_const_iterator(pointer ptr) noexcept
+	vector_const_iterator(T* ptr) noexcept
 		: m_ptr{ ptr }
 	{}
 	vector_const_iterator(vector_iterator<T> const& other) noexcept
@@ -915,67 +592,71 @@ public:
 	~vector_const_iterator() noexcept = default;
 	vector_const_iterator& operator++() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
 
 		m_ptr += 1;
 		return *this;
 	}
 	vector_const_iterator operator++(int) const noexcept
 	{
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
+
 		auto result = vector_iterator{ *this };
 		return ++result;
 	}
 	vector_const_iterator operator+(difference_type offset) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
 
 		return vector_const_iterator{ m_ptr + offset };
 	}
 	vector_const_iterator& operator+=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
 
 		m_ptr += offset;
 		return *this;
 	}
 	vector_const_iterator& operator--() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
 
 		m_ptr -= 1;
 		return *this;
 	}
 	vector_const_iterator operator--(int) const noexcept
 	{
+		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
+
 		auto result = vector_iterator{ *this };
 		return --result;
 	}
 	difference_type operator-(vector_const_iterator rhs) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!((m_ptr == nullptr || rhs.m_ptr == nullptr) && m_ptr != rhs.m_ptr), "Invalid iterator");
 
 		return m_ptr - rhs.m_ptr;
 	}
 	vector_const_iterator operator-(difference_type offset) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
 
 		return vector_const_iterator{ m_ptr - offset };
 	}
 	vector_const_iterator& operator-=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
 
 		m_ptr -= offset;
 		return *this;
 	}
-	const_reference operator*() const noexcept
+	reference operator*() const noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
 
 		return *m_ptr;
 	}
-	const_pointer operator->() const noexcept
+	pointer operator->() const noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
 
@@ -1002,7 +683,7 @@ private:
 	friend bool operator>=(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
 
 private:
-	pointer m_ptr;
+	T* m_ptr;
 };
 template <typename T>
 bool operator==(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
@@ -1049,7 +730,17 @@ struct iterator_traits<agl::impl::vector_iterator<T>>
 	using iterator_category = random_access_iterator_tag;
 
 };
-
+/*
+template <typename T>
+struct iterator_traits<agl::impl::vector_iterator<T*>>
+{
+	using value_type = T*;
+	using pointer = T**;
+	using reference = T*;
+	using difference_type = ptrdiff_t;;
+	using iterator_category = random_access_iterator_tag;
+};
+*/
 template <typename T>
 struct iterator_traits<agl::impl::vector_const_iterator<T>>
 {
@@ -1059,4 +750,37 @@ struct iterator_traits<agl::impl::vector_const_iterator<T>>
 	using difference_type = typename ::agl::type_traits<T>::difference_type;
 	using iterator_category = random_access_iterator_tag;
 };
+
+/*
+template <typename T>
+struct iterator_traits<agl::impl::vector_const_iterator<T*>>
+{
+	using value_type = T const*;
+	using pointer = T const**;
+	using reference = T const*;
+	using difference_type = ptrdiff_t;;
+	using iterator_category = random_access_iterator_tag;
+
+};
+*/
+/*
+template <typename T>
+struct iterator_traits<reverse_iterator<agl::impl::vector_iterator<T>>>
+{
+	using value_type = typename ::agl::type_traits<T>::value_type;
+	using pointer = typename ::agl::type_traits<T>::pointer;
+	using reference = typename ::agl::type_traits<T>::reference;
+	using difference_type = typename ::agl::type_traits<T>::difference_type;
+	using iterator_category = random_access_iterator_tag;
+};
+template <typename T>
+struct iterator_traits<reverse_iterator<agl::impl::vector_const_iterator<T>>>
+{
+	using value_type = typename ::agl::type_traits<T>::value_type;
+	using pointer = typename ::agl::type_traits<T>::pointer;
+	using reference = typename ::agl::type_traits<T>::reference;
+	using difference_type = typename ::agl::type_traits<T>::difference_type;
+	using iterator_category = random_access_iterator_tag;
+};
+*/
 }

@@ -5,55 +5,63 @@ namespace agl
 {
 namespace impl
 {
-template <typename T, typename TAlloc>
-class free_space
+struct space
 {
-private:
-	struct space;
+	std::uint32_t index; // begin
+	std::uint32_t size;  // how many after
+};
+template <typename TAlloc>
+class free_spaces
+{
 public:
 	using spaces_alloc_t = typename TAlloc::template rebind<space>;
 	using spaces_t = vector<space, spaces_alloc_t>;
+	using difference_type = typename spaces_t::difference_type;
 
 public:
-	explicit free_space(spaces_alloc_t const& allocator = {}) noexcept
+	explicit free_spaces(spaces_alloc_t const& allocator = {}) noexcept
 		: m_spaces{ allocator }
 	{
 	}
-	void push(std::uint64_t index, std::uint64_t size) noexcept
+	void push(difference_type index, difference_type size = 1) noexcept
 	{
-		constexpr auto const comp = [](space const& lhs, std::uint64_t index) { return lhs.index < index; };
-		auto merge_it = std::lower_bound(m_spaces.cbegin(), m_spaces.cend(), index + size, comp);
+		constexpr auto const comp = [](difference_type index, space const& s) { return index < s.index; };
+		auto merge_it = std::upper_bound(m_spaces.crbegin(), m_spaces.crend(), index + size, comp);
+		auto forward_it = m_spaces.cbegin();
 
-		while (merge_it != m_spaces.cend() && index == merge_it->index)
+		while (merge_it != m_spaces.crend() && index == merge_it->index)
 		{
 			size += merge_it->size;
-			m_spaces.erase(merge_it);
-			merge_it = std::lower_bound(merge_it, m_spaces.cend(), index + size, comp);
+			forward_it = m_spaces.cbegin() + std::distance(merge_it, m_spaces.crend());
+			forward_it = m_spaces.erase(forward_it);
+			merge_it = m_spaces.crbegin() + std::distance(m_spaces.cbegin(), forward_it);
+			merge_it = std::upper_bound(merge_it, m_spaces.crend(), index + size, comp);
 		}
-		merge_it = std::lower_bound(m_spaces.cbegin(), m_spaces.cend(), index, comp);
-		m_spaces.insert(it, space{ index, size });
+		merge_it = std::upper_bound(m_spaces.crbegin(), m_spaces.crend(), index, comp);
+		forward_it = m_spaces.cbegin() + std::distance(merge_it, m_spaces.crend());
+		m_spaces.insert(forward_it, space{ static_cast<std::uint32_t>(index), static_cast<std::uint32_t>(size) });
 	}
-	std::uint64_t pop() noexcept
+	difference_type pop() noexcept
 	{
 		auto& back = m_spaces.back();
 		auto index = back.index;
 		
 		if (back.size > 1)
+		{
+			++back.index;
 			--back.size;
+		}
 		else
 			m_spaces.erase(m_spaces.cend() - 1);
 		
 		return index;
 	}
-
-private:
-	struct space
+	void clear() noexcept
 	{
-		std::uint32_t index; // begin
-		std::uint32_t size;  // how many after
-	};
+		m_spaces.clear();
+	}
 private:
-	vector<space> m_spaces;
+	spaces_t m_spaces;
 };
 // TODO: free_indexes must not store every index, but rather ranges of them. this will decrease amount of memory needed to track free spaces. 
 template <typename T, typename TAlloc>
@@ -67,6 +75,7 @@ class block
 	using const_reference = typename type_traits<T>::const_reference;
 	using size_type = typename type_traits<T>::size_type;
 	using difference_type = typename type_traits<T>::difference_type;
+
 	using iterator = typename type_traits<T>::pointer;
 	using const_iterator = typename type_traits<T>::const_pointer;
 
@@ -76,7 +85,7 @@ public:
 		: m_allocator{ allocator }
 		, m_block_size{ block_size }
 		, m_memory{ nullptr }
-		, m_free_indexes{ index_allocator{ allocator } }
+		, m_free_spaces{ free_spaces_alloc_t{ allocator } }
 		, m_size{ 0 }
 	{
 	}
@@ -84,7 +93,7 @@ public:
 		: m_allocator{ other.m_allocator }
 		, m_block_size{ other.m_block_size }
 		, m_memory{ other.m_memory }
-		, m_free_indexes{ std::move(other.m_free_indexes) }
+		, m_free_spaces{ std::move(other.m_free_spaces) }
 		, m_size{ other.m_size }
 	{
 		other.m_memory = nullptr;
@@ -93,7 +102,7 @@ public:
 		: m_allocator{ other.m_allocator }
 		, m_block_size{ other.m_block_size }
 		, m_memory{ nullptr }
-		, m_free_indexes{ other.m_free_indexes }
+		, m_free_spaces{ other.m_free_spaces }
 		, m_size{ other.m_size }
 	{
 		reserve(block_size());
@@ -109,7 +118,7 @@ public:
 
 		m_allocator = other.m_allocator;
 		m_block_size = other.m_block_size;
-		m_free_indexes = std::move(other.m_free_indexes);
+		m_free_spaces = std::move(other.m_free_spaces);
 		m_memory = other.m_memory;
 		m_size = other.m_size;
 		other.m_memory = nullptr;
@@ -125,7 +134,7 @@ public:
 
 		m_allocator = other.m_allocator;
 		m_block_size = other.m_block_size;
-		m_free_indexes = other.m_free_indexes;
+		m_free_spaces = other.m_free_spaces;
 		m_size = other.m_size;
 
 		reserve(block_size());
@@ -160,7 +169,7 @@ public:
 
 		m_allocator.deallocate(m_memory);
 		m_memory = nullptr;
-		m_free_indexes.clear();
+		m_free_spaces.clear();
 		m_size = 0;
 	}
 	bool empty() const noexcept
@@ -175,7 +184,7 @@ public:
 		auto const index = pos - cbegin();
 		m_allocator.destruct(m_memory + index);
 		m_allocator.construct(m_memory + index);
-		m_free_indexes.push_back(index);
+		m_free_spaces.push(index);
 	}
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
@@ -191,7 +200,7 @@ public:
 		{
 			m_allocator.destruct(m_memory + index + i);
 			m_allocator.construct(m_memory + index + i);
-			m_free_indexes.push_back(index + i);
+			m_free_spaces.push(index + i);
 		}
 	}
 	void reserve(size_type n) noexcept
@@ -204,18 +213,14 @@ public:
 		for (auto i = difference_type{}; i < static_cast<difference_type>(block_size()); ++i)
 			m_allocator.construct(m_memory + i);
 		
-		m_free_indexes.resize(n);
-
-		for (auto i = static_cast<std::int64_t>(m_free_indexes.size()); i >= 0; --i)
-			m_free_indexes[i] = i;
+		m_free_spaces.push(0, n);
 	}
 	pointer push_back(value_type&& value) noexcept
 	{
 		if (empty())
 			reserve(block_size());
 
-		auto const index = m_free_indexes.back();
-		m_free_indexes.pop_back();
+		auto const index = m_free_spaces.pop();
 		*(m_memory + index) = std::move(value);
 		++m_size;
 
@@ -226,8 +231,7 @@ public:
 		if (empty())
 			reserve(block_size());
 
-		auto const index = m_free_indexes.back();
-		m_free_indexes.pop_back();
+		auto const index = m_free_spaces.pop();
 		*(m_memory + index) = value;
 		++m_size;
 
@@ -259,13 +263,13 @@ public:
 	}
 
 private:
-	using index_allocator = typename allocator_type::template rebind<std::uint16_t>;
-	using index_vector = vector<std::uint16_t, index_allocator>;
+	using free_spaces_alloc_t = typename allocator_type::template rebind<space>;
+	using free_spaces_t = free_spaces<free_spaces_alloc_t>;
 
 private:
 	allocator_type m_allocator;
 	T* m_memory;
-	index_vector m_free_indexes;
+	free_spaces_t m_free_spaces;
 	size_type m_size;
 	size_type m_block_size;
 };
@@ -273,10 +277,6 @@ template <typename T>
 class deque_iterator;
 template <typename T>
 class deque_const_iterator;
-template <typename T>
-class deque_reverse_iterator;
-template <typename T>
-class deque_reverse_const_iterator;
 }
 template <typename T, typename TAlloc = agl::mem::allocator<T>>
 class deque
@@ -293,8 +293,8 @@ public:
 
 	using iterator = typename impl::deque_iterator<T>;
 	using const_iterator = typename impl::deque_const_iterator<T>;
-	using reverse_iterator = typename impl::deque_reverse_iterator<T>;
-	using reverse_const_iterator = typename impl::deque_reverse_const_iterator<T>;
+	using reverse_iterator = typename std::reverse_iterator<impl::deque_iterator<T>>;
+	using reverse_const_iterator = typename std::reverse_iterator<impl::deque_const_iterator<T>>;
 
 public:
 	deque(size_type block_size = 1024, allocator_type const& allocator = {}) noexcept
@@ -528,221 +528,15 @@ private:
 namespace impl
 {
 template <typename T>
-class deque_reverse_iterator
-{
-public:
-	using iterator = vector_reverse_iterator<T*>;
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename iterator::size_type;
-	using difference_type = typename iterator::difference_type;
-
-public:
-	deque_reverse_iterator() noexcept
-		: m_it{ nullptr }
-	{}
-	deque_reverse_iterator(iterator it) noexcept
-		: m_it{ it }
-	{}
-	deque_reverse_iterator(deque_reverse_iterator&& other) noexcept = default;
-	deque_reverse_iterator(deque_reverse_iterator const& other) noexcept = default;
-	deque_reverse_iterator& operator=(deque_reverse_iterator&& other) noexcept = default;
-	deque_reverse_iterator& operator=(deque_reverse_iterator const& other) noexcept = default;
-	~deque_reverse_iterator() noexcept = default;
-	deque_reverse_iterator& operator++() noexcept
-	{
-		++m_it;
-		return *this;
-	}
-	deque_reverse_iterator operator++(int) const noexcept
-	{
-		return m_it++;
-	}
-	deque_reverse_iterator operator+(difference_type offset) const noexcept
-	{
-		return m_it + offset;
-	}
-	deque_reverse_iterator& operator+=(difference_type offset) const noexcept
-	{
-		m_it += offset;
-		return *this;
-	}
-	deque_reverse_iterator& operator--() noexcept
-	{
-		--m_it;
-		return *this;
-	}
-	deque_reverse_iterator operator--(int) const noexcept
-	{
-		return m_it--;
-	}
-	difference_type operator-(deque_reverse_iterator rhs) const noexcept
-	{
-		return m_it - rhs;
-	}
-	deque_reverse_iterator operator-(difference_type offset) const noexcept
-	{
-		return m_it - offset;
-	}
-	deque_reverse_iterator& operator-=(difference_type offset) const noexcept
-	{
-		m_it -= offset;
-		return *this;
-	}
-	reference operator*() noexcept
-	{
-		return *(*m_it);
-	}
-	const_reference operator*() const noexcept
-	{
-		return *(*m_it);
-	}
-	pointer const operator->() noexcept
-	{
-		return *m_it;
-	}
-	const_pointer operator->() const noexcept
-	{
-		return *m_it;
-	}
-
-private:
-	template <typename U>
-	friend class deque_reverse_const_iterator;
-
-	template <typename U>
-	friend bool operator==(deque_reverse_iterator<U> const& lhs, deque_reverse_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator!=(deque_reverse_iterator<U> const& lhs, deque_reverse_iterator<U> const& rhs) noexcept;
-
-private:
-	iterator m_it;
-}; 
-template <typename T>
-bool operator==(deque_reverse_iterator<T> const& lhs, deque_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_it == rhs.m_it;
-}
-template <typename T>
-bool operator!=(deque_reverse_iterator<T> const& lhs, deque_reverse_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_it != rhs.m_it;
-}
-template <typename T>
-class deque_reverse_const_iterator
-{
-public:
-	using iterator = vector_reverse_const_iterator<T*>;
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename iterator::size_type;
-	using difference_type = typename iterator::difference_type;
-
-	deque_reverse_const_iterator() noexcept
-		: m_it{ nullptr }
-	{}
-	deque_reverse_const_iterator(iterator it) noexcept
-		: m_it{ it }
-	{}
-	deque_reverse_const_iterator(deque_reverse_iterator<T>&& other) noexcept
-		: m_it{ other.m_it }
-	{}
-	deque_reverse_const_iterator(deque_reverse_iterator<T> const&) noexcept
-		: m_it{ other.m_it }
-	{}
-	deque_reverse_const_iterator(deque_reverse_const_iterator&& other) noexcept = default;
-	deque_reverse_const_iterator(deque_reverse_const_iterator const& other) noexcept = default;
-	deque_reverse_const_iterator& operator=(deque_reverse_const_iterator&& other) noexcept = default;
-	deque_reverse_const_iterator& operator=(deque_reverse_const_iterator const& other) noexcept = default;
-	~deque_reverse_const_iterator() noexcept = default;
-	deque_reverse_const_iterator& operator++() noexcept
-	{
-		++m_it;
-		return *this;
-	}
-	deque_reverse_const_iterator operator++(int) const noexcept
-	{
-		return m_it++;
-	}
-	deque_reverse_const_iterator operator+(difference_type offset) const noexcept
-	{
-		return m_it + offset;
-	}
-	deque_reverse_const_iterator& operator+=(difference_type offset) const noexcept
-	{
-		m_it += offset;
-		return *this;
-	}
-	deque_reverse_const_iterator& operator--() noexcept
-	{
-		--m_it;
-		return *this;
-	}
-	deque_reverse_const_iterator operator--(int) const noexcept
-	{
-		return m_it--;
-	}
-	difference_type operator-(deque_reverse_const_iterator rhs) const noexcept
-	{
-		return m_it - rhs;
-	}
-	deque_reverse_const_iterator operator-(difference_type offset) const noexcept
-	{
-		return m_it - offset;
-	}
-	deque_reverse_const_iterator& operator-=(difference_type offset) const noexcept
-	{
-		m_it -= offset;
-		return *this;
-	}
-	const_reference operator*() const noexcept
-	{
-		return *(*m_it);
-	}
-	const_pointer operator->() const noexcept
-	{
-		return *m_it;
-	}
-
-private:
-	template <typename U>
-	friend bool operator==(deque_reverse_const_iterator<U> const& lhs, deque_reverse_const_iterator<U> const& rhs) noexcept;
-
-	template <typename U>
-	friend bool operator!=(deque_reverse_const_iterator<U> const& lhs, deque_reverse_const_iterator<U> const& rhs) noexcept;
-
-private:
-	iterator m_it;
-};
-template <typename T>
-bool operator==(deque_reverse_const_iterator<T> const& lhs, deque_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_it == rhs.m_it;
-}
-template <typename T>
-bool operator!=(deque_reverse_const_iterator<T> const& lhs, deque_reverse_const_iterator<T> const& rhs) noexcept
-{
-	return lhs.m_it != rhs.m_it;
-}
-template <typename T>
 class deque_iterator
 {
 public:
 	using iterator = vector_iterator<T*>;
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename iterator::size_type;
-	using difference_type = typename iterator::difference_type;
+	using traits = std::iterator_traits<deque_iterator<T>>;
+	using value_type = typename traits::value_type;
+	using pointer = typename traits::pointer;
+	using reference = typename traits::reference;
+	using difference_type = typename traits::difference_type;
 
 	deque_iterator() noexcept
 		: m_it{ nullptr }
@@ -797,19 +591,11 @@ public:
 		m_it -= offset;
 		return *this;
 	}
-	reference operator*() noexcept
+	reference operator*() const noexcept
 	{
 		return *(*m_it);
 	}
-	const_reference operator*() const noexcept
-	{
-		return *(*m_it);
-	}
-	pointer operator->() noexcept
-	{
-		return *m_it;
-	}
-	const_pointer operator->() const noexcept
+	pointer operator->() const noexcept
 	{
 		return *m_it;
 	}
@@ -842,13 +628,11 @@ class deque_const_iterator
 {
 public:
 	using iterator = vector_const_iterator<T*>;
-	using value_type = typename type_traits<T>::value_type;
-	using pointer = typename type_traits<T>::pointer;
-	using const_pointer = typename type_traits<T>::const_pointer;
-	using reference = typename type_traits<T>::reference;
-	using const_reference = typename type_traits<T>::const_reference;
-	using size_type = typename iterator::size_type;
-	using difference_type = typename iterator::difference_type;
+	using traits = std::iterator_traits<deque_const_iterator<T>>;
+	using value_type = typename traits::value_type;
+	using pointer = typename traits::pointer;
+	using reference = typename traits::reference;
+	using difference_type = typename traits::difference_type;
 
 public:
 	deque_const_iterator() noexcept
@@ -913,11 +697,11 @@ public:
 		m_it -= offset;
 		return *this;
 	}
-	const_reference operator*() const noexcept
+	reference operator*() const noexcept
 	{
 		return *(*m_it);
 	}
-	const_pointer operator->() const noexcept
+	pointer operator->() const noexcept
 	{
 		return *m_it;
 	}
@@ -968,4 +752,24 @@ struct iterator_traits<agl::impl::deque_const_iterator<T>>
 	using difference_type = typename ::agl::type_traits<T>::difference_type;
 	using iterator_category = random_access_iterator_tag;
 };
+/*
+template <typename T>
+struct iterator_traits<agl::impl::deque_iterator<T*>>
+{
+	using value_type = T*;
+	using pointer = T**;
+	using reference = T*;
+	using difference_type = ptrdiff_t;
+	using iterator_category = random_access_iterator_tag;
+};
+template <typename T>
+struct iterator_traits<agl::impl::deque_const_iterator<T*>>
+{
+	using value_type = T const*;
+	using pointer = T const**;
+	using reference = T const*;
+	using difference_type = ptrdiff_t;;
+	using iterator_category = random_access_iterator_tag;
+};
+*/
 }

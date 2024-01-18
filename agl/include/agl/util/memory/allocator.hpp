@@ -19,7 +19,6 @@ public:
 	using size_type = std::uint64_t;
 	using difference_type = std::ptrdiff_t;
 };
-
 namespace mem
 {
 template <typename T>

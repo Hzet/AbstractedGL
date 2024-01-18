@@ -56,6 +56,9 @@ namespace impl
 		}
 		const_iterator find(std::byte* ptr) const noexcept
 		{
+			if (empty())
+				return cend();
+
 			if (front() > ptr || back() > ptr)
 				return cend();
 
@@ -78,18 +81,6 @@ namespace impl
 	class defragmented_space
 	{
 	public:
-		defragmented_space() noexcept
-			: m_size{ 0 }
-		{
-		}
-		/// <summary>
-		/// Returns number of items held within the object.
-		/// </summary>
-		/// <returns></returns>
-		std::uint64_t count() const noexcept
-		{
-			return m_size;
-		}
 		/// <summary>
 		/// Adds item to the collection. If the space, that the object represents, overlaps with space of another object, the objects will be joined together.
 		/// </summary>
@@ -97,12 +88,6 @@ namespace impl
 		/// <param name="size"></param>
 		void push(std::byte* ptr, std::uint64_t size) noexcept
 		{
-			auto it = std::lower_bound(m_spaces.begin(), m_spaces.end(), size);
-			if (it->space_size() == size)
-			{
-				it->push(ptr);
-				return;
-			}
 			// find and merge adjacent spaces
 			auto end_ptr = ptr + size;
 			for (auto i = 0; i < m_spaces.size(); ++i)
@@ -117,8 +102,9 @@ namespace impl
 				i = 0;
 			}
 			// push merged space 
-			it = std::lower_bound(m_spaces.begin(), m_spaces.end(), size);
-			it = m_spaces.insert(it, membuf{ size });
+			auto it = std::lower_bound(m_spaces.begin(), m_spaces.end(), size);
+			if(it == m_spaces.end())
+				it = m_spaces.insert(it, membuf{ size });
 			it->push(ptr);
 		}
 
@@ -134,11 +120,10 @@ namespace impl
 			
 			AGL_ASSERT(it != m_spaces.end(), "No more space available");
 
-			return it->pop();
+			auto* ptr = it->pop();
 		}
 
 	private:
-		std::uint64_t m_size;
 		vector<membuf> m_spaces;
 	};
 }
@@ -253,6 +238,8 @@ namespace impl
 
 			m_buffer = reinterpret_cast<std::byte*>(std::malloc(m_size));
 			m_size = size;
+
+			m_free_spaces.push(m_buffer, m_size);
 
 			return m_buffer != nullptr;
 		}
