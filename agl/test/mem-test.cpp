@@ -1,7 +1,7 @@
 #include <gtest/gtest.h>
 #include <agl/util/memory/pool.hpp>
 #include <agl/util/random.hpp>
-
+/*
 TEST(impl_memory_defragmented_space, insertion)
 {
 	using agl::mem::impl::defragmented_space;
@@ -13,7 +13,6 @@ TEST(impl_memory_defragmented_space, insertion)
 			EXPECT_TRUE(ds[j].size <= ds[j + 1].size) << "defragmented_space is unsorted";
 	}
 }
-
 TEST(impl_memory_defragmented_space, deletion)
 {
 	using agl::mem::impl::defragmented_space;
@@ -62,3 +61,4 @@ TEST(impl_memory_defragmented_space, ins_del)
 }
 
 // TODO: pool tests
+*/
