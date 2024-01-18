@@ -11,7 +11,7 @@ namespace impl
 	class entity_data
 	{
 	public:
-		entity_data(mem::pool::allocator<std::pair<std::uint64_t, mem::vector<std::byte*>>> const& allocator = {}) noexcept
+		entity_data(mem::dictionary<type_id_t, mem::vector<std::byte*>>::allocator_type const& allocator = {}) noexcept
 			: m_components{ allocator }
 		{
 		}
@@ -57,9 +57,9 @@ namespace impl
 			return m_components.find(id) != m_components.cend();
 		}
 
-		std::vector<type_id_t> get_component_ids() const noexcept
+		vector<type_id_t> get_component_ids() const noexcept
 		{
-			auto result = std::vector<type_id_t>{};
+			auto result = vector<type_id_t>{};
 			result.reserve(m_components.size());
 
 			for (auto const& pair : m_components)
@@ -112,7 +112,7 @@ namespace impl
 			return m_data->has_component(id);
 		}
 
-		std::vector<type_id_t> get_component_ids() const noexcept
+		vector<type_id_t> get_component_ids() const noexcept
 		{
 			return m_data->get_component_ids();
 		}

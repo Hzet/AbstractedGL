@@ -5,6 +5,56 @@ namespace agl
 {
 namespace impl
 {
+template <typename T, typename TAlloc>
+class free_space
+{
+private:
+	struct space;
+public:
+	using spaces_alloc_t = typename TAlloc::template rebind<space>;
+	using spaces_t = vector<space, spaces_alloc_t>;
+
+public:
+	explicit free_space(spaces_alloc_t const& allocator = {}) noexcept
+		: m_spaces{ allocator }
+	{
+	}
+	void push(std::uint64_t index, std::uint64_t size) noexcept
+	{
+		constexpr auto const comp = [](space const& lhs, std::uint64_t index) { return lhs.index < index; };
+		auto merge_it = std::lower_bound(m_spaces.cbegin(), m_spaces.cend(), index + size, comp);
+
+		while (merge_it != m_spaces.cend() && index == merge_it->index)
+		{
+			size += merge_it->size;
+			m_spaces.erase(merge_it);
+			merge_it = std::lower_bound(merge_it, m_spaces.cend(), index + size, comp);
+		}
+		merge_it = std::lower_bound(m_spaces.cbegin(), m_spaces.cend(), index, comp);
+		m_spaces.insert(it, space{ index, size });
+	}
+	std::uint64_t pop() noexcept
+	{
+		auto& back = m_spaces.back();
+		auto index = back.index;
+		
+		if (back.size > 1)
+			--back.size;
+		else
+			m_spaces.erase(m_spaces.cend() - 1);
+		
+		return index;
+	}
+
+private:
+	struct space
+	{
+		std::uint32_t index; // begin
+		std::uint32_t size;  // how many after
+	};
+private:
+	vector<space> m_spaces;
+};
 // TODO: free_indexes must not store every index, but rather ranges of them. this will decrease amount of memory needed to track free spaces. 
 template <typename T, typename TAlloc>
 class block
@@ -144,14 +194,14 @@ public:
 			m_free_indexes.push_back(index + i);
 		}
 	}
-	void reserve(std::uint64_t n) noexcept
+	void reserve(size_type n) noexcept
 	{
 		if (m_memory != nullptr)
 			clear();
 
 		m_block_size = n;
 		m_memory = m_allocator.allocate(block_size());
-		for (auto i = 0; i < block_size(); ++i)
+		for (auto i = difference_type{}; i < static_cast<difference_type>(block_size()); ++i)
 			m_allocator.construct(m_memory + i);
 		
 		m_free_indexes.resize(n);

@@ -284,7 +284,7 @@ public:
 		}
 		auto const index = pos - begin();
 		reserve(size() + 1);
-		move_elements(index, 1);
+		move_elements(cbegin() + index, 1);
 		*(m_memory + index) = value;
 		++m_size;
 		return iterator{ m_memory + index };
