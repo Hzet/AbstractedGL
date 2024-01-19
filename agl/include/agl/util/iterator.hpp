@@ -19,6 +19,7 @@ template <typename T>
 struct is_iterator<T,
     void_t<decltype(++std::declval<T&>()),
         decltype(*std::declval<T&>()),
+        decltype(std::declval<T&>() == std::declval<T&>()),
         std::enable_if_t<std::is_copy_assignable_v<T>>,
         std::enable_if_t<std::is_copy_constructible_v<T>>,
         std::enable_if_t<std::is_destructible_v<T>>>>
@@ -29,9 +30,9 @@ struct is_iterator<T,
 };
 
 template <typename T>
-using is_iterator_t = typename is_iterator<T>::type;
+constexpr auto is_iterator_v = typename is_iterator<T>::value;
 
 template <typename T>
-constexpr auto is_iterator_v = typename is_iterator<T>::value;
+using is_iterator_t = std::enable_if_t<is_iterator_v<T>>;
 }
 }

@@ -1,7 +1,8 @@
 #pragma once
 #include <cstdint>
-#include "agl/util/memory/allocator.hpp"
 #include "agl/core/debug.hpp"
+#include "agl/util/iterator.hpp"
+#include "agl/util/memory/allocator.hpp"
 
 namespace agl
 {
@@ -44,7 +45,7 @@ public:
 		, m_size{ 0 }
 	{
 	}
-	template <typename TInputIt>
+	template <typename TInputIt, typename TEnable = impl::is_iterator<TInputIt>>
 	vector(TInputIt first, TInputIt last) noexcept
 	{
 		assign(first, last);
@@ -139,23 +140,23 @@ public:
 				*(m_memory + i) = value;
 		}
 	}
-	//template <typename TInputIt>
-	//void assign(TInputIt first, TInputIt last) noexcept
-	//{
-	//	auto const count = last - first;
-	//	if (count != capacity())
-	//	{
-	//		clear();
-	//		reserve(count);
-	//		for (auto i = 0; i < count; ++i, ++first)
-	//			push_back(*first);
-	//	}
-	//	else
-	//	{
-	//		for (auto i = 0; i < count; ++i, ++first)
-	//			*(m_memory + i) = *first;
-	//	}
-	//}
+	template <typename TInputIt, typename TEnable = impl::is_iterator_t<TInputIt>>
+	void assign(TInputIt first, TInputIt last) noexcept
+	{
+		auto const count = last - first;
+		if (count != capacity())
+		{
+			clear();
+			reserve(count);
+			for (auto i = 0; i < count; ++i, ++first)
+				push_back(std::move(*first));
+		}
+		else
+		{
+			for (auto i = 0; i < count; ++i, ++first)
+				*(m_memory + i) = std::move(*first);
+		}
+	}
 	iterator begin() const noexcept
 	{
 		return iterator{ m_memory };
@@ -301,7 +302,7 @@ public:
 		++m_size;
 		return iterator{ m_memory + index };
 	}
-	template <typename TInputIt>
+	template <typename TInputIt, typename TEnable = impl::is_iterator<TInputIt>>
 	iterator insert(const_iterator pos, TInputIt first, TInputIt last) noexcept
 	{
 		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
@@ -425,7 +426,7 @@ public:
 	vector_iterator() noexcept
 		: m_ptr{ nullptr }
 	{}
-	vector_iterator(pointer ptr) noexcept
+	explicit vector_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
 	vector_iterator(vector_iterator&& other) noexcept = default;
@@ -574,7 +575,7 @@ public:
 		: m_ptr{ nullptr }
 		, m_size{ 0 }
 	{}
-	vector_const_iterator(T* ptr) noexcept
+	explicit vector_const_iterator(T* ptr) noexcept
 		: m_ptr{ ptr }
 	{}
 	vector_const_iterator(vector_iterator<T> const& other) noexcept
@@ -601,7 +602,7 @@ public:
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
 
-		auto result = vector_iterator{ *this };
+		auto result = vector_const_iterator{ *this };
 		return ++result;
 	}
 	vector_const_iterator operator+(difference_type offset) const noexcept
@@ -628,7 +629,7 @@ public:
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
 
-		auto result = vector_iterator{ *this };
+		auto result = vector_const_iterator{ *this };
 		return --result;
 	}
 	difference_type operator-(vector_const_iterator rhs) const noexcept
