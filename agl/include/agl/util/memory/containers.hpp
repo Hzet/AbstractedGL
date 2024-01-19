@@ -8,8 +8,8 @@ namespace agl
 {
 namespace mem
 {
-template <typename TKey, typename TValue>
-using dictionary = agl::dictionary<TKey, TValue, pool::allocator<pair<TKey, TValue>>>;
+template <typename TKey, typename TValue, typename TComp = std::less<TKey>>
+using dictionary = agl::dictionary<TKey, TValue, TComp, pool::allocator<std::pair<TKey, TValue>>>;
 
 template <typename T>
 using deque = agl::deque<T, pool::allocator<T>>;

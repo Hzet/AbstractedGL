@@ -1,25 +1,26 @@
 #pragma once
 #include <algorithm>
-#include "agl/util/pair.hpp"
 #include "agl/util/memory/allocator.hpp"
 #include "agl/util/vector.hpp"
 
 namespace agl
 {
-template <typename TKey, typename TValue, typename TAlloc = mem::allocator<pair<TKey, TValue>>>
+template <typename TKey, typename TValue, typename TComp = std::less<TKey>, typename TAlloc = mem::allocator<std::pair<TKey, TValue>>>
 class dictionary
 {
 public:
-	using key_type = TKey;
-	using mapped_type = TValue;
-	using allocator_type = typename TAlloc::template rebind<pair<TKey, TValue>>;
-	using value_type = typename type_traits<pair<TKey, TValue>>::value_type;
-	using pointer = typename type_traits<pair<TKey, TValue>>::pointer;
-	using const_pointer = typename type_traits<pair<TKey, TValue>>::const_pointer;
-	using reference = typename type_traits<pair<TKey, TValue>>::reference;
-	using const_reference = typename type_traits<pair<TKey, TValue>>::const_reference;
+	using value_type = typename type_traits<std::pair<TKey, TValue>>::value_type;
+	using pointer = typename type_traits<std::pair<TKey, TValue>>::pointer;
+	using const_pointer = typename type_traits<std::pair<TKey, TValue>>::const_pointer;
+	using reference = typename type_traits<std::pair<TKey, TValue>>::reference;
+	using const_reference = typename type_traits<std::pair<TKey, TValue>>::const_reference;
 	using size_type = std::uint64_t;
 	using difference_type = std::uint64_t;
+
+	using comp_type = TComp;
+	using key_type = TKey;
+	using mapped_type = TValue;
+	using allocator_type = typename TAlloc::template rebind<std::pair<TKey, TValue>>;
 	using vector_type = vector<typename value_type, typename allocator_type>;
 
 	using iterator = typename vector_type::iterator;
@@ -27,8 +28,63 @@ public:
 	using reverse_iterator = typename vector_type::reverse_iterator;
 	using reverse_const_iterator = typename vector_type::reverse_const_iterator;
 
-	dictionary(allocator_type alloc = {}) noexcept
-		: m_data{ alloc }
+public:
+	struct key_value_comp_type
+	{
+		comp_type comp;
+
+		bool operator()(value_type const& lhs, key_type const& rhs) const noexcept
+		{
+			return comp(lhs.first, rhs);
+		}
+		bool operator()(key_type const& lhs, value_type const& rhs) const noexcept
+		{
+			return comp(lhs, rhs.first);
+		}
+	};
+
+public:
+	dictionary() noexcept
+	{
+	}
+	explicit dictionary(allocator_type allocator) noexcept
+		: m_data{ allocator }
+	{
+	}
+	explicit dictionary(comp_type const& comp, allocator_type const& allocator) noexcept
+		: m_comp{ .comp = comp }
+		, m_data{ allocator }
+	{
+	}
+	dictionary(dictionary&& other) noexcept
+		: m_comp{ std::move(other.m_comp) }
+		, m_data{ std::move(other.m_data) }
+	{
+	}
+	dictionary(dictionary const& other) noexcept
+		: m_comp{ other.m_comp }
+		, m_data{ other.m_data }
+	{
+	}
+	dictionary& operator=(dictionary&& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+
+		m_comp = std::move(other.m_comp);
+		m_data = std::move(other.m_data);
+		return *this;
+	}
+	dictionary& operator=(dictionary const& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+
+		m_comp = other.m_comp;
+		m_data = other.m_data;
+		return *this;
+	}
+	~dictionary() noexcept
 	{
 	}
 	iterator begin() const noexcept
@@ -67,21 +123,27 @@ public:
 	{
 		m_data.clear();
 	}
+	comp_type key_comp() const noexcept
+	{
+		return m_comp.comp;
+	}	
+	key_value_comp_type key_value_comp() const noexcept
+	{
+		return m_comp;
+	}
 	iterator find(key_type key) noexcept
 	{
-		if (empty())
-			return end();
+		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
 
-		auto const comparator = [](value_type const& data, key_type const& key) { return data.first < key; };
-		return std::lower_bound(m_data.begin(), m_data.end(), key, comparator);
+		if (found == m_data.cend() || !equal(found->first, key))
+			return end();
 	}
 	const_iterator find(key_type key) const noexcept
 	{
-		if (empty())
-			return cend();
+		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
 
-		auto const comparator = [](value_type const& data, key_type const& key) { return data.first < key; };
-		return std::lower_bound(m_data.cbegin(), m_data.cend(), key, comparator);
+		if (found == m_data.cend() || !equal(found->first, key))
+			return cend();
 	}
 	iterator erase(const_iterator pos) noexcept
 	{
@@ -91,13 +153,15 @@ public:
 	{
 		return m_data.erase(first, last);
 	}
-	iterator emplace(key_type key, mapped_type value = {}) noexcept
+	template <typename... TArgs>
+	iterator emplace(TArgs&&... args) noexcept
 	{
-		auto const it = find(key);
-		
+		auto pair = std::make_pair<TKey, TValue>(std::forward<TArgs>(args)...);
+		auto const it = find(pair.first);
+
 		AGL_ASSERT(it == end(), "Key already stored");
 
-		return m_data.insert(it, std::move(value_type{ std::move(key), std::move(value) }));
+		return m_data.insert(it, std::move(pair));
 	}
 	bool empty() const noexcept
 	{
@@ -105,7 +169,7 @@ public:
 	}
 	mapped_type& at(key_type key) noexcept
 	{
-		auto found = find(key);
+		auto const found = find(key);
 
 		AGL_ASSERT(found != end(), "Index out of bounds");
 
@@ -113,7 +177,7 @@ public:
 	}
 	mapped_type const& at(key_type key) const noexcept
 	{
-		auto found = find(key);
+		auto const found = find(key);
 
 		AGL_ASSERT(found != cend(), "Index out of bounds");
 
@@ -121,18 +185,18 @@ public:
 	}
 	mapped_type& operator[](key_type key) noexcept
 	{
-		auto found = find(key);
-		if (found == end())
-			return emplace(key)->second;
+		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
 
+		if (found == cend() || !equal(found->first, key))
+			return m_data.insert(found, value_type{})->second;
 		return found->second;
 	}
 	mapped_type const& operator[](key_type key) const noexcept
 	{
-		auto found = find(key);
-		if (found == cend())
-			return emplace(key);
+		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
 
+		if (found == cend() || !equal(found->first, key))
+			return m_data.insert(found, value_type{})->second;
 		return found->second;
 	}
 	size_type size() const noexcept
@@ -145,6 +209,17 @@ public:
 	}
 
 private:
+	const_iterator lower_bound(const_iterator first, const_iterator last, key_type key) const noexcept
+	{
+		return std::lower_bound(m_data.cbegin(), m_data.cend(), key, key_value_comp());
+	}
+	bool equal(TKey const& lhs, TKey const& rhs) const noexcept
+	{
+		return !m_comp.comp(lhs, rhs) && !m_comp.comp(rhs, lhs);
+	}
+
+private:
+	key_value_comp_type m_comp;
 	vector_type m_data;
 };
 }
