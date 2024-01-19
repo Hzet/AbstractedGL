@@ -8,7 +8,11 @@ namespace agl
 	class type_id_t
 	{
 	public:
-		constexpr explicit type_id_t(std::uint64_t id = 0) noexcept
+		constexpr type_id_t() noexcept
+			: m_id{ 0 }
+		{
+		}
+		constexpr explicit type_id_t(std::uint64_t id) noexcept
 			: m_id{ id }
 		{
 		}
