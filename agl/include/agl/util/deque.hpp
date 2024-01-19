@@ -80,8 +80,12 @@ class block
 	using const_iterator = typename type_traits<T>::const_pointer;
 
 public:
-	block() noexcept = default;
-	block(std::uint64_t block_size, allocator_type const& allocator) noexcept
+	block() noexcept
+		: m_memory{ nullptr }
+		, m_size{ 0 }
+	{
+	}
+	explicit block(std::uint64_t block_size, allocator_type const& allocator) noexcept
 		: m_allocator{ allocator }
 		, m_block_size{ block_size }
 		, m_memory{ nullptr }
@@ -389,7 +393,6 @@ public:
 
 		m_indexes.erase(pos.m_it);
 	}
-	/*
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
 		AGL_ASSERT(cbegin() <= first && first <= cend(), "Index out of bounds");
@@ -404,7 +407,6 @@ public:
 				m_blocks.erase(it_block);
 		}
 	}
-	*/
 	void push_back(value_type&& value) noexcept
 	{
 		for (auto& block : m_blocks)
@@ -540,15 +542,33 @@ public:
 
 	deque_iterator() noexcept
 		: m_it{ nullptr }
-	{}
+	{
+	}
 	deque_iterator(iterator it) noexcept
 		: m_it{ it }
-	{}
-	deque_iterator(deque_iterator&& other) noexcept = default;
-	deque_iterator(deque_iterator const& other) noexcept = default;
-	deque_iterator& operator=(deque_iterator&& other) noexcept = default;
-	deque_iterator& operator=(deque_iterator const& other) noexcept = default;
-	~deque_iterator() noexcept = default;
+	{
+	}
+	deque_iterator(deque_iterator&& other) noexcept
+		: m_it{ other.m_it }
+	{
+	}
+	deque_iterator(deque_iterator const& other) noexcept
+		: m_it{ other.m_it }
+	{
+	}
+	deque_iterator& operator=(deque_iterator&& other) noexcept
+	{
+		m_it = other.m_it;
+		return *this;
+	}
+	deque_iterator& operator=(deque_iterator const& other) noexcept
+	{
+		m_it = other.m_it;
+		return *this;
+	}
+	~deque_iterator() noexcept
+	{
+	}
 	deque_iterator& operator++() noexcept
 	{
 		m_it += 1;
@@ -638,10 +658,12 @@ public:
 	deque_const_iterator() noexcept
 		: m_it{ nullptr }
 		, m_size{ 0 }
-	{}
+	{
+	}
 	deque_const_iterator(iterator it) noexcept
 		: m_it{ it }
-	{}
+	{
+	}
 	deque_const_iterator(deque_iterator<T> const& other) noexcept
 		: m_it{ other.m_it }
 	{
@@ -650,11 +672,27 @@ public:
 		: m_it{ other.m_it }
 	{
 	}
-	deque_const_iterator(deque_const_iterator&& other) noexcept = default;
-	deque_const_iterator(deque_const_iterator const& other) noexcept = default;
-	deque_const_iterator& operator=(deque_const_iterator&& other) noexcept = default;
-	deque_const_iterator& operator=(deque_const_iterator const& other) noexcept = default;
-	~deque_const_iterator() noexcept = default;
+	deque_const_iterator(deque_const_iterator&& other) noexcept
+		: m_it{ other.m_it }
+	{
+	}
+	deque_const_iterator(deque_const_iterator const& other) noexcept
+		: m_it{ other.m_it }
+	{
+	}
+	deque_const_iterator& operator=(deque_const_iterator&& other) noexcept
+	{
+		m_it = other.m_it;
+		return *this;
+	}
+	deque_const_iterator& operator=(deque_const_iterator const& other) noexcept
+	{
+		m_it = other.m_it;
+		return *this;
+	}
+	~deque_const_iterator() noexcept
+	{
+	}
 	deque_const_iterator& operator++() noexcept
 	{
 		m_it += 1;

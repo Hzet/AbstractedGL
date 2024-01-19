@@ -429,10 +429,24 @@ public:
 	explicit vector_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{}
-	vector_iterator(vector_iterator&& other) noexcept = default;
-	vector_iterator(vector_iterator const& other) noexcept = default;
-	vector_iterator& operator=(vector_iterator&& other) noexcept = default;
-	vector_iterator& operator=(vector_iterator const& other) noexcept = default;
+	vector_iterator(vector_iterator&& other) noexcept
+		: m_ptr{ other.m_ptr }
+	{
+	}
+	vector_iterator(vector_iterator const& other) noexcept
+		: m_ptr{ other.m_ptr }
+	{
+	}
+	vector_iterator& operator=(vector_iterator&& other) noexcept
+	{
+		m_ptr = other.m_ptr;
+		return *this;
+	}
+	vector_iterator& operator=(vector_iterator const& other) noexcept
+	{
+		m_ptr = other.m_ptr;
+		return *this;
+	}
 	~vector_iterator() noexcept = default;
 	vector_iterator& operator++() noexcept
 	{
@@ -586,10 +600,24 @@ public:
 		: m_ptr{ other.m_ptr }
 	{
 	}
-	vector_const_iterator(vector_const_iterator&& other) noexcept = default;
-	vector_const_iterator(vector_const_iterator const& other) noexcept = default;
-	vector_const_iterator& operator=(vector_const_iterator&& other) noexcept = default;
-	vector_const_iterator& operator=(vector_const_iterator const& other) noexcept = default;
+	vector_const_iterator(vector_const_iterator&& other) noexcept
+		: m_ptr{ other.m_ptr }
+	{
+	}
+	vector_const_iterator(vector_const_iterator const& other) noexcept
+		: m_ptr{ other.m_ptr }
+	{
+	}
+	vector_const_iterator& operator=(vector_const_iterator&& other) noexcept
+	{
+		m_ptr = other.m_ptr;
+		return *this;
+	}
+	vector_const_iterator& operator=(vector_const_iterator const& other) noexcept
+	{
+		m_ptr = other.m_ptr;
+		return *this;
+	}
 	~vector_const_iterator() noexcept = default;
 	vector_const_iterator& operator++() noexcept
 	{
