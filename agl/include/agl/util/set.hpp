@@ -29,16 +29,44 @@ public:
 	}
 	explicit set(allocator_type const& allocator) noexcept
 		: m_data{ allocator }
-		set(comp_type const& comp, allocator_type const& allocator) noexcept
+	{
+	}
+	explicit set(comp_type const& comp, allocator_type const& allocator) noexcept
 		: m_comp{ comp }
 		, m_data{ allocator }
 	{
 	}
-	set(set&& other) noexcept = default;
-	set(set const& other) noexcept = default;
-	set& operator=(set&& other) noexcept = default;
-	set& operator=(set const& other) noexcept = default;
-	~set() noexcept = default;
+	set(set&& other) noexcept
+		: m_comp{ std::move(other.m_comp) }
+		, m_data{ std::move(other.m_data) }
+	{
+	}
+	set(set const& other) noexcept
+		: m_comp{ other.m_comp }
+		, m_data{ other.m_data }
+	{
+	}
+	set& operator=(set&& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+
+		m_comp = std::move(other.m_comp);
+		m_data = std::move(other.m_data);
+		return *this;
+	}
+	set& operator=(set const& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+
+		m_comp = other.m_comp;
+		m_data = other.m_data;
+		return *this;
+	}
+	~set() noexcept
+	{
+	}
 	iterator begin() const noexcept
 	{
 		return m_data.begin();
@@ -71,6 +99,22 @@ public:
 	{
 		return m_data.crend();
 	}
+	reference front() noexcept
+	{
+		return m_data.front();
+	}
+	const_reference front() const noexcept
+	{
+		return m_data.front();
+	}
+	reference back() noexcept
+	{
+		return m_data.back();
+	}
+	const_reference back() const noexcept
+	{
+		return m_data.const();
+	}
 	void clear() noexcept
 	{
 		m_comp = {};
@@ -79,18 +123,18 @@ public:
 	template <typename U>
 	iterator find(U const& value) noexcept
 	{
-		if (empty())
-			return end();
+		auto const found = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 
-		return std::lower_bound(m_data.begin(), m_data.end(), value, key_comp());
+		if (found == m_data.cend() || !equal(*found, value))
+			return end();
 	}
 	template <typename U>
 	const_iterator find(U const& value) const noexcept
 	{
-		if (empty())
-			return cend();
+		auto const found = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 
-		return std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
+		if (found == m_data.cend() || !equal(*found, value))
+			return cend();
 	}
 	comp_type key_comp() const noexcept
 	{
@@ -98,7 +142,7 @@ public:
 	}
 	reference at(value_type value) noexcept
 	{
-		auto found = std::lower_bound(m_data.begin(), m_data.end(), value, key_comp());
+		auto const found = std::lower_bound(m_data.begin(), m_data.end(), value, key_comp());
 
 		AGL_ASSERT(found != m_data.end() && equal(*found, value), "Index out of bounds");
 
@@ -106,7 +150,7 @@ public:
 	}
 	const_reference at(value_type value) const noexcept
 	{
-		auto found = std::lower_bound(m_data.begin(), m_data.end(), value, key_comp());
+		auto const found = std::lower_bound(m_data.begin(), m_data.end(), value, key_comp());
 
 		AGL_ASSERT(found != m_data.cend() && equal(*found, value), "Index out of bounds");
 
@@ -114,12 +158,12 @@ public:
 	}
 	iterator emplace(value_type&& value) noexcept
 	{
-		auto it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
+		auto const it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 		return m_data.insert(it, std::move(value));
 	}
 	iterator emplace(value_type const& value) noexcept
 	{
-		auto it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
+		auto const it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 		return m_data.insert(it, value);
 	}
 	bool empty() const noexcept
@@ -140,13 +184,9 @@ public:
 	}
 
 private:
-	bool less(value_type const& lhs, value_type const& rhs) const noexcept
-	{
-		return m_comp(lhs, rhs);
-	}
 	bool equal(value_type const& lhs, value_type const& rhs) const noexcept
 	{
-		return !less(lhs, rhs) && !less(rhs, lhs);
+		return !m_comp(lhs, rhs) && !m_comp(rhs, lhs);
 	}
 
 private:

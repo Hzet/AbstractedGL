@@ -425,10 +425,12 @@ public:
 
 	vector_iterator() noexcept
 		: m_ptr{ nullptr }
-	{}
+	{
+	}
 	explicit vector_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
-	{}
+	{
+	}
 	vector_iterator(vector_iterator&& other) noexcept
 		: m_ptr{ other.m_ptr }
 	{
@@ -447,7 +449,9 @@ public:
 		m_ptr = other.m_ptr;
 		return *this;
 	}
-	~vector_iterator() noexcept = default;
+	~vector_iterator() noexcept
+	{
+	}
 	vector_iterator& operator++() noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
@@ -520,6 +524,7 @@ public:
 
 		return m_ptr;
 	}
+
 private:
 	template <typename U>
 	friend class vector_const_iterator;
@@ -588,10 +593,12 @@ public:
 	vector_const_iterator() noexcept
 		: m_ptr{ nullptr }
 		, m_size{ 0 }
-	{}
+	{
+	}
 	explicit vector_const_iterator(T* ptr) noexcept
 		: m_ptr{ ptr }
-	{}
+	{
+	}
 	vector_const_iterator(vector_iterator<T> const& other) noexcept
 		: m_ptr{ other.m_ptr }
 	{
@@ -618,7 +625,9 @@ public:
 		m_ptr = other.m_ptr;
 		return *this;
 	}
-	~vector_const_iterator() noexcept = default;
+	~vector_const_iterator() noexcept
+	{
+	}
 	vector_const_iterator& operator++() noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");

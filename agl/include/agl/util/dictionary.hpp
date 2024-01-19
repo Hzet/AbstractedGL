@@ -133,10 +133,11 @@ public:
 	}
 	iterator find(key_type key) noexcept
 	{
-		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
+		auto found = lower_bound(m_data.begin(), m_data.end(), key);
 
-		if (found == m_data.cend() || !equal(found->first, key))
+		if (found == m_data.end() || !equal(found->first, key))
 			return end();
+		return found;
 	}
 	const_iterator find(key_type key) const noexcept
 	{
@@ -144,6 +145,7 @@ public:
 
 		if (found == m_data.cend() || !equal(found->first, key))
 			return cend();
+		return found;
 	}
 	iterator erase(const_iterator pos) noexcept
 	{
@@ -156,7 +158,12 @@ public:
 	template <typename... TArgs>
 	iterator emplace(TArgs&&... args) noexcept
 	{
-		auto pair = std::make_pair<TKey, TValue>(std::forward<TArgs>(args)...);
+		auto pair = value_type{};
+		if constexpr (sizeof... (TArgs) == 1)
+			pair = std::make_pair(std::forward<TArgs>(args)..., mapped_type{});
+		else 
+			pair = std::make_pair(std::forward<TArgs>(args)...);
+
 		auto const it = find(pair.first);
 
 		AGL_ASSERT(it == end(), "Key already stored");
@@ -187,8 +194,8 @@ public:
 	{
 		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
 
-		if (found == cend() || !equal(found->first, key))
-			return m_data.insert(found, value_type{})->second;
+		if (found == end() || !equal(found->first, key))
+			return m_data.insert(found, value_type{ key, {} })->second;
 		return found->second;
 	}
 	mapped_type const& operator[](key_type key) const noexcept
@@ -196,7 +203,7 @@ public:
 		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
 
 		if (found == cend() || !equal(found->first, key))
-			return m_data.insert(found, value_type{})->second;
+			return m_data.insert(found, value_type{ key, {} })->second;
 		return found->second;
 	}
 	size_type size() const noexcept
@@ -209,6 +216,10 @@ public:
 	}
 
 private:
+	iterator lower_bound(const_iterator first, const_iterator last, key_type key) noexcept
+	{
+		return std::lower_bound(m_data.begin(), m_data.end(), key, key_value_comp());
+	}
 	const_iterator lower_bound(const_iterator first, const_iterator last, key_type key) const noexcept
 	{
 		return std::lower_bound(m_data.cbegin(), m_data.cend(), key, key_value_comp());

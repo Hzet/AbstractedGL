@@ -17,6 +17,7 @@ TEST(ECS, ecs_storage)
 TEST(ECS, ecs)
 {
 	auto pool = agl::mem::pool{};
+
 	pool.create(1024 * 1024 * 1024);
 
 	auto allocator = pool.make_allocator<int>();
