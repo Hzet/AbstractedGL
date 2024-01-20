@@ -9,9 +9,13 @@ namespace mem
 {
 namespace impl 
 {
-class defragmented_space
+class free_space_tracker
 {
 public:
+	bool has_space() const noexcept
+	{
+		return !m_spaces.empty();
+	}
 	/// <summary>
 	/// Adds item to the collection. If the space, that the object represents, overlaps with space of another object, the objects will be joined together.
 	/// </summary>
@@ -57,13 +61,13 @@ public:
 		auto* ptr = result + size;
 		auto surplus = it->first - size;
 
+		if (it->second.empty())
+			m_spaces.erase(it);
+
 		if (surplus > 0)
 		{
-			if (it->second.empty())
-				m_spaces.erase(it);
-
 			auto found = m_spaces.find(surplus);
-			if (found == m_spaces.end())
+			if (found != m_spaces.end())
 				found->second.emplace(ptr);
 			else
 			{
@@ -180,10 +184,17 @@ public:
 	}
 	std::byte* allocate(std::uint64_t size, std::uint64_t alignment) noexcept
 	{
+		AGL_ASSERT(alignment > 0, "Invalid alignment value");
+		AGL_ASSERT(size <= this->size(), "Not enough memory to store object");
+		AGL_ASSERT(size <= this->size() - occupancy(), "Ran out of memory");
+
 		m_occupancy += size;
 		auto* ptr = m_free_spaces.pop(size);
 		auto i = size;
 		std::align(alignment, size, reinterpret_cast<void*&>(ptr), i);
+
+		AGL_ASSERT(ptr != nullptr, "Invalid pointer returned");
+
 		return ptr;
 	}
 	bool create(std::uint64_t size) noexcept
@@ -203,12 +214,16 @@ public:
 		AGL_ASSERT(empty(), "Some object were not deallocated");
 
 		std::free(m_buffer);
-		m_free_spaces = impl::defragmented_space{};
+		m_free_spaces = impl::free_space_tracker{};
 		m_occupancy = 0;
 		m_size = 0;
 	}
 	void deallocate(std::byte* ptr, std::uint64_t size) noexcept
 	{
+		AGL_ASSERT(ptr == nullptr || has_pointer(ptr), "Invalid pointer");
+		AGL_ASSERT(!empty(), "pool is empty");
+		AGL_ASSERT(static_cast<std::int64_t>(occupancy()) - static_cast<std::int64_t>(size) >= 0, "");
+
 		m_free_spaces.push(ptr, size);
 		m_occupancy -= size;
 	}
@@ -233,10 +248,14 @@ public:
 	{
 		return m_size;
 	}
+	bool has_pointer(std::byte* ptr) const noexcept
+	{
+		return m_buffer <= ptr && ptr < m_buffer + size();
+	}
 
 private:
 	std::byte* m_buffer;
-	impl::defragmented_space m_free_spaces;
+	impl::free_space_tracker m_free_spaces;
 	std::uint64_t m_occupancy;
 	std::uint64_t m_size;
 };

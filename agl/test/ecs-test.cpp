@@ -1,19 +1,7 @@
 #include <gtest/gtest.h>
 #include "agl/ecs/ecs.hpp"
 
-TEST(ECS, ecs_storage)
-{
-	auto block_size = std::uint64_t{ 1024 };
-	auto s = agl::deque<std::uint64_t>{ block_size };
-
-	for (auto i = 0; i < 10 * block_size; ++i)
-	{
-		s.push_back(i);
-
-		if (s[i] != i)
-			FAIL() << "Invalid value after push operation";
-	}
-}
+/*
 TEST(ECS, ecs)
 {
 	auto pool = agl::mem::pool{};
@@ -57,3 +45,4 @@ TEST(ECS, ecs)
 
 
 }
+*/

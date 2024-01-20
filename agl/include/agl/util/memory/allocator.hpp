@@ -48,9 +48,13 @@ public:
 	allocator& operator=(allocator<U> const&) noexcept {}
 	~allocator() noexcept {}
 
-	[[nodiscard]] pointer allocate(size_type count = 1) noexcept
+	[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type)) noexcept
 	{
-		return reinterpret_cast<pointer>(std::malloc(count * sizeof(value_type)));
+		auto const size = count * sizeof(value_type);
+		auto* ptr = std::malloc(size);
+		auto i = size;
+		std::align(alignment, size, ptr, i);
+		return reinterpret_cast<pointer>(ptr);
 	}
 	void deallocate(pointer ptr, size_type size = 0) noexcept
 	{
