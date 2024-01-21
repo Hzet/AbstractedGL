@@ -769,6 +769,7 @@ bool operator!=(deque_const_iterator<T> const& lhs, deque_const_iterator<T> cons
 }
 }
 }
+
 namespace std
 {
 template <typename T>
@@ -790,24 +791,4 @@ struct iterator_traits<agl::impl::deque_const_iterator<T>>
 	using difference_type = typename ::agl::type_traits<T>::difference_type;
 	using iterator_category = random_access_iterator_tag;
 };
-/*
-template <typename T>
-struct iterator_traits<agl::impl::deque_iterator<T*>>
-{
-	using value_type = T*;
-	using pointer = T**;
-	using reference = T*;
-	using difference_type = ptrdiff_t;
-	using iterator_category = random_access_iterator_tag;
-};
-template <typename T>
-struct iterator_traits<agl::impl::deque_const_iterator<T*>>
-{
-	using value_type = T const*;
-	using pointer = T const**;
-	using reference = T const*;
-	using difference_type = ptrdiff_t;;
-	using iterator_category = random_access_iterator_tag;
-};
-*/
 }

@@ -6,13 +6,12 @@
 
 namespace agl
 {
-namespace impl
-{
 template <typename T>
 class vector_iterator;
+
 template <typename T>
 class vector_const_iterator;
-}
+
 template <typename T, typename TAlloc = mem::allocator<T>>
 class vector
 {
@@ -183,7 +182,7 @@ public:
 	}
 	reverse_iterator rend() const noexcept
 	{	
-		return reverse_iterator{ begin()};
+		return reverse_iterator{ begin() };
 	}
 	reverse_const_iterator crend() const noexcept
 	{
@@ -281,7 +280,7 @@ public:
 		}
 		auto const index = pos - begin();
 		reserve(size() + 1);
-		move_elements(pos.m_ptr + 1, pos.m_ptr);
+		move_elements_right(begin() + index + 1, begin() + index);
 		*(m_memory + index) = value;
 		++m_size;
 		return iterator{ m_memory + index };
@@ -297,8 +296,7 @@ public:
 		}
 		auto const index = pos - begin();
 		reserve(size() + 1);
-		move_elements(pos.m_ptr + 1, pos.m_ptr);
-		move_elements_right(cbegin() + index, 1);
+		move_elements_right(begin() + index + 1, begin() + index);
 		*(m_memory + index) = std::move(value);
 		++m_size;
 		return iterator{ m_memory + index };
@@ -320,7 +318,7 @@ public:
 			return iterator{ m_memory + index };
 		}
 		reserve(size() + insert_size);
-		move_elements(pos.m_ptr, pos.m_ptr + insert_size));
+		move_elements_right(begin() + index + insert_size, begin() + index);
 		for (auto i = difference_type{ 0 }; i < insert_size; ++i)
 			*(m_memory + index + i) = first++;
 		m_size += insert_size;
@@ -330,9 +328,15 @@ public:
 	{
 		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");
 
+		if (size() == 1)
+		{
+			clear();
+			return end();
+		}
+
 		m_allocator.destruct(&(*pos));
 		m_allocator.construct(&(*pos));
-		move_elements(pos.m_ptr, pos.m_ptr + 1);
+		move_elements_left(pos.m_ptr, pos.m_ptr + 1);
 		--m_size;
 		return iterator{ pos.m_ptr };
 	}
@@ -341,13 +345,19 @@ public:
 		AGL_ASSERT(cbegin() <= first && first < cend(), "Iterator out of bounds");
 		AGL_ASSERT(cbegin() <= last && last < cend(), "Iterator out of bounds");
 
+		if (first == begin() && last == cend())
+		{
+			clear();
+			return end();
+		}
+
 		for (first; first != last; ++first)
 		{
 			m_allocator.destruct(first.m_ptr);
 			m_allocator.construct(first.m_ptr);
 		}
 		
-		move_elements(first.m_ptr, last.m_ptr)
+		move_elements_left(first.m_ptr, last.m_ptr)
 		m_size -= erase_size;
 		return iterator{ m_memory + offset };
 	}
@@ -375,18 +385,35 @@ public:
 		realloc(n);
 	}
 private:
+	iterator real_end() const noexcept
+	{
+		return iterator{ m_memory + capacity() };
+	}
 	/// <summary>
 	/// Moves element 'from' and all the elements right to it to the position 'where'
 	/// </summary>
-	void move_elements(iterator where, iterator from) noexcept
+	void move_elements_left(iterator where, iterator from) noexcept
 	{
-		AGL_ASSERT(cbegin() <= where && where < cend(), "Index out of bounds");
-		AGL_ASSERT(cbegin() <= from && from < cend(), "Index out of bounds");
-		if (where > from)
-			std::swap(where, from);
+		AGL_ASSERT(where <= from, "Invalid data");
+		AGL_ASSERT(begin() <= where && where < end(), "Index out of bounds");
+		AGL_ASSERT(begin() <= from && from <= end(), "Index out of bounds");
 
 		for (where, from; from != end(); ++where, ++from)
 			*where = std::move(*from);
+	}
+	void move_elements_right(iterator where, iterator from) noexcept
+	{
+		AGL_ASSERT(where >= from, "Invalid data");
+		AGL_ASSERT(begin() <= where && where < real_end(), "Index out of bounds");
+		AGL_ASSERT(begin() <= from && from <= real_end(), "Index out of bounds");
+
+		auto const size = where - from;
+		auto w = rbegin() - size; // before begin
+		auto f = rbegin();
+		auto const end = std::make_reverse_iterator(where);
+
+		for (w, f; w != end; ++w, ++f)
+			*w = std::move(*f);
 	}
 	void realloc(size_type n) noexcept
 	{
@@ -409,6 +436,7 @@ private:
 	pointer m_memory;
 	size_type m_size;
 };
+
 template <typename T>
 class vector_iterator
 {
@@ -549,6 +577,7 @@ private:
 private:
 	pointer m_ptr;
 };
+
 template <typename T>
 bool operator==(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) noexcept
 {
@@ -726,6 +755,7 @@ private:
 private:
 	T* m_ptr;
 };
+
 template <typename T>
 bool operator==(vector_const_iterator<T> const& lhs, vector_const_iterator<T> const& rhs) noexcept
 {
@@ -770,6 +800,7 @@ struct iterator_traits<agl::vector_iterator<T>>
 	using iterator_category = random_access_iterator_tag;
 
 };
+
 template <typename T>
 struct iterator_traits<agl::vector_const_iterator<T>>
 {
