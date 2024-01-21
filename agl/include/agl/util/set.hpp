@@ -120,6 +120,14 @@ public:
 		m_comp = {};
 		m_data.clear();
 	}
+	void reserve(size_type n) noexcept
+	{
+		m_data.reserve(n);
+	}
+	void resize(size_type n) noexcept
+	{
+		m_data.resize(n);
+	}
 	template <typename U>
 	iterator find(U const& value) noexcept
 	{

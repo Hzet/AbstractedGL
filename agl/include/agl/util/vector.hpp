@@ -26,10 +26,10 @@ public:
 	using size_type = typename type_traits<T>::size_type;
 	using difference_type = typename type_traits<T>::difference_type;
 
-	using iterator = impl::vector_iterator<T>;
-	using const_iterator = impl::vector_const_iterator<T>;
-	using reverse_iterator = std::reverse_iterator<impl::vector_iterator<T>>;
-	using reverse_const_iterator = std::reverse_iterator<impl::vector_const_iterator<T>>;
+	using iterator = vector_iterator<T>;
+	using const_iterator = vector_const_iterator<T>;
+	using reverse_iterator = std::reverse_iterator<vector_iterator<T>>;
+	using reverse_const_iterator = std::reverse_iterator<vector_const_iterator<T>>;
 	
 	vector() noexcept
 		: m_allocator{ }
@@ -281,7 +281,7 @@ public:
 		}
 		auto const index = pos - begin();
 		reserve(size() + 1);
-		move_elements(cbegin() + index, 1);
+		move_elements(pos.m_ptr + 1, pos.m_ptr);
 		*(m_memory + index) = value;
 		++m_size;
 		return iterator{ m_memory + index };
@@ -297,7 +297,8 @@ public:
 		}
 		auto const index = pos - begin();
 		reserve(size() + 1);
-		move_elements(cbegin() + index, 1);
+		move_elements(pos.m_ptr + 1, pos.m_ptr);
+		move_elements_right(cbegin() + index, 1);
 		*(m_memory + index) = std::move(value);
 		++m_size;
 		return iterator{ m_memory + index };
@@ -319,7 +320,7 @@ public:
 			return iterator{ m_memory + index };
 		}
 		reserve(size() + insert_size);
-		move_elements(cbegin() + index, insert_size);
+		move_elements(pos.m_ptr, pos.m_ptr + insert_size));
 		for (auto i = difference_type{ 0 }; i < insert_size; ++i)
 			*(m_memory + index + i) = first++;
 		m_size += insert_size;
@@ -329,24 +330,24 @@ public:
 	{
 		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");
 
-		m_allocator.destruct(m_memory + (pos - begin()));
-		m_allocator.construct(m_memory + (pos - begin()));
-		move_elements(pos + 1, -1);
+		m_allocator.destruct(&(*pos));
+		m_allocator.construct(&(*pos));
+		move_elements(pos.m_ptr, pos.m_ptr + 1);
 		--m_size;
-		return iterator{ m_memory + (pos - begin()) };
+		return iterator{ pos.m_ptr };
 	}
 	iterator erase(const_iterator first, const_iterator last) noexcept
 	{
 		AGL_ASSERT(cbegin() <= first && first < cend(), "Iterator out of bounds");
 		AGL_ASSERT(cbegin() <= last && last < cend(), "Iterator out of bounds");
 
-		auto const erase_size = last - first;
-		auto const offset = first - begin();
-		for (auto i = difference_type{ 0 }; i < erase_size; ++i)
+		for (first; first != last; ++first)
 		{
-			m_allocator.destruct(m_memory + offset + i);
-			m_allocator.construct(m_memory + offset + i);
+			m_allocator.destruct(first.m_ptr);
+			m_allocator.construct(first.m_ptr);
 		}
+		
+		move_elements(first.m_ptr, last.m_ptr)
 		m_size -= erase_size;
 		return iterator{ m_memory + offset };
 	}
@@ -375,20 +376,17 @@ public:
 	}
 private:
 	/// <summary>
-	/// Moves element under 'pos' and all the elements on it's right 'count' spaces in given direction.
+	/// Moves element 'from' and all the elements right to it to the position 'where'
 	/// </summary>
-	/// <param name="pos">position where to start moving items from</param>
-	/// <param name="count">how many spaces will items be moved. if negative, items right to pos will be moved towards the beginning of the array</param>
-	void move_elements(const_iterator pos, std::int64_t count) noexcept
+	void move_elements(iterator where, iterator from) noexcept
 	{
-		auto const offset = std::int64_t{ pos - begin() };
-		auto const size = cend() - pos;
-		for (auto i = std::int64_t{ 0 }; i < size; ++i)
-		{
-			*(m_memory + offset + i) = std::move(*(m_memory + offset + count + i));
-			m_allocator.destruct(m_memory + offset + count + i);
-			m_allocator.construct(m_memory + offset + count + i);
-		}
+		AGL_ASSERT(cbegin() <= where && where < cend(), "Index out of bounds");
+		AGL_ASSERT(cbegin() <= from && from < cend(), "Index out of bounds");
+		if (where > from)
+			std::swap(where, from);
+
+		for (where, from; from != end(); ++where, ++from)
+			*where = std::move(*from);
 	}
 	void realloc(size_type n) noexcept
 	{
@@ -411,8 +409,6 @@ private:
 	pointer m_memory;
 	size_type m_size;
 };
-namespace impl
-{
 template <typename T>
 class vector_iterator
 {
@@ -427,7 +423,7 @@ public:
 		: m_ptr{ nullptr }
 	{
 	}
-	explicit vector_iterator(pointer ptr) noexcept
+	vector_iterator(pointer ptr) noexcept
 		: m_ptr{ ptr }
 	{
 	}
@@ -529,6 +525,9 @@ private:
 	template <typename U>
 	friend class vector_const_iterator;
 
+	template <typename U, typename W>
+	friend class vector;
+
 	template <typename U>
 	friend bool operator==(vector_iterator<U> const& lhs, vector_iterator<U> const& rhs) noexcept;
 
@@ -580,6 +579,7 @@ bool operator>=(vector_iterator<T> const& lhs, vector_iterator<T> const& rhs) no
 {
 	return lhs.m_ptr >= rhs.m_ptr;
 }
+
 template <typename T>
 class vector_const_iterator
 {
@@ -595,7 +595,7 @@ public:
 		, m_size{ 0 }
 	{
 	}
-	explicit vector_const_iterator(T* ptr) noexcept
+	vector_const_iterator(T* ptr) noexcept
 		: m_ptr{ ptr }
 	{
 	}
@@ -702,6 +702,9 @@ public:
 	}
 
 private:
+	template <typename U, typename W>
+	friend class vector;
+
 	template <typename U>
 	friend bool operator==(vector_const_iterator<U> const& lhs, vector_const_iterator<U> const& rhs) noexcept;
 
@@ -754,12 +757,11 @@ bool operator>=(vector_const_iterator<T> const& lhs, vector_const_iterator<T> co
 	return lhs.m_ptr >= rhs.m_ptr;
 }
 }
-}
 
 namespace std
 {
 template <typename T>
-struct iterator_traits<agl::impl::vector_iterator<T>>
+struct iterator_traits<agl::vector_iterator<T>>
 {
 	using value_type = typename ::agl::type_traits<T>::value_type;
 	using pointer = typename ::agl::type_traits<T>::pointer;
@@ -768,19 +770,8 @@ struct iterator_traits<agl::impl::vector_iterator<T>>
 	using iterator_category = random_access_iterator_tag;
 
 };
-/*
 template <typename T>
-struct iterator_traits<agl::impl::vector_iterator<T*>>
-{
-	using value_type = T*;
-	using pointer = T**;
-	using reference = T*;
-	using difference_type = ptrdiff_t;;
-	using iterator_category = random_access_iterator_tag;
-};
-*/
-template <typename T>
-struct iterator_traits<agl::impl::vector_const_iterator<T>>
+struct iterator_traits<agl::vector_const_iterator<T>>
 {
 	using value_type = typename ::agl::type_traits<T>::value_type;
 	using pointer = typename ::agl::type_traits<T>::pointer;
@@ -788,37 +779,4 @@ struct iterator_traits<agl::impl::vector_const_iterator<T>>
 	using difference_type = typename ::agl::type_traits<T>::difference_type;
 	using iterator_category = random_access_iterator_tag;
 };
-
-/*
-template <typename T>
-struct iterator_traits<agl::impl::vector_const_iterator<T*>>
-{
-	using value_type = T const*;
-	using pointer = T const**;
-	using reference = T const*;
-	using difference_type = ptrdiff_t;;
-	using iterator_category = random_access_iterator_tag;
-
-};
-*/
-/*
-template <typename T>
-struct iterator_traits<reverse_iterator<agl::impl::vector_iterator<T>>>
-{
-	using value_type = typename ::agl::type_traits<T>::value_type;
-	using pointer = typename ::agl::type_traits<T>::pointer;
-	using reference = typename ::agl::type_traits<T>::reference;
-	using difference_type = typename ::agl::type_traits<T>::difference_type;
-	using iterator_category = random_access_iterator_tag;
-};
-template <typename T>
-struct iterator_traits<reverse_iterator<agl::impl::vector_const_iterator<T>>>
-{
-	using value_type = typename ::agl::type_traits<T>::value_type;
-	using pointer = typename ::agl::type_traits<T>::pointer;
-	using reference = typename ::agl::type_traits<T>::reference;
-	using difference_type = typename ::agl::type_traits<T>::difference_type;
-	using iterator_category = random_access_iterator_tag;
-};
-*/
 }

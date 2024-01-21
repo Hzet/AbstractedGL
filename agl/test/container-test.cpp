@@ -1,4 +1,6 @@
 #include <gtest/gtest.h>
+#include <vector>
+
 #include "agl/util/vector.hpp"
 #include "agl/util/deque.hpp"
 #include "agl/util/set.hpp"
@@ -8,7 +10,7 @@
 TEST(vector, vector)
 {
 	auto vec = agl::vector<int>{};
-	
+	auto std_vec = std::vector<int>{};
 	// empty
 	if (!vec.empty())
 		FAIL() << "Invalid vector size [ 0 ]";
@@ -123,13 +125,25 @@ TEST(vector, vector)
 	}
 
 	vec.reserve(10000);
+	std_vec.reserve(10000);
 	for (auto i = 0; i < 10000; ++i)
+	{
+		std_vec.push_back(i);
 		vec.push_back(i);
+	}
 
 	while (!vec.empty())
 	{
 		auto index = agl::simple_rand(std::uint64_t{}, vec.size() - 1);
 		vec.erase(vec.cbegin() + index);
+		std_vec.erase(std_vec.cbegin() + index);
+
+		if(std_vec.size() != vec.size())
+			FAIL() << "Invalid vector size [ 5 ]";
+
+		for(auto i = 0; i < std_vec.size(); ++i)
+			if(vec[i] != std_vec[i])
+				FAIL() << "Invalid vector value [ 8 ]";
 	}
 }
 
@@ -510,9 +524,12 @@ TEST(dictionary, dictionary)
 	for (auto i = 0; i < 10000; ++i)
 		arr[i] = true;
 
-	/*
+	for (auto it = dict.cbegin() + 1; it != dict.cend(); ++it)
+		if ((it - 1)->first > it->first)
+			FAIL() << "dictionary is unsorted [ 0 ]";
+
 	auto index = agl::simple_rand(0, 10000);
-	while (!dict.empty())
+	while (!dict.size() > 100)
 	{
 		while (!arr[index])
 			index = agl::simple_rand(0, 9999);
@@ -524,7 +541,20 @@ TEST(dictionary, dictionary)
 		if (dict.find(index) != dict.end())
 			FAIL() << "Invalid dictionary erase algorithm [ 0 ]";
 	}
-	*/
+
+	while (dict.size() < 10000)
+	{
+		auto rnd = agl::simple_rand(std::numeric_limits<std::int64_t>::lowest(), std::numeric_limits<std::int64_t>::max());
+		
+		if (dict.find(rnd) != dict.end())
+			continue;
+
+		dict.emplace(rnd, rnd);
+	}
+
+	for (auto it = dict.cbegin() + 1; it != dict.cend(); ++it)
+		if ((it - 1)->first > it->first)
+			FAIL() << "dictionary is unsorted [ 1 ]";
 }
 
 TEST(set, set)
@@ -566,6 +596,11 @@ TEST(set, set)
 	for (auto i = 0; i < set.size(); ++i)
 		if (set.at({ i }) != i)
 			FAIL() << "Invalid dictionary value [ 1 ]";
+
+
+	for (auto it = set.cbegin() + 1; it != set.cend(); ++it)
+		if (*it > *it)
+			FAIL() << "set is unsorted [ 0 ]";
 
 	// erase
 	bool arr[10000];

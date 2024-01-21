@@ -25,22 +25,34 @@ public:
 	{
 		// find and merge adjacent spaces
 		auto end_ptr = ptr + size;
-		for (auto it = m_spaces.cbegin(); it != m_spaces.cend(); ++it)
+		auto it_spaces = m_spaces.begin();
+		for(it_spaces; it_spaces != m_spaces.end(); ++it_spaces)
 		{
-			auto found = it->second.find(end_ptr);
-			if (found == it->second.end())
+			// check for end_ptr in set
+			auto it_second = it_spaces->second.find(end_ptr);
+			if (it_second == it_spaces->second.end())
 				continue;
 
-			it->second.erase(found);
-			size += it->first;
-			end_ptr += it->first;
-			it = m_spaces.cbegin();
+			// remove pointer from set
+			it_spaces->second.erase(it_second);
+			
+			// calc new end pointer and add size to 'to be emplaced' space
+			end_ptr += it_spaces->first;
+			size += it_spaces->first;
+
+			// erase size gap if it was the last pointer to it
+			if (it_spaces->second.empty())
+				m_spaces.erase(it_spaces);
+
+			// find new end_ptr
+			it_spaces = m_spaces.begin();
 		}
-		// push merged space 
-		auto it = m_spaces.find(size);
-		if(it == m_spaces.end())
-			it = m_spaces.emplace(size);
-		it->second.emplace(ptr);
+
+		// emplace new space
+		it_spaces = m_spaces.find(size);
+		if (it_spaces == m_spaces.end())
+			it_spaces = m_spaces.emplace(size);
+		it_spaces->second.emplace(ptr);
 	}
 
 	/// <summary>
@@ -58,15 +70,14 @@ public:
 		auto* result = it->second.back();
 		it->second.erase(it->second.cend() - 1);
 
-		auto* ptr = result + size;
-		auto surplus = it->first - size;
-
+		auto surplus = it->first - size; 
 		if (it->second.empty())
 			m_spaces.erase(it);
 
-		if (surplus > 0)
+		if (surplus > 0) // check if there is excessive space available under pointer 'result'
 		{
-			auto found = m_spaces.find(surplus);
+			auto* ptr = result + size;
+			auto found = m_spaces.find(surplus); // where to insert new ptr
 			if (found != m_spaces.end())
 				found->second.emplace(ptr);
 			else
@@ -222,7 +233,7 @@ public:
 	{
 		AGL_ASSERT(ptr == nullptr || has_pointer(ptr), "Invalid pointer");
 		AGL_ASSERT(!empty(), "pool is empty");
-		AGL_ASSERT(static_cast<std::int64_t>(occupancy()) - static_cast<std::int64_t>(size) >= 0, "");
+		AGL_ASSERT(occupancy() >= size, "Invalid pointer size");
 
 		m_free_spaces.push(ptr, size);
 		m_occupancy -= size;
@@ -233,7 +244,7 @@ public:
 	}
 	bool empty() const noexcept
 	{
-		return size() == 0;
+		return occupancy() == 0;
 	}
 	template <typename T>
 	allocator<T> make_allocator() noexcept

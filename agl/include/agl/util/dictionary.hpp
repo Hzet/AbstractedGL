@@ -133,7 +133,7 @@ public:
 	}
 	iterator find(key_type key) noexcept
 	{
-		auto found = lower_bound(m_data.begin(), m_data.end(), key);
+		auto found = lower_bound(key);
 
 		if (found == m_data.end() || !equal(found->first, key))
 			return end();
@@ -141,7 +141,7 @@ public:
 	}
 	const_iterator find(key_type key) const noexcept
 	{
-		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
+		auto const found = lower_bound(key);
 
 		if (found == m_data.cend() || !equal(found->first, key))
 			return cend();
@@ -164,9 +164,9 @@ public:
 		else 
 			pair = std::make_pair(std::forward<TArgs>(args)...);
 
-		auto const it = find(pair.first);
+		auto const it = lower_bound(pair.first);
 
-		AGL_ASSERT(it == end(), "Key already stored");
+		AGL_ASSERT(find(pair.first) == end(), "Key already stored");
 
 		return m_data.insert(it, std::move(pair));
 	}
@@ -192,7 +192,7 @@ public:
 	}
 	mapped_type& operator[](key_type key) noexcept
 	{
-		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
+		auto const found = lower_bound(key);
 
 		if (found == end() || !equal(found->first, key))
 			return m_data.insert(found, value_type{ key, {} })->second;
@@ -200,7 +200,7 @@ public:
 	}
 	mapped_type const& operator[](key_type key) const noexcept
 	{
-		auto const found = lower_bound(m_data.cbegin(), m_data.cend(), key);
+		auto const found = lower_bound(key);
 
 		if (found == cend() || !equal(found->first, key))
 			return m_data.insert(found, value_type{ key, {} })->second;
@@ -216,11 +216,11 @@ public:
 	}
 
 private:
-	iterator lower_bound(const_iterator first, const_iterator last, key_type key) noexcept
+	iterator lower_bound(key_type key) noexcept
 	{
 		return std::lower_bound(m_data.begin(), m_data.end(), key, key_value_comp());
 	}
-	const_iterator lower_bound(const_iterator first, const_iterator last, key_type key) const noexcept
+	const_iterator lower_bound(key_type key) const noexcept
 	{
 		return std::lower_bound(m_data.cbegin(), m_data.cend(), key, key_value_comp());
 	}
