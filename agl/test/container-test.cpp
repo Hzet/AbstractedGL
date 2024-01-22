@@ -599,7 +599,7 @@ TEST(set, set)
 
 
 	for (auto it = set.cbegin() + 1; it != set.cend(); ++it)
-		if (*it > *it)
+		if (it->x > it->x)
 			FAIL() << "set is unsorted [ 0 ]";
 
 	// erase
