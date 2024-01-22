@@ -277,14 +277,24 @@ private:
 	size_type m_size;
 	size_type m_block_size;
 };
+}
+
 template <typename T>
 class deque_iterator;
+
 template <typename T>
 class deque_const_iterator;
-}
+
+template <typename T>
+class deque_reverse_iterator;
+
+template <typename T>
+class deque_reverse_const_iterator;
+
 template <typename T, typename TAlloc = agl::mem::allocator<T>>
 class deque
 {
+
 public:
 	using allocator_type = typename TAlloc::template rebind<T>;
 	using value_type = typename type_traits<T>::value_type;
@@ -295,10 +305,17 @@ public:
 	using size_type = typename type_traits<T>::size_type;
 	using difference_type = typename type_traits<T>::difference_type;
 
-	using iterator = typename impl::deque_iterator<T>;
-	using const_iterator = typename impl::deque_const_iterator<T>;
-	using reverse_iterator = typename std::reverse_iterator<impl::deque_iterator<T>>;
-	using reverse_const_iterator = typename std::reverse_iterator<impl::deque_const_iterator<T>>;
+private:
+	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
+	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
+	using index_allocator = typename allocator_type::template rebind<T*>;
+	using index_vector = vector<T*, index_allocator>;
+
+public:
+	using iterator = typename deque_iterator<typename index_vector::iterator>;
+	using const_iterator = typename deque_const_iterator<typename index_vector::const_iterator>;
+	using reverse_iterator = typename deque_iterator<typename index_vector::reverse_iterator>;
+	using reverse_const_iterator = typename deque_const_iterator<typename index_vector::reverse_const_iterator>;
 
 public:
 	deque(size_type block_size = 1024, allocator_type const& allocator = {}) noexcept
@@ -501,12 +518,6 @@ public:
 	}
 
 private:
-	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
-	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
-	using index_allocator = typename allocator_type::template rebind<T*>;
-	using index_vector = vector<T*, index_allocator>;
-
-private:
 	/// <summary>
 	/// Finds a block that contains item residing under index 'value_index'.
 	/// </summary>
@@ -527,13 +538,12 @@ private:
 	size_type m_block_size;
 	index_vector m_indexes;
 };
-namespace impl
-{
+
 template <typename T>
 class deque_iterator
 {
 public:
-	using iterator = vector_iterator<T*>;
+	using iterator = T;
 	using traits = std::iterator_traits<deque_iterator<T>>;
 	using value_type = typename traits::value_type;
 	using pointer = typename traits::pointer;
@@ -630,6 +640,18 @@ private:
 	template <typename U>
 	friend bool operator!=(deque_iterator<U> const& lhs, deque_iterator<U> const& rhs) noexcept;
 
+	template <typename U>
+	friend bool operator<(deque_iterator<U> const& lhs, deque_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<=(deque_iterator<U> const& lhs, deque_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>(deque_iterator<U> const& lhs, deque_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>=(deque_iterator<U> const& lhs, deque_iterator<U> const& rhs) noexcept;
+
 private:
 	iterator m_it;
 };
@@ -644,10 +666,31 @@ bool operator!=(deque_iterator<T> const& lhs, deque_iterator<T> const& rhs) noex
 	return lhs.m_it != rhs.m_it;
 }
 template <typename T>
+bool operator<(deque_iterator<T> const& lhs, deque_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it < rhs.m_it;
+}
+template <typename T>
+bool operator<=(deque_iterator<T> const& lhs, deque_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it <= rhs.m_it;
+}
+template <typename T>
+bool operator>(deque_iterator<T> const& lhs, deque_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it > rhs.m_it;
+}
+template <typename T>
+bool operator>=(deque_iterator<T> const& lhs, deque_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it >= rhs.m_it;
+}
+
+template <typename T>
 class deque_const_iterator
 {
 public:
-	using iterator = vector_const_iterator<T*>;
+	using iterator = T;
 	using traits = std::iterator_traits<deque_const_iterator<T>>;
 	using value_type = typename traits::value_type;
 	using pointer = typename traits::pointer;
@@ -754,6 +797,18 @@ private:
 	template <typename U>
 	friend bool operator!=(deque_const_iterator<U> const& lhs, deque_const_iterator<U> const& rhs) noexcept;
 
+	template <typename U>
+	friend bool operator<(deque_const_iterator<U> const& lhs, deque_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator<=(deque_const_iterator<U> const& lhs, deque_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>(deque_const_iterator<U> const& lhs, deque_const_iterator<U> const& rhs) noexcept;
+
+	template <typename U>
+	friend bool operator>=(deque_const_iterator<U> const& lhs, deque_const_iterator<U> const& rhs) noexcept;
+
 private:
 	iterator m_it;
 };
@@ -767,28 +822,52 @@ bool operator!=(deque_const_iterator<T> const& lhs, deque_const_iterator<T> cons
 {
 	return lhs.m_it != rhs.m_it;
 }
+template <typename T>
+bool operator<(deque_const_iterator<T> const& lhs, deque_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it < rhs.m_it;
+}
+template <typename T>
+bool operator<=(deque_const_iterator<T> const& lhs, deque_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it <= rhs.m_it;
+}
+template <typename T>
+bool operator>(deque_const_iterator<T> const& lhs, deque_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it > rhs.m_it;
+}
+template <typename T>
+bool operator>=(deque_const_iterator<T> const& lhs, deque_const_iterator<T> const& rhs) noexcept
+{
+	return lhs.m_it >= rhs.m_it;
 }
 }
 
 namespace std
 {
 template <typename T>
-struct iterator_traits<agl::impl::deque_iterator<T>>
+struct iterator_traits<agl::deque_iterator<T>>
 {
-	using value_type = typename ::agl::type_traits<T>::value_type;
-	using pointer = typename ::agl::type_traits<T>::pointer;
-	using reference = typename ::agl::type_traits<T>::reference;
-	using difference_type = typename ::agl::type_traits<T>::difference_type;
+	using raw_value_type = std::remove_pointer_t<typename T::value_type>;
+	using traits = typename agl::type_traits<raw_value_type>;
+	using value_type = typename traits::value_type;
+	using pointer = typename traits::pointer;
+	using reference = typename traits::reference;
+	using difference_type = typename traits::difference_type;
 	using iterator_category = random_access_iterator_tag;
 
 };
+
 template <typename T>
-struct iterator_traits<agl::impl::deque_const_iterator<T>>
+struct iterator_traits<agl::deque_const_iterator<T>>
 {
-	using value_type = typename ::agl::type_traits<T>::value_type;
-	using pointer = typename ::agl::type_traits<T>::pointer;
-	using reference = typename ::agl::type_traits<T>::reference;
-	using difference_type = typename ::agl::type_traits<T>::difference_type;
+	using raw_value_type = std::remove_pointer_t<typename T::value_type>;
+	using traits = typename agl::type_traits<raw_value_type>;
+	using value_type = typename traits::value_type;
+	using pointer = typename traits::pointer;
+	using reference = typename traits::reference;
+	using difference_type = typename traits::difference_type;
 	using iterator_category = random_access_iterator_tag;
 };
 }
