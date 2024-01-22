@@ -290,7 +290,7 @@ public:
 		if (m_memory == nullptr)
 			return;
 
-		for (auto i = difference_type{ 0 }; i < size(); ++i)
+		for (auto i = difference_type{ 0 }; i < static_cast<difference_type>(size()); ++i)
 			m_allocator.destruct(m_memory + i);
 		m_allocator.deallocate(m_memory, m_capacity);
 		m_memory = nullptr;
@@ -421,7 +421,6 @@ private:
 	}
 	iterator real_end() const noexcept
 	{
-
 		return iterator{ m_memory + capacity(), m_memory, m_memory + capacity() };
 	}
 	/// <summary>
@@ -443,9 +442,9 @@ private:
 		AGL_ASSERT(begin() <= from && from <= real_end(), "Index out of bounds");
 
 		auto const size = where - from;
-		auto w = rbegin() - size; // before begin
+		auto w = rbegin() + size; // before begin
 		auto f = rbegin();
-		auto const end = make_iterator<reverse_iterator>(&(*where));
+		auto const end = make_iterator<reverse_iterator>(&(*(where--)));
 
 		for (w, f; w != end; ++w, ++f)
 			*w = std::move(*f);
@@ -504,7 +503,7 @@ public:
 		, m_ptr{ ptr }
 
 	{
-		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin, m_end), "Invalid iterator");
+		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin, m_end), "invalid iterator");
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
 	vector_iterator(vector_iterator<T, UTraits>&& other) noexcept
@@ -541,78 +540,79 @@ public:
 	}
 	vector_iterator& operator++() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid operation");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past end");
 
 		m_ptr += 1;
 		return *this;
 	}
 	vector_iterator operator++(int) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid operation");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past end");
 
 		auto result = vector_iterator{ *this };
 		return ++result;
 	}
 	vector_iterator operator+(difference_type offset) const noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin, m_end), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin, m_end), "iterator out of range");
 
 		return vector_iterator{ m_ptr + offset, m_begin, m_end };
 	}
 	vector_iterator& operator+=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin, m_end), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin, m_end), "iterator out of range");
 
 		m_ptr += offset;
 		return *this;
 	}
 	vector_iterator& operator--() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin + 1, m_end), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin + 1, m_end), "cannot decrement past begin");
 
 		m_ptr -= 1;
 		return *this;
 	}
 	vector_iterator operator--(int) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin + 1, m_end), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin + 1, m_end), "cannot decrement past begin");
 
 		auto result = vector_iterator{ *this };
 		return --result;
 	}
 	difference_type operator-(vector_iterator rhs) const noexcept
 	{
-		AGL_ASSERT((m_ptr == nullptr && rhs.m_ptr == nullptr) || (m_ptr != nullptr && rhs.m_ptr != nullptr), "Invalid iterator");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin + 1, m_end), "Invalid iterator");
-		AGL_ASSERT(impl::iterator_in_range(rhs.m_ptr, m_begin + 1, m_end), "Invalid iterator");
-		
-		return std::abs(*reinterpret_cast<std::int64_t const*>(&m_ptr) - *reinterpret_cast<std::int64_t const*>(&rhs.m_ptr));
+		AGL_ASSERT((m_ptr == nullptr && rhs.m_ptr == nullptr) || (m_ptr != nullptr && rhs.m_ptr != nullptr), "invalid operation");
+		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr, m_begin, m_end), "invalid iterator");
+		AGL_ASSERT(rhs.m_ptr == nullptr || impl::iterator_in_range(rhs.m_ptr, m_begin, m_end), "invalid iterator");
+		AGL_ASSERT(rhs.m_ptr == nullptr || *this >= rhs, "unsigned integer overflow");
+
+		return m_ptr - rhs.m_ptr;
 	}
 	vector_iterator operator-(difference_type offset) const noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr - offset, m_begin, m_end), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr - offset, m_begin, m_end), "iterator out of range");
 
 		return vector_iterator{ m_ptr - offset, m_begin, m_end };
 	}
 	vector_iterator& operator-=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr - offset, m_begin, m_end), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr - offset, m_begin, m_end), "iterator out of range");
 
 		m_ptr -= offset;
 		return *this;
 	}
 	reference operator*() const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "Cannot dereference outside-range iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "cannot dereference outside-range iterator");
 
 		return *m_ptr;
 	}
@@ -712,7 +712,7 @@ public:
 		, m_ptr{ ptr }
 
 	{
-		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "invalid iterator");
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
 	vector_reverse_iterator(vector_iterator<T, UTraits> const& other) noexcept
@@ -756,85 +756,86 @@ public:
 	}
 	vector_reverse_iterator& operator++() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid operation");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past rend");
 
 		m_ptr -= 1;
 		return *this;
 	}
 	vector_reverse_iterator operator++(int) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past rend");
 
 		auto result = vector_reverse_iterator{ *this };
 		return ++result;
 	}
 	vector_reverse_iterator operator+(difference_type offset) const noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid iterator");
-		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr - offset, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
+		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr - offset, m_begin - 1, m_end - 1), "iterator out of range");
 
 		return vector_reverse_iterator{ m_ptr - offset, m_begin, m_end };
 	}
 	vector_reverse_iterator& operator+=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid iterator");
-		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr - offset, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
+		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr - offset, m_begin - 1, m_end - 1), "iterator out of range");
 
 		m_ptr -= offset;
 		return *this;
 	}
 	vector_reverse_iterator& operator--() noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
-		AGL_ASSERT(m_ptr != m_end - 1 && impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(m_ptr != m_end - 1 && impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cennot decrement past rbegin");
 
 		m_ptr += 1;
 		return *this;
 	}
 	vector_reverse_iterator operator--(int) const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid operation");
-		AGL_ASSERT(m_ptr != m_end - 1 && impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(m_ptr != m_end - 1 && impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cennot decrement past rbegin");
 
 		auto result = vector_reverse_iterator{ *this };
 		return --result;
 	}
 	difference_type operator-(vector_reverse_iterator rhs) const noexcept
 	{
-		AGL_ASSERT((m_ptr == nullptr && rhs.m_ptr == nullptr) || (m_ptr != nullptr && rhs.m_ptr != nullptr), "Invalid iterator");
-		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT((m_ptr == nullptr && rhs.m_ptr == nullptr) || (m_ptr != nullptr && rhs.m_ptr != nullptr), "invalid iterator");
+		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "invalid iterator");
 		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(rhs.m_ptr, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(m_ptr == nullptr || *this >= rhs, "unsigned integer overflow");
 
-		return std::abs(*reinterpret_cast<std::int64_t const*>(&m_ptr) - *reinterpret_cast<std::int64_t const*>(&rhs.m_ptr));
+		return m_ptr - rhs.m_ptr;
 	}
 	vector_reverse_iterator operator-(difference_type offset) const noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
-		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr + offset, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
+		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr + offset, m_begin - 1, m_end - 1), "iterator out of range");
 
 		return vector_reverse_iterator{ m_ptr + offset, m_begin, m_end };
 	}
 	vector_reverse_iterator& operator-=(difference_type offset) noexcept
 	{
-		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "Invalid operation");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin - 1, m_end - 1), "Invalid iterator");
+		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin - 1, m_end - 1), "iterator out of range");
 
 		m_ptr += offset;
 		return *this;
 	}
 	reference operator*() const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "Cannot dereference outside-range iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cannot dereference outside-range iterator");
 
 		return *m_ptr;
 	}
 	pointer operator->() const noexcept
 	{
-		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
-		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "Cannot dereference outside-range iterator");
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cannot dereference outside-range iterator");
 
 		return m_ptr;
 	}

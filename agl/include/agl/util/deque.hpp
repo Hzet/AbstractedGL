@@ -25,21 +25,20 @@ public:
 	}
 	void push(difference_type index, difference_type size = 1) noexcept
 	{
-		constexpr auto const comp = [](difference_type index, space const& s) { return index < s.index; };
-		auto merge_it = std::upper_bound(m_spaces.crbegin(), m_spaces.crend(), index + size, comp);
-		auto forward_it = m_spaces.cbegin();
+		constexpr auto const comp = [](space const& s, difference_type index) { return s.index >= index; };
 
-		while (merge_it != m_spaces.crend() && index == merge_it->index)
+		// check if any space overlaps with this and merge it
+		// TODO: maybe it might be necessary to find just the first occurrence of the overlap
+
+		// check for overlap
+		auto it = std::lower_bound(m_spaces.begin(), m_spaces.end(), index + size, comp);
+		if (it != m_spaces.end())
 		{
-			size += merge_it->size;
-			forward_it = m_spaces.cbegin() + std::distance(merge_it, m_spaces.crend());
-			forward_it = m_spaces.erase(forward_it);
-			merge_it = m_spaces.crbegin() + std::distance(m_spaces.cbegin(), forward_it);
-			merge_it = std::upper_bound(merge_it, m_spaces.crend(), index + size, comp);
+			it->size += size;
+			it->index -= size;
 		}
-		merge_it = std::upper_bound(m_spaces.crbegin(), m_spaces.crend(), index, comp);
-		forward_it = m_spaces.cbegin() + std::distance(merge_it, m_spaces.crend());
-		m_spaces.insert(forward_it, space{ static_cast<std::uint32_t>(index), static_cast<std::uint32_t>(size) });
+		else
+			m_spaces.insert(it, space{ static_cast<std::uint32_t>(index), static_cast<std::uint32_t>(size) });
 	}
 	difference_type pop() noexcept
 	{
@@ -184,11 +183,11 @@ public:
 	{
 		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");
 
-		--m_size;
 		auto const index = pos - cbegin();
 		m_allocator.destruct(m_memory + index);
 		m_allocator.construct(m_memory + index);
 		m_free_spaces.push(index);
+		--m_size;
 	}
 	void erase(const_iterator first, const_iterator last) noexcept
 	{
