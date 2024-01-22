@@ -145,4 +145,4 @@ if(AGL_BUILD_TESTS)
 
 endif()
 
-#add_compile_options("-Werror")
+add_compile_options("-g3")

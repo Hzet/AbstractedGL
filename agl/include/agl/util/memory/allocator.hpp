@@ -45,7 +45,10 @@ public:
 	template <typename U>
 	allocator(allocator<U> const&) noexcept {}
 	template <typename U>
-	allocator& operator=(allocator<U> const&) noexcept {}
+	allocator& operator=(allocator<U> const&) noexcept 
+	{
+		return *this;
+	}
 	~allocator() noexcept {}
 
 	[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type)) noexcept

@@ -437,12 +437,12 @@ private:
 	}
 	void move_elements_right(iterator where, iterator from) noexcept
 	{
-		AGL_ASSERT(where >= from, "Invalid data");
+		AGL_ASSERT(where > from, "Invalid data");
 		AGL_ASSERT(begin() <= where && where < real_end(), "Index out of bounds");
 		AGL_ASSERT(begin() <= from && from <= real_end(), "Index out of bounds");
 
 		auto const size = where - from;
-		auto w = rbegin() + size; // before begin
+		auto w = reverse_iterator{ rbegin().m_ptr + size, m_memory, m_memory + capacity() }; // make it checked where end = capacity
 		auto f = rbegin();
 		auto const end = make_iterator<reverse_iterator>(&(*(where--)));
 
@@ -715,7 +715,7 @@ public:
 		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "invalid iterator");
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
-	vector_reverse_iterator(vector_iterator<T, UTraits> const& other) noexcept
+	explicit vector_reverse_iterator(vector_iterator<T, UTraits> const& other) noexcept
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
@@ -814,7 +814,7 @@ public:
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
 		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr + offset, m_begin - 1, m_end - 1), "iterator out of range");
-
+		
 		return vector_reverse_iterator{ m_ptr + offset, m_begin, m_end };
 	}
 	vector_reverse_iterator& operator-=(difference_type offset) noexcept

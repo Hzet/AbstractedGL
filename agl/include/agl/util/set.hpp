@@ -131,18 +131,20 @@ public:
 	template <typename U>
 	iterator find(U const& value) noexcept
 	{
-		auto const found = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
+		auto const found = std::lower_bound(m_data.begin(), m_data.end(), value, key_comp());
 
-		if (found == m_data.cend() || !equal(*found, value))
+		if (!equal(*found, value))
 			return end();
+		return found;
 	}
 	template <typename U>
 	const_iterator find(U const& value) const noexcept
 	{
 		auto const found = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 
-		if (found == m_data.cend() || !equal(*found, value))
+		if (!equal(*found, value))
 			return cend();
+		return found;
 	}
 	comp_type key_comp() const noexcept
 	{

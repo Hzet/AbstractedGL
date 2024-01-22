@@ -34,6 +34,9 @@ public:
 	template <typename U, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
 	unique_ptr& operator=(unique_ptr<U>&& other) noexcept
 	{
+		if (this == &other)
+			return *this;
+
 		m_allocator = other.m_allocator;
 		m_data = other.m_data;
 		other.m_data = nullptr;
