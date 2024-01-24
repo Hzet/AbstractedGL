@@ -7,6 +7,8 @@
 #include "agl/util/random.hpp"
 #include "agl/util/dictionary.hpp"
 
+auto const size = 100000;
+
 TEST(vector, vector)
 {
 	auto vec = agl::vector<int>{};
@@ -16,10 +18,10 @@ TEST(vector, vector)
 		FAIL() << "Invalid vector size [ 0 ]";
 
 	// assign
-	vec.assign(10000, 5);
+	vec.assign(size, 5);
 
 	// size
-	if(vec.size() != 10000)
+	if(vec.size() != size)
 		FAIL() << "Invalid vector size [ 1 ]";
 
 	// at 
@@ -49,7 +51,7 @@ TEST(vector, vector)
 		++count;
 	}
 
-	if(count != 10000)
+	if(count != size)
 		FAIL() << "Invalid vector iteration count [ 0 ]";
 
 	count = 0;
@@ -60,13 +62,13 @@ TEST(vector, vector)
 		++count;
 	}
 
-	if (count != 10000)
+	if (count != size)
 		FAIL() << "Invalid vector iteration count [ 1 ]";
 
 	// reverse iterators
 	vec.clear();
-	vec.reserve(10000);
-	for (auto i = 0; i < 10000; ++i)
+	vec.reserve(size);
+	for (auto i = 0; i < size; ++i)
 		vec.push_back(i);
 
 	count = vec.size();
@@ -97,14 +99,14 @@ TEST(vector, vector)
 		FAIL() << "Invalid vector size [ 2 ]";
 
 	// reserve 
-	vec.reserve(10000);
-	if (vec.capacity() < 10000)
+	vec.reserve(size);
+	if (vec.capacity() < size)
 		FAIL() << "Invalid vector capacity [ 0 ]";
 	if(!vec.empty())
 		FAIL() << "Invalid vector size [ 3 ]";
 
 	// push_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		vec.push_back(i);
 
 	for (auto i = 0; i < vec.size(); ++i)
@@ -112,21 +114,21 @@ TEST(vector, vector)
 			FAIL() << "Invalid vector value [ 6 ]";
 
 	// pop_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 	{
-		if(vec.size() != 10000 - i)
+		if(vec.size() != size - i)
 			FAIL() << "Invalid vector size [ 4 ]";
 
-		auto expected = 10000 - i - 1;
+		auto expected = size - i - 1;
 		if(vec.back() != expected)
 			FAIL() << "Invalid vector value [ 7 ]";
 
 		vec.pop_back();
 	}
 
-	vec.reserve(10000);
-	std_vec.reserve(10000);
-	for (auto i = 0; i < 10000; ++i)
+	vec.reserve(size);
+	std_vec.reserve(size);
+	for (auto i = 0; i < size; ++i)
 	{
 		std_vec.push_back(i);
 		vec.push_back(i);
@@ -157,10 +159,10 @@ TEST(vector, vector_ptr)
 		FAIL() << "Invalid vector size [ 0 ]";
 
 	// assign
-	vec.assign(10000, nullptr);
+	vec.assign(size, nullptr);
 
 	// size
-	if (vec.size() != 10000)
+	if (vec.size() != size)
 		FAIL() << "Invalid vector size [ 1 ]";
 
 	// at 
@@ -190,7 +192,7 @@ TEST(vector, vector_ptr)
 		++count;
 	}
 
-	if (count != 10000)
+	if (count != size)
 		FAIL() << "Invalid vector iteration count [ 0 ]";
 
 	count = 0;
@@ -201,13 +203,13 @@ TEST(vector, vector_ptr)
 		++count;
 	}
 
-	if (count != 10000)
+	if (count != size)
 		FAIL() << "Invalid vector iteration count [ 1 ]";
 
 	// reverse iterators
 	vec.clear();
-	vec.reserve(10000);
-	for (auto i = 0; i < 10000; ++i)
+	vec.reserve(size);
+	for (auto i = 0; i < size; ++i)
 		vec.push_back(nullptr);
 
 	count = vec.size();
@@ -238,14 +240,14 @@ TEST(vector, vector_ptr)
 		FAIL() << "Invalid vector size [ 2 ]";
 
 	// reserve 
-	vec.reserve(10000);
-	if (vec.capacity() < 10000)
+	vec.reserve(size);
+	if (vec.capacity() < size)
 		FAIL() << "Invalid vector capacity [ 0 ]";
 	if (!vec.empty())
 		FAIL() << "Invalid vector size [ 3 ]";
 
 	// push_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		vec.push_back(nullptr);
 
 	for (auto i = 0; i < vec.size(); ++i)
@@ -253,9 +255,9 @@ TEST(vector, vector_ptr)
 			FAIL() << "Invalid vector value [ 6 ]";
 
 	// pop_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 	{
-		if (vec.size() != 10000 - i)
+		if (vec.size() != size - i)
 			FAIL() << "Invalid vector size [ 4 ]";
 
 		if (vec.back() != nullptr)
@@ -274,11 +276,11 @@ TEST(deque, deque)
 		FAIL() << "Invalid deque size [ 0 ]";
 
 	// push_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		deq.push_back(i);
 
 	// size
-	if (deq.size() != 10000)
+	if (deq.size() != size)
 		FAIL() << "Invalid deque size [ 1 ]";
 
 	// at 
@@ -308,7 +310,7 @@ TEST(deque, deque)
 		++count;
 	}
 
-	if (count != 10000)
+	if (count != size)
 		FAIL() << "Invalid deque iteration count [ 0 ]";
 
 	count = 0;
@@ -319,12 +321,12 @@ TEST(deque, deque)
 		++count;
 	}
 
-	if (count != 10000)
+	if (count != size)
 		FAIL() << "Invalid deque iteration count [ 1 ]";
 
 	// reverse iterators
 	deq.clear();
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		deq.push_back(i);
 
 	count = deq.size();
@@ -355,19 +357,19 @@ TEST(deque, deque)
 		FAIL() << "Invalid deque size [ 2 ]";
 
 	// push_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		deq.push_back(i);
 
 	for (auto i = 0; i < deq.size(); ++i)
 		if (deq[i] != i)
 			FAIL() << "Invalid deque value [ 6 ]";
 
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 	{
-		if (deq.size() != 10000 - i)
+		if (deq.size() != size - i)
 			FAIL() << "Invalid deque size [ 3 ]";
 
-		auto expected = 10000 - i - 1;
+		auto expected = size - i - 1;
 		if (deq.back() != expected)
 			FAIL() << "Invalid deque value [ 7 ]" << "deq[" << i << "]: " << deq.back() << " expected: " << expected;
 
@@ -386,11 +388,11 @@ TEST(deque, deque_ptr)
 		FAIL() << "Invalid deque size [ 0 ]";
 
 	// push_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		deq.push_back(nullptr);
 
 	// size
-	if (deq.size() != 10000)
+	if (deq.size() != size)
 		FAIL() << "Invalid deque size [ 1 ]";
 
 	// at 
@@ -421,7 +423,7 @@ TEST(deque, deque_ptr)
 		++count;
 	}
 
-	if (count != 10000)
+	if (count != size)
 		FAIL() << "Invalid deque iteration count [ 0 ]";
 
 	count = 0;
@@ -432,12 +434,12 @@ TEST(deque, deque_ptr)
 		++count;
 	}
 
-	if (count != 10000)
+	if (count != size)
 		FAIL() << "Invalid deque iteration count [ 1 ]";
 
 	// reverse iterators
 	deq.clear();
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		deq.push_back(&address);
 
 	count = deq.size();
@@ -468,16 +470,16 @@ TEST(deque, deque_ptr)
 		FAIL() << "Invalid deque size [ 2 ]";
 
 	// push_back
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		deq.push_back(nullptr);
 
 	for (auto i = 0; i < deq.size(); ++i)
 		if (deq[i] != nullptr)
 			FAIL() << "Invalid deque value [ 6 ]";
 
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 	{
-		if (deq.size() != 10000 - i)
+		if (deq.size() != size - i)
 			FAIL() << "Invalid deque size [ 3 ]";
 
 		if (deq.back() != nullptr)
@@ -489,14 +491,15 @@ TEST(deque, deque_ptr)
 
 TEST(dictionary, dictionary)
 {
+	auto const size = 100000;
 	auto dict = agl::dictionary<int, int>{};
 
 	// emplace 
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		dict.emplace(i, i);
 
 	// size
-	if (dict.size() != 10000)
+	if (dict.size() != size)
 		FAIL() << "Invalid dictionary size [ 0 ]";
 
 	// []
@@ -512,7 +515,7 @@ TEST(dictionary, dictionary)
 		FAIL() << "Invalid dictionary size [ 1 ]";
 
 	// [] emplace
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		dict[i] = i;
 
 	for (auto i = 0; i < dict.size(); ++i)
@@ -520,15 +523,17 @@ TEST(dictionary, dictionary)
 			FAIL() << "Invalid dictionary value [ 1 ]";
 
 	// erase
-	bool arr[10000];
-	for (auto i = 0; i < 10000; ++i)
+	auto arr = agl::vector<bool>{};
+	arr.resize(size);
+
+	for (auto i = 0; i < size; ++i)
 		arr[i] = true;
 
 	for (auto it = dict.cbegin() + 1; it != dict.cend(); ++it)
 		if ((it - 1)->first > it->first)
 			FAIL() << "dictionary is unsorted [ 0 ]";
 
-	auto index = agl::simple_rand(0, 10000);
+	auto index = agl::simple_rand(0, size);
 	while (!dict.size() > 100)
 	{
 		while (!arr[index])
@@ -542,7 +547,7 @@ TEST(dictionary, dictionary)
 			FAIL() << "Invalid dictionary erase algorithm [ 0 ]";
 	}
 
-	while (dict.size() < 10000)
+	while (dict.size() < size)
 	{
 		auto rnd = agl::simple_rand(std::numeric_limits<std::int64_t>::lowest(), std::numeric_limits<std::int64_t>::max());
 		
@@ -567,14 +572,15 @@ TEST(set, set)
 	
 	struct foo_comp { bool operator()(foo l, foo r) const noexcept { return l.x < r.x; } };
 
+	auto const size = 100000;
 	auto set = agl::set<foo, foo_comp>{};
 
 	// emplace 
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		set.emplace({ i });
 
 	// size
-	if (set.size() != 10000)
+	if (set.size() != size)
 		FAIL() << "Invalid set size [ 0 ]";
 
 	// at
@@ -590,7 +596,7 @@ TEST(set, set)
 		FAIL() << "Invalid dictionary size [ 1 ]";
 
 	//  emplace
-	for (auto i = 0; i < 10000; ++i)
+	for (auto i = 0; i < size; ++i)
 		set.emplace({ i });
 
 	for (auto i = 0; i < set.size(); ++i)
@@ -603,8 +609,9 @@ TEST(set, set)
 			FAIL() << "set is unsorted [ 0 ]";
 
 	// erase
-	bool arr[10000];
-	for (auto i = 0; i < 10000; ++i)
+	auto arr = agl::vector<bool>{};
+	arr.resize(size);
+	for (auto i = 0; i < size; ++i)
 		arr[i] = true;
 
 	/*
