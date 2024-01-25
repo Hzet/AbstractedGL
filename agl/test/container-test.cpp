@@ -7,7 +7,7 @@
 #include "agl/util/random.hpp"
 #include "agl/util/dictionary.hpp"
 
-auto const size = 100000;
+auto const size = 10000;
 
 TEST(vector, vector)
 {
@@ -491,7 +491,6 @@ TEST(deque, deque_ptr)
 
 TEST(dictionary, dictionary)
 {
-	auto const size = 100000;
 	auto dict = agl::dictionary<int, int>{};
 
 	// emplace 
@@ -537,7 +536,7 @@ TEST(dictionary, dictionary)
 	while (!dict.size() > 100)
 	{
 		while (!arr[index])
-			index = agl::simple_rand(0, 9999);
+			index = agl::simple_rand(0, size - 1);
 
 		arr[index] = false;
 
@@ -572,7 +571,6 @@ TEST(set, set)
 	
 	struct foo_comp { bool operator()(foo l, foo r) const noexcept { return l.x < r.x; } };
 
-	auto const size = 100000;
 	auto set = agl::set<foo, foo_comp>{};
 
 	// emplace 

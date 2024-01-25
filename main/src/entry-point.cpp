@@ -1,3 +1,4 @@
+#include <iostream>
 #include "agl/core/application.hpp"
 
 namespace agl
@@ -14,5 +15,16 @@ int main(int argc, char **argv)
 {
 	auto app = agl::create_application();
 
-	app->run();
+	try
+	{
+		app->run();
+	}
+	catch (std::exception& e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
+	catch (...)
+	{
+		std::cerr << "Unknown exception\n";
+	}
 }

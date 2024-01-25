@@ -34,8 +34,8 @@ public:
 		auto it = std::lower_bound(m_spaces.begin(), m_spaces.end(), index + size, comp);
 		if (it != m_spaces.end())
 		{
-			it->size += size;
-			it->index -= size;
+			it->size += static_cast<std::uint32_t>(size);
+			it->index -= static_cast<std::uint32_t>(size);
 		}
 		else
 			m_spaces.insert(it, space{ static_cast<std::uint32_t>(index), static_cast<std::uint32_t>(size) });

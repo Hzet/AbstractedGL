@@ -8,7 +8,7 @@ template <typename T, typename TAlloc = mem::allocator<T>>
 class unique_ptr final
 {
 public:
-	using allocator_type = typename TAlloc::templace rebind<T>;
+	using allocator_type = typename TAlloc::template rebind<T>;
 	using value_type = typename TAlloc::value_type;
 	using pointer = typename TAlloc::pointer;
 	using const_pointer = typename TAlloc::const_pointer;
@@ -135,10 +135,10 @@ private:
 template <typename T, typename U>
 unique_ptr<T> make_unique(U&& value) noexcept
 {
-	auto alloc = unique_ptr<T>::allocator_type{};
+	auto alloc = unique_ptr<U>::allocator_type{};
 	auto* ptr = alloc.allocate();
 	alloc.construct(ptr, std::move(value));
-	return unique_ptr<T>{ allocator, ptr };
+	return unique_ptr<T>{ alloc, ptr };
 }
 
 namespace mem
@@ -147,7 +147,7 @@ template <typename T>
 using unique_ptr = ::agl::unique_ptr<T, pool::allocator<T>>;
 
 template <typename T, typename U>
-unique_ptr<T> make_unique(unique_ptr<T>::allocator_type const& allocator, U&& value) noexcept
+unique_ptr<T> make_unique(pool::allocator<T> const& allocator, U&& value) noexcept
 {
 	auto* ptr = allocator.allocate();
 	allocator.construct(ptr, std::move(value));
