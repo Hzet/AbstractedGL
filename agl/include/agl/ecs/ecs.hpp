@@ -1,9 +1,10 @@
 #pragma once
 #include <any>
+#include "agl/core/application.hpp"
 #include "agl/ecs/entity.hpp"
 #include "agl/ecs/system.hpp"
-#include "agl/util/memory/unique-ptr.hpp"
 #include "agl/util/deque.hpp"
+#include "agl/util/memory/unique-ptr.hpp"
 
 namespace agl
 {
@@ -15,13 +16,14 @@ private:
 	using allocator_type = mem::pool::allocator<organizer>;
 	using component_allocator = typename allocator_type::template rebind<std::pair<type_id_t, std::any>>;
 	using system_allocator = typename allocator_type::template rebind<system>;
+	using system_vector_allocator = typename allocator_type::template rebind<mem::unique_ptr<system>>;
 	using entity_allocator = typename allocator_type::template rebind<impl::entity_data>;
 
 public:
 	organizer(mem::pool::allocator<organizer> allocator) noexcept
 		: m_components{ component_allocator{ allocator } }
 		, m_entities{ 1024, entity_allocator{ allocator } }
-		, m_systems{ system_allocator{ allocator } }
+		, m_systems{ system_vector_allocator{ allocator } }
 	{
 	}
 	organizer(organizer&& other) noexcept
@@ -77,22 +79,35 @@ public:
 
 		return result;
 	}
-	void add_system(std::uint64_t stage, std::string const& name, system::function fun) noexcept
+	template <typename T, typename TEnable=std::enable_if_t<std::is_base_of_v<system, T>>>
+	void add_system(application* app, T&& sys) noexcept
 	{
-		constexpr auto const comparator = [](system const& s, std::uint64_t stage) { return s.stage < stage; };
-		auto const it = std::lower_bound(m_systems.cbegin(), m_systems.cend(), stage, comparator);
-		m_systems.insert(it, system{ fun, name, stage });
+		auto const comp = [](system const& sys, std::uint64_t stage) { return sys.stage < stage; };
+		auto it = std::lower_bound(m_systems.begin(), m_systems.end(), sys.stage(), comp);
+		it = m_systems.insert(it, std::move(mem::make_unique<system>(system_allocator{ m_systems.get_allocator() }, T{})));
+		(*it)->on_attach(app);
 	}
-	void update(float dt) noexcept
+	void update(application* app) noexcept
 	{
 		for (auto& sys : m_systems)
-			sys.fun(this, dt);
+			sys->on_update(app);
+	}
+	template <typename T>
+	void remove_system(application* app) noexcept
+	{
+		auto const dummy = T{};
+		for(auto it = 0; it != m_systems.end(); ++it)
+			if (it->name() == dummy.name())
+			{
+				(*it)->on_detach(app);
+				m_systems.erase(it);
+ 			}
 	}
 
 private:
 	mem::dictionary<type_id_t, std::any> m_components;
 	mem::deque<impl::entity_data> m_entities;
-	mem::vector<system> m_systems;
+	mem::vector<mem::unique_ptr<system>> m_systems;
 };
 }
 }
