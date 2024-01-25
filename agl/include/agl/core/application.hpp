@@ -1,6 +1,6 @@
 #pragma once
 #include <memory>
-#include "agl/core/application-resource.hpp"
+#include "agl/core/resources.hpp"
 
 int main(int, char**);
 
@@ -29,12 +29,14 @@ public:
 	void close();
 	virtual void init();
 
+	resources& get_resources() noexcept;
+
 private:
 	friend int ::main(int, char**);
 
 private:
 	void run();
-
+	
 private:
 	properties m_properties;
 	resources m_resources;
