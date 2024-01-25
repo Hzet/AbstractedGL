@@ -11,6 +11,7 @@ namespace agl
 namespace ecs
 {
 class organizer
+	: public application_resource
 {
 private:
 	using allocator_type = mem::pool::allocator<organizer>;
@@ -21,20 +22,21 @@ private:
 
 public:
 	organizer(mem::pool::allocator<organizer> allocator) noexcept
-		: m_components{ component_allocator{ allocator } }
+		: application_resource(type_id<organizer>::get_id())
+		, m_components{ component_allocator{ allocator } }
 		, m_entities{ 1024, entity_allocator{ allocator } }
 		, m_systems{ system_vector_allocator{ allocator } }
 	{
 	}
 	organizer(organizer&& other) noexcept
-		: m_components{ std::move(m_components) }
+		: m_components{ std::move(other.m_components) }
 		, m_entities{ std::move(other.m_entities) }
 		, m_systems{ std::move(other.m_systems) }
 	{
 	}
 	organizer& operator=(organizer&& other) noexcept
 	{
-		m_components = std::move(m_components);
+		m_components = std::move(other.m_components);
 		m_entities = std::move(other.m_entities);
 		m_systems = std::move(other.m_systems);
 
@@ -87,11 +89,13 @@ public:
 		it = m_systems.insert(it, std::move(mem::make_unique<system>(system_allocator{ m_systems.get_allocator() }, T{})));
 		(*it)->on_attach(app);
 	}
-	void update(application* app) noexcept
+	virtual void on_update(application* app) noexcept override
 	{
 		for (auto& sys : m_systems)
 			sys->on_update(app);
 	}
+	virtual void on_attach(application*) noexcept override {};
+	virtual void on_detach(application*) noexcept override {};
 	template <typename T>
 	void remove_system(application* app) noexcept
 	{

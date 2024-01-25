@@ -1,7 +1,8 @@
 #pragma once
 #include <cstddef>
-#include "agl/util/dictionary.hpp"
+#include "agl/core/application-resource.hpp"
 #include "agl/util/set.hpp"
+#include "agl/util/dictionary.hpp"
 
 namespace agl
 {
@@ -99,6 +100,7 @@ private:
 }
 
 class pool
+	: public application_resource
 {
 public:
 	template <typename T>
@@ -180,14 +182,33 @@ public:
 
 public:
 	pool() noexcept
-		: m_buffer{ nullptr }
+		: application_resource{ type_id<pool>::get_id() }
+		, m_buffer{ nullptr }
 		, m_occupancy{ 0 }
 		, m_size{ 0 }
 	{
 	}
-	pool(pool&&) noexcept = default;
+	pool(pool&& other) noexcept
+		: m_buffer{ other.m_buffer }
+		, m_free_spaces{ std::move(other.m_free_spaces) }
+		, m_occupancy{ other.m_occupancy }
+		, m_size{ other.m_size }
+	{
+		other.m_buffer = nullptr;
+	}
 	pool(pool const&) noexcept = delete;
-	pool& operator=(pool&&) noexcept = default;
+	pool& operator=(pool&& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+
+		m_buffer = other.m_buffer;
+		other.m_buffer = nullptr;
+		m_free_spaces = std::move(other.m_free_spaces);
+		m_occupancy = other.m_occupancy;
+		m_size = other.m_size;
+		return *this;
+	}
 	pool& operator=(pool const&) noexcept = delete;
 	~pool() noexcept
 	{
@@ -222,9 +243,13 @@ public:
 	}
 	void destroy() noexcept
 	{
+		if (m_buffer == nullptr)
+			return;
+
 		AGL_ASSERT(empty(), "Some object were not deallocated");
 
 		std::free(m_buffer);
+		m_buffer = nullptr;
 		m_free_spaces = impl::free_space_tracker{};
 		m_occupancy = 0;
 		m_size = 0;
@@ -263,6 +288,9 @@ public:
 	{
 		return m_buffer <= ptr && ptr < m_buffer + size();
 	}
+	virtual void on_attach(application*) noexcept override;
+	virtual void on_update(application*) noexcept override;
+	virtual void on_detach(application*) noexcept override;
 
 private:
 	std::byte* m_buffer;

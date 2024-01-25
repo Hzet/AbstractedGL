@@ -25,11 +25,23 @@ namespace ecs
 			, m_stage{ stage }
 		{
 		}
-
+		system(system&& other) noexcept
+			: m_name{ other.m_name }
+			, m_stage{ other.m_stage }
+		{
+		}
+		system& operator=(system&& other) noexcept
+		{
+			m_name = m_name;
+			m_stage = m_stage;
+			return *this;
+		}
+		system(system const&) noexcept = delete;
+		system& operator=(system const&) noexcept = delete;
+		virtual ~system() noexcept = default;
 		virtual void on_attach(application*) noexcept = 0;
 		virtual void on_update(application*) noexcept = 0;
 		virtual void on_detach(application*) noexcept = 0;
-
 		std::string const& name() const noexcept
 		{
 			return m_name;
