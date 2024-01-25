@@ -13,11 +13,14 @@ set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAGL_DEBUG")
 set(BUILD_SHARED_LIBS OFF)
 
 option(AGL_BUILD_TESTS OFF)
-set(AGL_BUILD_TESTS ON CACHE BOOL "" FORCE) # for dev reasons TODO: hash out on realease build
+#set(AGL_BUILD_TESTS ON CACHE BOOL "" FORCE) # for dev reasons TODO: hash out on realease build
 
 # AGL
 # ---
 project(AGL)
+
+# DEPENDENCIES
+# ------------
 
 include(FetchContent)
 
@@ -28,8 +31,8 @@ FetchContent_Declare(
 	GIT_REPOSITORY https://github.com/g-truc/glm.git
 	GIT_TAG		   0.9.9.2
 )
-
 FetchContent_GetProperties(glm)
+
 if(NOT glm_POPULATED)
 	FetchContent_Populate(glm)
 	set(GLM_TEST_ENABLE OFF CACHE BOOL "" FORCE)
@@ -38,12 +41,34 @@ endif()
 
 FetchContent_MakeAvailable(glm)
 
+# OpenGL
+# ------
+find_package(OpenGL 4.2 REQUIRED)
+
+# GLFW
+# -----
+FetchContent_Declare(
+  glfw
+  GIT_REPOSITORY https://github.com/glfw/glfw.git
+  GIT_TAG        3.2.1
+)
+FetchContent_GetProperties(glfw)
+
+if(NOT glfw_POPULATED)
+	FetchContent_Populate(glfw)
+	set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+	set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+	set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+	add_subdirectory(${glfw_SOURCE_DIR} ${glfw_BINARY_DIR})
+endif()
+
 # AGL_LIB
 # -------
 file (
 	GLOB_RECURSE 
 	AGL_LIB_SOURCES #
 	CONFIGURE_DEPENDS 
+	"agl/external/*.c"
 	"agl/src/*.cpp"
 )
 
@@ -51,6 +76,8 @@ file (
 	GLOB_RECURSE 
 	AGL_LIB_HEADERS #
 	CONFIGURE_DEPENDS 
+	"agl/external/*.h"
+	"agl/external/*.hpp"
 	"agl/include/*.hpp" 
 	"agl/include/*.inl"
 )
@@ -63,18 +90,25 @@ add_library(
 
 add_dependencies(
 	AGL_LIB
+	glfw
 	glm
+	OpenGL::GL
 )
 
 target_include_directories(
 	AGL_LIB
+	PUBLIC "agl/external/"
 	PUBLIC "agl/include/"
+    PUBLIC "${freetype_SOURCE_DIR}/include/"
+    PUBLIC "${glfw_SOURCE_DIR}/include/"
 	PUBLIC ${glm_SOURCE_DIR}
 )
 
 target_link_libraries(
 	AGL_LIB
+	PUBLIC glfw
 	PUBLIC glm
+	PUBLIC OpenGL::GL
 )	
 
 # AGL MAIN
@@ -145,4 +179,3 @@ if(AGL_BUILD_TESTS)
 
 endif()
 
-add_compile_options("-g3")
