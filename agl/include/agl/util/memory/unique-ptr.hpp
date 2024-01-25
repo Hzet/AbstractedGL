@@ -1,23 +1,22 @@
 #pragma once
+#include "agl/util/memory/allocator.hpp"
 #include "agl/util/memory/pool.hpp"
 
 namespace agl
 {
-namespace mem
-{
-template <typename T>
+template <typename T, typename TAlloc = mem::allocator<T>>
 class unique_ptr final
 {
 public:
-	//using value_type = typename TAlloc::value_type;
-	//using pointer = typename TAlloc::pointer;
-	//using const_pointer = typename TAlloc::const_pointer;
-	//using reference = typename TAlloc::reference;
-	//using const_reference = typename TAlloc::const_reference;
-	//using size_type = typename TAlloc::size_type;
-	//using difference_type = typename TAlloc::difference_type;
+	using allocator_type = typename TAlloc::templace rebind<T>;
+	using value_type = typename TAlloc::value_type;
+	using pointer = typename TAlloc::pointer;
+	using const_pointer = typename TAlloc::const_pointer;
+	using reference = typename TAlloc::reference;
+	using const_reference = typename TAlloc::const_reference;
+	using size_type = typename TAlloc::size_type;
 
-	unique_ptr(pool::allocator<T> allocator = {}, T* ptr = nullptr) noexcept
+	unique_ptr(allocator_type allocator = {}, pointer ptr = nullptr) noexcept
 		: m_allocator{ allocator }
 		, m_data{ ptr }
 	{
@@ -88,12 +87,12 @@ public:
 		std::swap(m_data, other.m_data);
 	}
 
-	T* const get() noexcept
+	pointer get() noexcept
 	{
 		return m_data;
 	}
 
-	T const* const get() const noexcept
+	const_pointer get() const noexcept
 	{
 		return m_data;
 	}
@@ -103,22 +102,22 @@ public:
 		return m_data != nullptr;
 	}
 
-	T& operator*() noexcept
+	reference operator*() noexcept
 	{
 		return *m_data;
 	}
 
-	T const& operator*() const noexcept
+	const_reference operator*() const noexcept
 	{
 		return *m_data;
 	}
 
-	T* const operator->() noexcept
+	pointer operator->() noexcept
 	{
 		return m_data;
 	}
 
-	T const* const operator->() const noexcept
+	const_pointer operator->() const noexcept
 	{
 		return m_data;
 	}
@@ -129,16 +128,29 @@ public:
 	}
 
 private:
-	pool::allocator<T> m_allocator;
-	T* m_data;
+	allocator_type m_allocator;
+	pointer m_data;
 };
 
 template <typename T, typename U>
-unique_ptr<T> make_unique(pool::allocator<T> const& allocator, U&& value) noexcept
+unique_ptr<T> make_unique(U&& value) noexcept
 {
-	auto alloc = pool::allocator<U>{ allocator };
+	auto alloc = unique_ptr<T>::allocator_type{};
 	auto* ptr = alloc.allocate();
 	alloc.construct(ptr, std::move(value));
+	return unique_ptr<T>{ allocator, ptr };
+}
+
+namespace mem
+{
+template <typename T>
+using unique_ptr = ::agl::unique_ptr<T, pool::allocator<T>>;
+
+template <typename T, typename U>
+unique_ptr<T> make_unique(unique_ptr<T>::allocator_type const& allocator, U&& value) noexcept
+{
+	auto* ptr = allocator.allocate();
+	allocator.construct(ptr, std::move(value));
 	return unique_ptr<T>{ allocator, ptr };
 }
 }
