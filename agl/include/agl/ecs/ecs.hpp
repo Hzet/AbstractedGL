@@ -1,9 +1,9 @@
 #pragma once
 #include <any>
 #include "agl/core/application.hpp"
+#include "agl/ecs/components.hpp"
 #include "agl/ecs/entity.hpp"
 #include "agl/ecs/system.hpp"
-#include "agl/util/deque.hpp"
 #include "agl/util/memory/unique-ptr.hpp"
 
 namespace agl
@@ -14,18 +14,19 @@ class organizer
 	: public application_resource
 {
 private:
+	using components = mem::dictionary<type_id_t, mem::unique_ptr<component_storage_base>>;
+	using entities = mem::deque<impl::entity_data>;
+	using systems = mem::vector<mem::unique_ptr<system>>;
 	using allocator_type = mem::pool::allocator<organizer>;
-	using component_allocator = typename allocator_type::template rebind<std::pair<type_id_t, std::any>>;
-	using system_allocator = typename allocator_type::template rebind<system>;
-	using system_vector_allocator = typename allocator_type::template rebind<mem::unique_ptr<system>>;
-	using entity_allocator = typename allocator_type::template rebind<impl::entity_data>;
+	template <typename T>
+	using is_system = std::enable_if_t<std::is_base_of_v<system, T>>;
 
 public:
 	organizer(mem::pool::allocator<organizer> allocator) noexcept
 		: application_resource(type_id<organizer>::get_id())
-		, m_components{ component_allocator{ allocator } }
-		, m_entities{ 1024, entity_allocator{ allocator } }
-		, m_systems{ system_vector_allocator{ allocator } }
+		, m_components{ components::allocator_type{ allocator } }
+		, m_entities{ 1024, entities::allocator_type{ allocator } }
+		, m_systems{ systems::allocator_type{ allocator } }
 	{
 	}
 	organizer(organizer&& other) noexcept
@@ -54,20 +55,22 @@ public:
 	template <typename T, typename... TArgs>
 	void push_component(entity& ent, TArgs&&... args) noexcept
 	{
-		auto& container = m_components[type_id<T>::get_id()];
+		auto& storage = m_components[type_id<T>::get_id()];
 
-		if (!container.has_value())
+		if (storage == nullptr)
 		{
-			auto deq = mem::deque<T>{ sizeof(T) * 500, mem::pool::allocator<T>{ m_components.get_allocator() }};
-			container = deq;
+			storage = mem::make_unique<component_storage_base>(m_components.get_allocator(), component_storage<T>{});
+			storage->storage = mem::deque<T>{ sizeof(T) * 500, mem::pool::allocator<T>{ m_components.get_allocator() }};
 		}
-		auto& deq = std::any_cast<mem::deque<T>>(container);
+		auto& deq = *reinterpret_cast<component_storage<T>>(container.get());
 		deq.push_back(T{ std::forward<TArgs>(args)... });
 		ent.m_data->push_component<T>(&deq.back());
 	}
 	template <typename T>
 	void pop_component(entity& ent, T* ptr) noexcept
 	{
+		AGL_ASSERT(m_components[type_id<T>::get_id()] != nullptr, "Invalid component type");
+
 		m_components[type_id<T>::get_id()]->pop(ptr);
 		ent.m_data->pop_component<T>(ptr);
 	}
@@ -81,7 +84,7 @@ public:
 
 		return result;
 	}
-	template <typename T, typename TEnable=std::enable_if_t<std::is_base_of_v<system, T>>>
+	template <typename T, typename = is_system<T>>
 	void add_system(application* app, T&& sys) noexcept
 	{
 		auto const comp = [](system const& sys, std::uint64_t stage) { return sys.stage < stage; };
@@ -109,9 +112,9 @@ public:
 	}
 
 private:
-	mem::dictionary<type_id_t, std::any> m_components;
-	mem::deque<impl::entity_data> m_entities;
-	mem::vector<mem::unique_ptr<system>> m_systems;
+	components m_components;
+	entities m_entities;
+	systems m_systems;
 };
 }
 }

@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include <string>
-#include "agl/util/memory/containers.hpp"
 
 namespace agl
 {

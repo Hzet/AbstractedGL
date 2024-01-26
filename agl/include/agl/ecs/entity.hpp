@@ -1,6 +1,7 @@
 #pragma once
-#include "agl/util/memory/containers.hpp"
 #include "agl/util/typeid.hpp"
+#include "agl/util/memory/dictionary.hpp"
+#include "agl/util/memory/vector.hpp"
 
 namespace agl
 {

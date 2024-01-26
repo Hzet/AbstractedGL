@@ -1,6 +1,7 @@
 #include "agl/core/application.hpp"
 #include "agl/ecs/ecs.hpp"
 #include "agl/util/memory/pool.hpp"
+#include "agl/ecs/systems/gl-renderer.hpp"
 
 namespace agl
 {
@@ -26,6 +27,7 @@ namespace agl
 		m_resources.add_resource(this, pool);
 
 		auto organizer = ecs::organizer{ pool.make_allocator<ecs::organizer>() };
+		organizer.add_system<opengl_renderer>(this);
 		m_resources.add_resource(this, organizer);
 	}
 
