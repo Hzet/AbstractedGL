@@ -1,6 +1,6 @@
 #include "agl/core/application.hpp"
-#include "agl/ecs/ecs.hpp"
 #include "agl/util/memory/pool.hpp"
+#include "agl/ecs/ecs.hpp"
 #include "agl/ecs/systems/gl-renderer.hpp"
 
 namespace agl
@@ -15,20 +15,17 @@ namespace agl
 		return m_properties;
 	}
 
-	resources& application::get_resources() noexcept
-	{
-		return m_resources;
-	}
-
 	void application::init()
 	{
-		auto pool = mem::pool{};
-		pool.create(1024 * 1024 * 10); // 10 mb 
-		m_resources.add_resource(this, pool);
-
+		{
+			auto pool = mem::pool{};
+			pool.create(1024 * 1024 * 10); // 10 mb 
+			add_resource(pool);
+		}
+		auto& pool = get_resource<mem::pool>();
 		auto organizer = ecs::organizer{ pool.make_allocator<ecs::organizer>() };
-		organizer.add_system<opengl_renderer>(this);
-		m_resources.add_resource(this, organizer);
+		organizer.add_system<opengl_renderer>(this, opengl_renderer{});
+		add_resource(organizer);
 	}
 
 	void application::run()
@@ -37,7 +34,8 @@ namespace agl
 
 		while (m_properties.is_open)
 		{
-			m_resources.update(this);
+			for(auto &r : m_resources)
+				r.second->on_update(this);
 		}
 	}
 }

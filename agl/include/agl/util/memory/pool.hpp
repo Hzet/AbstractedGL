@@ -1,6 +1,6 @@
 #pragma once
 #include <cstddef>
-#include "agl/core/application-resource.hpp"
+#include "agl/core/application.hpp"
 #include "agl/util/set.hpp"
 #include "agl/util/dictionary.hpp"
 
@@ -52,7 +52,7 @@ public:
 		// emplace new space
 		it_spaces = m_spaces.find(size);
 		if (it_spaces == m_spaces.end())
-			it_spaces = m_spaces.emplace(size);
+			it_spaces = m_spaces.push({ size, set<std::byte*>{} });
 		it_spaces->second.emplace(ptr);
 	}
 
@@ -83,7 +83,7 @@ public:
 				found->second.emplace(ptr);
 			else
 			{
-				auto s_it = m_spaces.emplace(surplus);
+				auto s_it = m_spaces.push({ surplus, set<std::byte*>{} });
 				s_it->second.emplace(ptr);
 			}
 		}
@@ -288,9 +288,9 @@ public:
 	{
 		return m_buffer <= ptr && ptr < m_buffer + size();
 	}
-	virtual void on_attach(application*) noexcept override;
-	virtual void on_update(application*) noexcept override;
-	virtual void on_detach(application*) noexcept override;
+	virtual void on_attach(application*) noexcept override {}
+	virtual void on_update(application*) noexcept override {}
+	virtual void on_detach(application*) noexcept override {}
 
 private:
 	std::byte* m_buffer;

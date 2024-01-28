@@ -155,20 +155,12 @@ public:
 	{
 		return m_data.erase(first, last);
 	}
-	template <typename... TArgs>
-	iterator emplace(TArgs&&... args) noexcept
+	iterator push(value_type&& pair) noexcept
 	{
-		auto pair = value_type{};
-		if constexpr (sizeof... (TArgs) == 1)
-			pair = std::make_pair(std::forward<TArgs>(args)..., mapped_type{});
-		else 
-			pair = std::make_pair(std::forward<TArgs>(args)...);
-
-		auto const it = lower_bound(pair.first);
-
 		AGL_ASSERT(find(pair.first) == end(), "Key already stored");
 
-		return m_data.insert(it, std::move(pair));
+		auto const it = lower_bound(pair.first);
+		return m_data.insert(it, std::forward<value_type>(pair));
 	}
 	bool empty() const noexcept
 	{
@@ -195,15 +187,15 @@ public:
 		auto const found = lower_bound(key);
 
 		if (found == end() || !equal(found->first, key))
-			return m_data.insert(found, value_type{ key, {} })->second;
+			return m_data.insert(found, std::make_pair(key, mapped_type{}))->second;
 		return found->second;
 	}
 	mapped_type const& operator[](key_type key) const noexcept
 	{
 		auto const found = lower_bound(key);
 
-		if (found == cend() || !equal(found->first, key))
-			return m_data.insert(found, value_type{ key, {} })->second;
+		AGL_ASSERT(found != cend() && equal(found->first, key), "Index out of bounds");
+
 		return found->second;
 	}
 	size_type size() const noexcept

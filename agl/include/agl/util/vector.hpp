@@ -325,6 +325,7 @@ public:
 		auto const index = pos - begin();
 		reserve(size() + 1);
 		move_elements_right(begin() + index + 1, begin() + index);
+		//m_allocator.construct(m_memory + index, std::forward<value_type&&>(value));
 		*(m_memory + index) = std::move(value);
 		++m_size;
 		return make_iterator<iterator>(m_memory + index);

@@ -8,8 +8,6 @@ class application;
 
 namespace ecs
 {
-	class organizer;
-	
 	struct stage
 	{
 		std::uint64_t id;
@@ -19,7 +17,10 @@ namespace ecs
 	class system
 	{
 	public:
-		system(std::string const& name = "", ecs::stage stage = {})
+		system() noexcept
+		{
+		}
+		system(std::string const& name, ecs::stage stage) noexcept
 			: m_name{ name }
 			, m_stage{ stage }
 		{

@@ -133,7 +133,7 @@ public:
 	{
 		auto const found = std::lower_bound(m_data.begin(), m_data.end(), value, key_comp());
 
-		if (!equal(*found, value))
+		if (found == end() || !equal(*found, value))
 			return end();
 		return found;
 	}
@@ -142,7 +142,7 @@ public:
 	{
 		auto const found = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 
-		if (!equal(*found, value))
+		if (found == cend() || !equal(*found, value))
 			return cend();
 		return found;
 	}
@@ -194,7 +194,8 @@ public:
 	}
 
 private:
-	bool equal(value_type const& lhs, value_type const& rhs) const noexcept
+	template <typename U, typename W>
+	bool equal(U const& lhs, W const& rhs) const noexcept
 	{
 		return !m_comp(lhs, rhs) && !m_comp(rhs, lhs);
 	}

@@ -16,8 +16,9 @@ class organizer
 private:
 	using components = mem::dictionary<type_id_t, mem::unique_ptr<component_storage_base>>;
 	using entities = mem::deque<impl::entity_data>;
-	using systems = mem::vector<mem::unique_ptr<system>>;
+	using systems = mem::dictionary<type_id_t, mem::unique_ptr<system>>;
 	using allocator_type = mem::pool::allocator<organizer>;
+	using system_allocator = mem::pool::allocator<system>;
 	template <typename T>
 	using is_system = std::enable_if_t<std::is_base_of_v<system, T>>;
 
@@ -85,30 +86,36 @@ public:
 		return result;
 	}
 	template <typename T, typename = is_system<T>>
-	void add_system(application* app, T&& sys) noexcept
+	bool has_system() const noexcept
 	{
-		auto const comp = [](system const& sys, std::uint64_t stage) { return sys.stage < stage; };
-		auto it = std::lower_bound(m_systems.begin(), m_systems.end(), sys.stage(), comp);
-		it = m_systems.insert(it, std::move(mem::make_unique<system>(system_allocator{ m_systems.get_allocator() }, T{})));
-		(*it)->on_attach(app);
+		return m_systems.find(type_id<T>::get_id()) != m_systems.cend();
+	}
+	template <typename T, typename = is_system<T>>
+	void add_system(application* app, T sys) noexcept
+	{
+		AGL_ASSERT(!has_system<T>(), "System already present");
+
+		auto allocator = mem::pool::allocator<T>{ m_systems.get_allocator() };
+		auto& s = m_systems[type_id<T>::get_id()];
+		s = mem::make_unique<system>(allocator, sys);
+		s->on_attach(app);
 	}
 	virtual void on_update(application* app) noexcept override
 	{
 		for (auto& sys : m_systems)
-			sys->on_update(app);
+			sys.second->on_update(app);
 	}
 	virtual void on_attach(application*) noexcept override {};
 	virtual void on_detach(application*) noexcept override {};
 	template <typename T>
 	void remove_system(application* app) noexcept
 	{
-		auto const dummy = T{};
-		for(auto it = 0; it != m_systems.end(); ++it)
-			if (it->name() == dummy.name())
-			{
-				(*it)->on_detach(app);
-				m_systems.erase(it);
- 			}
+		auto found = m_systems.find(type_id<T>::get_id());
+
+		AGL_ASSERT(found != m_systems.cend(), "Invalid system");
+
+		found->second->on_detach(app);
+		m_systems.erase(found);
 	}
 
 private:

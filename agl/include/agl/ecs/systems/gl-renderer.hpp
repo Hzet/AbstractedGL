@@ -9,7 +9,7 @@ class opengl_renderer
 {
 public:
 	opengl_renderer()
-		: system("opengl_renderer")
+		: system("opengl_renderer", {})
 	{
 	}
 
@@ -20,10 +20,10 @@ public:
 	}
 
 	// render
-	virtual void on_update(application*) noexcept override;
+	virtual void on_update(application*) noexcept override {}
 
 	// unload opengl
-	virtual void on_detach(application*) noexcept override;
+	virtual void on_detach(application*) noexcept override {}
 private:
 };
 }

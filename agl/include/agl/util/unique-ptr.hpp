@@ -1,6 +1,5 @@
 #pragma once
 #include "agl/util/memory/allocator.hpp"
-#include "agl/util/memory/pool.hpp"
 
 namespace agl
 {
@@ -22,7 +21,14 @@ public:
 	{
 	}
 
-	template <typename U, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
+	unique_ptr(unique_ptr&& other) noexcept
+		: m_allocator{ other.m_allocator }
+		, m_data{ other.m_data }
+	{
+		other.m_data = nullptr;
+	}
+
+	template <typename U>//, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
 	unique_ptr(unique_ptr<U>&& other) noexcept
 		: m_allocator{ other.m_allocator }
 		, m_data{ other.m_data }
@@ -30,7 +36,19 @@ public:
 		other.m_data = nullptr;
 	}
 
-	template <typename U, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
+	unique_ptr& operator=(unique_ptr&& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+
+		m_allocator = other.m_allocator;
+		m_data = other.m_data;
+		other.m_data = nullptr;
+
+		return *this;
+	}
+
+	template <typename U>//, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
 	unique_ptr& operator=(unique_ptr<U>&& other) noexcept
 	{
 		if (this == &other)
@@ -135,9 +153,10 @@ private:
 template <typename T, typename U>
 unique_ptr<T> make_unique(U&& value) noexcept
 {
-	auto alloc = unique_ptr<U>::allocator_type{};
+	using type = std::remove_cv_t<std::remove_reference_t<U>>;
+	auto alloc = unique_ptr<type>::allocator_type{};
 	auto* ptr = alloc.allocate();
 	alloc.construct(ptr, std::move(value));
-	return unique_ptr<T>{ alloc, ptr };
+	return unique_ptr<T>{ alloc, static_cast<type*>(ptr) };
 }
 }

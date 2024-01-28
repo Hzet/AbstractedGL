@@ -6,7 +6,7 @@ namespace agl
 {
 namespace mem
 {
-template <typename T, typename TComp>
+template <typename T, typename TComp = std::less<T>>
 using set = ::agl::set<T, TComp, pool::allocator<T>>;
 }
 }

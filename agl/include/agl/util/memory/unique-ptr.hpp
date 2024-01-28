@@ -9,12 +9,12 @@ namespace mem
 template <typename T>
 using unique_ptr = ::agl::unique_ptr<T, pool::allocator<T>>;
 
-template <typename T, typename U>
-unique_ptr<T> make_unique(pool::allocator<T> const& allocator, U&& value) noexcept
+template <typename T, typename U, typename W = std::remove_cv_t<std::remove_reference_t<U>>>
+mem::unique_ptr<T> make_unique(pool::allocator<W> allocator, U&& value) noexcept
 {
 	auto* ptr = allocator.allocate();
 	allocator.construct(ptr, std::move(value));
-	return unique_ptr<T>{ allocator, ptr };
+	return unique_ptr<T>{ allocator, static_cast<W*>(ptr) };
 }
 }
 }
