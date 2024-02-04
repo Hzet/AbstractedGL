@@ -1,6 +1,7 @@
 #pragma once
 #include <cstddef>
 #include "agl/core/application.hpp"
+#include "agl/core/logger.hpp"
 #include "agl/util/set.hpp"
 #include "agl/util/dictionary.hpp"
 
@@ -246,7 +247,7 @@ public:
 		if (m_buffer == nullptr)
 			return;
 
-		AGL_ASSERT(empty(), "Some object were not deallocated");
+		AGL_ASSERT(empty(), "Some objects were not deallocated");
 
 		std::free(m_buffer);
 		m_buffer = nullptr;
@@ -288,9 +289,21 @@ public:
 	{
 		return m_buffer <= ptr && ptr < m_buffer + size();
 	}
-	virtual void on_attach(application*) noexcept override {}
-	virtual void on_update(application*) noexcept override {}
-	virtual void on_detach(application*) noexcept override {}
+
+private:
+	virtual void on_attach(application* app) noexcept override 
+	{
+		auto& log = app->get_resource<agl::logger>();
+		log.info("Pool {} bytes: OK", size());
+	}
+	virtual void on_detach(application* app) noexcept override
+	{
+		auto& log = app->get_resource<agl::logger>();
+		log.info("Pool {} bytes: OFF");
+	}
+	virtual void on_update(application*) noexcept override 
+	{
+	}
 
 private:
 	std::byte* m_buffer;
