@@ -3,9 +3,9 @@
 
 namespace agl
 {
-	std::unique_ptr<application> create_application()
+	unique_ptr<application> create_application()
 	{
-		auto result = std::make_unique<application>();
+		auto result = make_unique<application>();
 		result->init();
 		return result;
 	}
@@ -18,6 +18,7 @@ int main(int argc, char **argv)
 	try
 	{
 		app->run();
+		app->close();
 	}
 	catch (std::exception& e)
 	{

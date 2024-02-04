@@ -1,21 +1,22 @@
 #pragma once
 #include <chrono>
 #include <string>
+#include <ostream>
 
 namespace agl
 {
 struct datetime
 {
-	std::uint32_t years;
-	std::uint16_t days;
-	std::uint8_t months;
-	std::uint8_t hours;
-	std::uint8_t minutes;
-	std::uint8_t seconds;
-	std::uint8_t milliseconds;
+	std::uint64_t years;
+	std::uint64_t days;
+	std::uint64_t months;
+	std::uint64_t hours;
+	std::uint64_t minutes;
+	std::uint64_t seconds;
+	std::uint64_t milliseconds;
 };
 
-std::string to_string(datetime const& d) noexcept
+inline std::string to_string(datetime const& d) noexcept
 {
 	return std::to_string(d.days) + "/"
 		+ std::to_string(d.months) + "/"
@@ -26,25 +27,36 @@ std::string to_string(datetime const& d) noexcept
 		+ std::to_string(d.milliseconds);
 }
 
-datetime get_datetime() noexcept
+inline datetime get_datetime() noexcept
 {
 	auto time = std::chrono::system_clock::now().time_since_epoch().count();
 	auto dt = datetime{};
 
-	dt.years = time / (365l * 24 * 60 * 60 * 1000 * 1000);
-	time %= (365l * 24 * 60 * 60 * 1000 * 1000);
-	dt.months = time / (12l * 24 * 60 * 60 * 1000 * 1000);
-	time %= (12l * 24 * 60 * 60 * 1000 * 1000);
-	dt.days = time / (24l * 60 * 60 * 1000 * 1000);
-	time %= (24l * 60 * 60 * 1000 * 1000);
-	dt.hours = time / (60l * 60 * 1000 * 1000);
-	time %= (60l * 60 * 1000 * 1000);
-	dt.minutes = time / (60 * 1000 * 1000);
+	dt.years = static_cast<decltype(dt.years)>(time / (365ll * 24 * 60 * 60 * 1000 * 1000));
+	time %= (365ll * 24 * 60 * 60 * 1000 * 1000);
+	dt.months = static_cast<decltype(dt.months)>(time / (12ll * 24 * 60 * 60 * 1000 * 1000));
+	time %= (12ll * 24 * 60 * 60 * 1000 * 1000);
+	dt.days = static_cast<decltype(dt.days)>(time / (24ll * 60 * 60 * 1000 * 1000));
+	time %= (24ll * 60 * 60 * 1000 * 1000);
+	dt.hours = static_cast<decltype(dt.hours)>(time / (60ll * 60 * 1000 * 1000));
+	time %= (60ll * 60 * 1000 * 1000);
+	dt.minutes = static_cast<decltype(dt.minutes)>(time / (60 * 1000 * 1000));
 	time %= (60 * 1000 * 1000);
-	dt.seconds = time / (1000 * 1000);
+	dt.seconds = static_cast<decltype(dt.seconds)>(time / (1000 * 1000));
 	time %= (1000 * 1000);
-	dt.milliseconds = time / 1000;
+	dt.milliseconds = static_cast<decltype(dt.milliseconds)>(time / 1000);
 
 	return dt;
+}
+
+inline std::ostream& operator<<(std::ostream& stream, datetime const& dt) noexcept
+{
+	return stream << dt.days << "/"
+		<< dt.months << "/"
+		<< dt.years << " "
+		<< dt.hours << ":"
+		<< dt.minutes << ":"
+		<< dt.seconds << ":"
+		<< dt.milliseconds;
 }
 }

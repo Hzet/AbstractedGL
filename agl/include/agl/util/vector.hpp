@@ -149,15 +149,11 @@ public:
 		if (count != capacity())
 		{
 			clear();
-			reserve(count);
-			for (auto i = 0; i < count; ++i)
-				push_back(value);
+			resize(count);
 		}
-		else
-		{
-			for (auto i = 0; i < count; ++i)
-				*(m_memory + i) = value;
-		}
+		
+		for (auto i = 0; i < count; ++i)
+			make_copy(value);
 	}
 	template <typename TInputIt, typename TEnable = impl::is_iterator_t<TInputIt>>
 	void assign(TInputIt first, TInputIt last) noexcept
@@ -166,15 +162,11 @@ public:
 		if (count != capacity())
 		{
 			clear();
-			reserve(count);
-			for (auto i = 0; i < count; ++i, ++first)
-				push_back(std::move(*first));
+			resize(count);
 		}
-		else
-		{
-			for (auto i = 0; i < count; ++i, ++first)
-				*(m_memory + i) = std::move(*first);
-		}
+
+		for (auto i = 0; i < count; ++i; ++first)
+			make_copy(m_memory + i, *first);
 	}
 	iterator begin() const noexcept
 	{
@@ -280,7 +272,6 @@ public:
 	}
 	void shrink_to_fit() noexcept
 	{
-		// ???
 		if (capacity() == size())
 			return;
 		realloc(size());
@@ -309,7 +300,7 @@ public:
 		auto const index = pos - begin();
 		reserve(size() + 1);
 		move_elements_right(begin() + index + 1, begin() + index);
-		*(m_memory + index) = value;
+		make_copy(m_memory + index, value);
 		++m_size;
 		return make_iterator<iterator>(m_memory + index);
 	}
@@ -325,8 +316,7 @@ public:
 		auto const index = pos - begin();
 		reserve(size() + 1);
 		move_elements_right(begin() + index + 1, begin() + index);
-		//m_allocator.construct(m_memory + index, std::forward<value_type&&>(value));
-		*(m_memory + index) = std::move(value);
+		make_move(m_memory + index, std::forward<value_type&&>(value));
 		++m_size;
 		return make_iterator<iterator>(m_memory + index);
 	}
@@ -348,8 +338,10 @@ public:
 		}
 		reserve(size() + insert_size);
 		move_elements_right(begin() + index + insert_size, begin() + index);
-		for (auto i = difference_type{ 0 }; i < insert_size; ++i)
-			*(m_memory + index + i) = first++;
+		
+		for (auto i = difference_type{ 0 }; i < insert_size; ++i, ++first)
+			make_move_or_copy(m_memory + index + i, std::forward<value_type&&>(*first));
+
 		m_size += insert_size;
 		return make_iterator<iterator>(m_memory + index);
 	}
@@ -391,15 +383,27 @@ public:
 			m_size -= erase_size;
 		return make_iterator<iterator>(m_memory + offset);
 	}
+	iterator emplace(const_iterator pos, value_type&& value) noexcept
+	{
+		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");
+
+		if (pos == cend())
+			return emplace_back(std::forward<value_type&&>(value));
+
+		m_allocator.destruct(&(*pos));
+		m_allocator.construct(&(*pos), std::forward<value_type&&>(value));
+
+		return 
+	}
 	void push_back(value_type&& value) noexcept
 	{
 		resize(size() + 1);
-		*(m_memory + size() - 1) = std::move(value);
+		make_move(m_memory + size() - 1, std::forward<value_type&&>(value));
 	}
 	void push_back(const_reference value) noexcept
 	{
 		resize(size() + 1);
-		*(m_memory + size() - 1) = value;
+		make_copy(m_memory + size() - 1, value);
 	}
 	void pop_back() noexcept
 	{
@@ -423,6 +427,36 @@ private:
 	iterator real_end() const noexcept
 	{
 		return iterator{ m_memory + capacity(), m_memory, m_memory + capacity() };
+	}
+	void make_copy(pointer dest, const_reference src) noexcept
+	{
+		AGL_ASSERT(&(*begin()) <= dest && dest < &(*end()), "iterator out of range");
+		
+		if constexpr (std::is_copy_constructible_v<value_type>)
+			m_allocator.construct(dest, src);
+		else if constexpr (std::is_copy_assignable_v<value_type>)
+			*dest = src;
+		else
+			static_assert(false, "invalid use of copy function - type is not copyable");
+	}
+	void make_move(pointer dest, value_type&& src) noexcept
+	{
+		AGL_ASSERT(&(*begin()) <= dest && dest < &(*end()), "iterator out of range");
+
+		if constexpr (std::is_move_constructible_v<value_type>)
+			m_allocator.construct(dest, std::forward<value_type&&>(src));
+		else if constexpr (std::is_move_assignable_v<value_type>)
+			*dest = std::move(src);
+		else
+			static_assert(false, "invalid use of copy function - type is not movalbe");
+	}
+	void make_move_or_copy(pointer dest, value_type&& src) noexcept
+	{
+		make_move(dest, std::forward<value_type&&>(src));
+	}
+	void make_move_or_copy(pointer dest, const_reference src) noexcept
+	{
+		make_copy(dest, src);
 	}
 	/// <summary>
 	/// Moves element 'from' and all the elements right to it to the position 'where'

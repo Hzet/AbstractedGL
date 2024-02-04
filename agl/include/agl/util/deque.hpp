@@ -110,7 +110,7 @@ public:
 	{
 		reserve(block_size());
 		for (auto i = 0; i < block_size(); ++i)
-			*(m_memory + i) = *(other.m_memory + i);
+			make_copy(m_memory + i, *(other.m_memory + i));
 	}
 	block& operator=(block&& other) noexcept
 	{
@@ -125,7 +125,6 @@ public:
 		m_memory = other.m_memory;
 		m_size = other.m_size;
 		other.m_memory = nullptr;
-
 		return *this;
 	}
 	block& operator=(block const& other) noexcept
@@ -139,12 +138,12 @@ public:
 		m_block_size = other.m_block_size;
 		m_free_spaces = other.m_free_spaces;
 		m_size = other.m_size;
-
+		
 		reserve(block_size());
 		for (auto i = 0; i < block_size(); ++i)
-			*(m_memory + i) = *(other.m_memory + i);
-		return *this;
+			make_copy(m_memory + i, *(other.m_memory + i));
 
+		return *this;
 	}
 	~block() noexcept
 	{
@@ -224,7 +223,7 @@ public:
 			reserve(block_size());
 
 		auto const index = m_free_spaces.pop();
-		*(m_memory + index) = std::move(value);
+		make_move(m_memory + index, std::forward<value_type&&>(value));
 		++m_size;
 
 		return m_memory + index;
@@ -235,6 +234,7 @@ public:
 			reserve(block_size());
 
 		auto const index = m_free_spaces.pop();
+		make_copy(m_memory + index, value);
 		*(m_memory + index) = value;
 		++m_size;
 
@@ -266,15 +266,35 @@ public:
 	}
 
 private:
+	void make_copy(pointer dest, const_reference src) noexcept
+	{
+		if constexpr (std::is_copy_constructible_v<value_type>)
+			m_allocator.construct(dest, src);
+		else if constexpr (std::is_copy_assignable_v<value_type>)
+			*dest = src;
+		else
+			static_assert(false, "invalid use of copy function - type is not copyable");
+	}
+	void make_move(pointer dest, value_type&& src) noexcept
+	{
+		if constexpr (std::is_move_constructible_v<value_type>)
+			m_allocator.construct(dest, std::forward<value_type&&>(src));
+		else if constexpr (std::is_move_assignable_v<value_type>)
+			*dest = std::move(src);
+		else
+			static_assert(false, "invalid use of copy function - type is not movalbe");
+	}
+
+private:
 	using free_spaces_alloc_t = typename allocator_type::template rebind<space>;
 	using free_spaces_t = free_spaces<free_spaces_alloc_t>;
 
 private:
 	allocator_type m_allocator;
-	T* m_memory;
-	free_spaces_t m_free_spaces;
-	size_type m_size;
 	size_type m_block_size;
+	free_spaces_t m_free_spaces;
+	T* m_memory;
+	size_type m_size;
 };
 }
 
@@ -434,10 +454,10 @@ public:
 			}
 
 		m_blocks.push_back(impl::block<T, allocator_type>{ block_size(), get_allocator() });
-		auto* ptr = m_blocks.back().push_back(std::move(value));
+		auto* ptr = m_blocks.back().push_back(std::forward<value_type&&>(value));
 		m_indexes.push_back(ptr);
 	}
-	void push_back(value_type const& value) noexcept
+	void push_back(const_reference value) noexcept
 	{
 		for (auto& block : m_blocks)
 			if (!block.full())

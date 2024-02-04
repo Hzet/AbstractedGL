@@ -11,6 +11,4 @@ struct remove_cvref
 };
 template <typename T>
 using remove_cvref_t = remove_cvref<T>::type;
-
-
 }

@@ -1,3 +1,4 @@
+/*
 #include "agl/ecs/systems/gl-renderer.hpp"
 
 namespace agl
@@ -27,3 +28,4 @@ void opengl_renderer::on_attach(application* app) noexcept
 
 }
 }
+*/
