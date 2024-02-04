@@ -150,8 +150,25 @@ private:
 	pointer m_data;
 };
 
+namespace impl
+{
+
+}
+
+template <typename T>
+unique_ptr<T> make_unique()
+{
+	static_assert(!std::is_reference_v<T>, "invalid type");
+	
+	using type = std::remove_const_t<T>;
+	auto alloc = unique_ptr<type>::allocator_type{};
+	auto* ptr = alloc.allocate();
+	alloc.construct(ptr);
+	return unique_ptr<T>{ alloc, static_cast<type*>(ptr) };
+}
+
 template <typename T, typename U>
-unique_ptr<T> make_unique(U&& value) noexcept
+unique_ptr<T> make_unique(U&& value)
 {
 	using type = std::remove_cv_t<std::remove_reference_t<U>>;
 	auto alloc = unique_ptr<type>::allocator_type{};
