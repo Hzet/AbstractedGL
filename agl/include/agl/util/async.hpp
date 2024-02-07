@@ -46,7 +46,7 @@ public:
 	}
 
 private:
-	friend class thread;
+	friend class threads;
 
 private:
 	std::uint64_t m_id;
@@ -125,7 +125,7 @@ public:
 	}
 
 private:
-	friend class thread;
+	friend class threads;
 
 private:
 	std::uint64_t m_id;

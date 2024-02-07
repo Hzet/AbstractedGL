@@ -87,6 +87,22 @@ public:
 	~dictionary() noexcept
 	{
 	}
+	reference front() noexcept
+	{
+		return m_data.front();
+	}
+	const_reference front() const noexcept
+	{
+		return m_data.front();
+	}
+	reference back() noexcept
+	{
+		return m_data.back();
+	}
+	const_reference back() const noexcept
+	{
+		return m_data.back();
+	}
 	iterator begin() const noexcept
 	{
 		return m_data.begin();

@@ -101,7 +101,7 @@ private:
 }
 
 class pool
-	: public application_resource
+	: public resource<pool>
 {
 public:
 	template <typename T>
@@ -183,14 +183,15 @@ public:
 
 public:
 	pool() noexcept
-		: application_resource{ type_id<pool>::get_id() }
+		: resource<pool>{ type_id<pool>::get_id() }
 		, m_buffer{ nullptr }
 		, m_occupancy{ 0 }
 		, m_size{ 0 }
 	{
 	}
 	pool(pool&& other) noexcept
-		: m_buffer{ other.m_buffer }
+		: resource<pool>{ std::move(other) }
+		, m_buffer{ other.m_buffer }
 		, m_free_spaces{ std::move(other.m_free_spaces) }
 		, m_occupancy{ other.m_occupancy }
 		, m_size{ other.m_size }
@@ -203,6 +204,7 @@ public:
 		if (this == &other)
 			return *this;
 
+		this->resource<pool>::operator=(std::move(other));
 		m_buffer = other.m_buffer;
 		other.m_buffer = nullptr;
 		m_free_spaces = std::move(other.m_free_spaces);
@@ -299,7 +301,7 @@ private:
 	virtual void on_detach(application* app) noexcept override
 	{
 		auto& log = app->get_resource<agl::logger>();
-		log.info("Pool {} bytes: OFF");
+		log.info("Pool {} bytes: OFF", size());
 	}
 	virtual void on_update(application*) noexcept override 
 	{

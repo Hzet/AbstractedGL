@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <string>
+#include "agl/util/typeid.hpp"
 
 namespace agl
 {
@@ -18,13 +19,14 @@ namespace ecs
 	{
 	public:
 		system() noexcept;
-		system(std::string const& name, ecs::stage stage) noexcept;
+		system(type_id_t id, std::string const& name, ecs::stage stage) noexcept;
 		system(system&& other) noexcept;
 		system& operator=(system&& other) noexcept;
 		system(system const&) noexcept = delete;
 		system& operator=(system const&) noexcept = delete;
 		virtual ~system() noexcept = default;
 
+		type_id_t id() const noexcept;
 		std::string const& name() const noexcept;
 		void name(std::string const& name);
 		virtual void on_attach(application*) noexcept = 0;
@@ -34,6 +36,7 @@ namespace ecs
 		void stage(ecs::stage s) noexcept;
 
 	private:
+		type_id_t m_id;
 		std::string m_name;
 		ecs::stage m_stage;
 	};

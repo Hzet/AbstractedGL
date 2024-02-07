@@ -22,7 +22,7 @@ class opengl_renderer
 {
 public:
 	opengl_renderer()
-		: system("opengl_renderer", {})
+		: system(type_id<opengl_renderer>::get_id(), "opengl_renderer", {})
 	{
 	}
 

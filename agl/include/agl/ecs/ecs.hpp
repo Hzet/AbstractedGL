@@ -11,12 +11,12 @@ namespace agl
 namespace ecs
 {
 class organizer
-	: public application_resource
+	: public resource<organizer>
 {
 private:
 	using components = mem::dictionary<type_id_t, mem::unique_ptr<component_storage_base>>;
 	using entities = mem::deque<impl::entity_data>;
-	using systems = mem::dictionary<type_id_t, mem::unique_ptr<system>>;
+	using systems = mem::vector<mem::unique_ptr<system>>;
 	using allocator_type = mem::pool::allocator<organizer>;
 	using system_allocator = mem::pool::allocator<system>;
 	template <typename T>
@@ -61,7 +61,6 @@ private:
 	systems m_systems;
 };
 
-
 template <typename T, typename... TArgs>
 void organizer::push_component(entity& ent, TArgs&&... args) noexcept
 {
@@ -97,7 +96,10 @@ mem::vector<entity> organizer::view() noexcept
 template <typename T, typename>
 bool organizer::has_system() const noexcept
 {
-	return m_systems.find(type_id<T>::get_id()) != m_systems.cend();
+	for (auto const& sys : m_systems)
+		if (sys->id() == type_id<T>::get_id())
+			return true;
+	return false;
 }
 template <typename T, typename>
 void organizer::add_system(application* app, T sys) noexcept
@@ -105,19 +107,21 @@ void organizer::add_system(application* app, T sys) noexcept
 	AGL_ASSERT(!has_system<T>(), "System already present");
 
 	auto allocator = mem::pool::allocator<T>{ m_systems.get_allocator() };
-	auto& s = m_systems[type_id<T>::get_id()];
-	s = mem::make_unique<system>(allocator, sys);
-	s->on_attach(app);
+	m_systems.push_back(mem::make_unique<system>(allocator, sys));
+	m_systems.back()->on_attach(app);
 }
 template <typename T>
 void organizer::remove_system(application* app) noexcept
 {
-	auto found = m_systems.find(type_id<T>::get_id());
+	for (auto it = m_systems.cbegin(); it != m_systems.cend(); ++it)
+		if ((*it)->id() == type_id<T>::get_id())
+		{
+			(*it)->on_detach(app);
+			m_systems.erase(it);
+			return;
+		}
 
-	AGL_ASSERT(found != m_systems.cend(), "Invalid system");
-
-	found->second->on_detach(app);
-	m_systems.erase(found);
+	AGL_ASSERT(false, "system not present");
 }
 }
 }

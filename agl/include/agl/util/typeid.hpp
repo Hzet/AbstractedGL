@@ -46,7 +46,7 @@ public:
 
 	constexpr bool operator!=(type_id_t other) const noexcept
 	{
-		return m_id == other.m_id;
+		return m_id != other.m_id;
 	}
 
 	constexpr operator std::uint64_t() const noexcept

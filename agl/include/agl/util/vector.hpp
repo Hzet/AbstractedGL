@@ -84,10 +84,7 @@ public:
 		other.m_memory = nullptr;
 	}
 	vector(vector const& other) noexcept
-		: m_allocator{ std::move(other.m_allocator) }
-		, m_capacity{ 0 }
-		, m_memory{ nullptr }
-		, m_size{ 0 }
+		: vector{ other.m_allocator }
 	{
 		if (other.m_memory == nullptr)
 			return;
