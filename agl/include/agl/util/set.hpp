@@ -67,13 +67,21 @@ public:
 	~set() noexcept
 	{
 	}
-	iterator begin() const noexcept
+	iterator begin() noexcept
 	{
 		return m_data.begin();
 	}
-	iterator rbegin() const noexcept
+	const_iterator begin() const noexcept
+	{
+		return m_data.cbegin();
+	}
+	iterator rbegin() noexcept
 	{
 		return m_data.rbegin();
+	}	
+	const_iterator rbegin() const noexcept
+	{
+		return m_data.crbegin();
 	}
 	const_iterator cbegin() const noexcept
 	{
@@ -83,13 +91,21 @@ public:
 	{
 		return m_data.crbegin();
 	}
-	iterator end() const noexcept
+	iterator end() noexcept
 	{
 		return m_data.end();
 	}
-	iterator rend() const noexcept
+	const_iterator end() const noexcept
+	{
+		return m_data.end();
+	}
+	iterator rend() noexcept
 	{
 		return m_data.rend();
+	}
+	const_iterator rend() const noexcept
+	{
+		return m_data.crend();
 	}
 	const_iterator cend() const noexcept
 	{

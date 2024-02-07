@@ -93,7 +93,7 @@ public:
 	{
 	}
 	block(block&& other) noexcept
-		: m_allocator{ other.m_allocator }
+		: m_allocator{ std::move(other.m_allocator) }
 		, m_block_size{ other.m_block_size }
 		, m_memory{ other.m_memory }
 		, m_free_spaces{ std::move(other.m_free_spaces) }
@@ -119,7 +119,7 @@ public:
 
 		clear();
 
-		m_allocator = other.m_allocator;
+		m_allocator = std::move(other.m_allocator);
 		m_block_size = other.m_block_size;
 		m_free_spaces = std::move(other.m_free_spaces);
 		m_memory = other.m_memory;
@@ -471,33 +471,49 @@ public:
 		auto* ptr = m_blocks.back().push_back(value);
 		m_indexes.push_back(ptr);
 	}
-	iterator begin() const noexcept
+	iterator begin() noexcept
 	{
 		return iterator{ m_indexes.begin() };
+	}
+	const_iterator begin() const noexcept
+	{
+		return iterator{ m_indexes.cbegin() };
 	}
 	const_iterator cbegin() const noexcept
 	{
 		return const_iterator{ m_indexes.cbegin() };
 	}
-	iterator end() const noexcept
+	iterator end() noexcept
 	{
 		return iterator{ m_indexes.end() };
+	}
+	const_iterator end() const noexcept
+	{
+		return iterator{ m_indexes.cend() };
 	}
 	const_iterator cend() const noexcept
 	{
 		return const_iterator{ m_indexes.cend() };
 	}
-	reverse_iterator rbegin() const noexcept
+	reverse_iterator rbegin() noexcept
 	{
 		return reverse_iterator{ m_indexes.rbegin() };
+	}
+	reverse_const_iterator rbegin() const noexcept
+	{
+		return reverse_iterator{ m_indexes.crbegin() };
 	}
 	reverse_const_iterator crbegin() const noexcept
 	{
 		return reverse_const_iterator{ m_indexes.crbegin() };
 	}
-	reverse_iterator rend() const noexcept
+	reverse_iterator rend() noexcept
 	{
 		return reverse_iterator{ m_indexes.rend() };
+	}
+	reverse_const_iterator rend() const noexcept
+	{
+		return reverse_iterator{ m_indexes.crend() };
 	}
 	reverse_const_iterator crend() const noexcept
 	{
@@ -542,7 +558,7 @@ private:
 	/// </summary>
 	/// <param name="value_index"></param>
 	/// <returns></returns>
-	typename block_vector::iterator find_block(const_iterator pos) const noexcept
+	typename block_vector::iterator find_block(const_iterator pos) noexcept
 	{
 		for (auto it = m_blocks.begin(); it != m_blocks.end(); ++it)
 			if (it->cbegin() <= &(*pos) && &(*pos) <= it->cend())

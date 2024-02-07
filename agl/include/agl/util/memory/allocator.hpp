@@ -41,15 +41,44 @@ public:
 	using rebind = allocator<U>;
 
 public:
-	allocator() noexcept {}
-	template <typename U>
-	allocator(allocator<U> const&) noexcept {}
-	template <typename U>
-	allocator& operator=(allocator<U> const&) noexcept 
+	allocator() noexcept 
+		: m_object_count{ 0 }
 	{
+	}
+	template <typename U>
+	allocator(allocator<U> const&) noexcept
+		: m_object_count{ 0 }
+	{
+	}
+	template <typename U>
+	allocator(allocator<U>&& other) noexcept
+		: m_object_count{ other.m_object_count }
+	{
+		other.m_object_count = 0;
+	}
+	template <typename U>
+	allocator& operator=(allocator<U>&& other) noexcept
+	{
+		if (this == &other)
+			return *this;
+
+		m_object_count = other.m_object_count;
+		other.m_object_count = 0;
 		return *this;
 	}
-	~allocator() noexcept {}
+	template <typename U>
+	allocator& operator=(allocator<U> const& other) noexcept 
+	{
+		if (this == &other)
+			return *this;
+
+		m_object_count = 0;
+		return *this;
+	}
+	~allocator() noexcept 
+	{
+		AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
+	}
 
 	[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type)) noexcept
 	{
@@ -61,6 +90,8 @@ public:
 	}
 	void deallocate(pointer ptr, size_type size = 0) noexcept
 	{
+		AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
+
 		std::free(ptr);
 	}
 	template <typename... TArgs>
@@ -70,8 +101,17 @@ public:
 	}
 	void destruct(pointer ptr) noexcept
 	{
+		AGL_ASSERT(m_object_count > 0, "invalid destruction call");
+
 		ptr->~T();
 	}
+
+private:
+	template <typename U>
+	friend class allocator;
+
+private:
+	std::uint64_t m_object_count;
 };
 
 template <typename T, typename U>

@@ -16,13 +16,13 @@ public:
 	using size_type = typename TAlloc::size_type;
 
 	unique_ptr(allocator_type allocator = {}, pointer ptr = nullptr) noexcept
-		: m_allocator{ allocator }
+		: m_allocator{ std::move(allocator) }
 		, m_data{ ptr }
 	{
 	}
 
 	unique_ptr(unique_ptr&& other) noexcept
-		: m_allocator{ other.m_allocator }
+		: m_allocator{ std::move(other.m_allocator) }
 		, m_data{ other.m_data }
 	{
 		other.m_data = nullptr;
@@ -30,7 +30,7 @@ public:
 
 	template <typename U>//, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
 	unique_ptr(unique_ptr<U>&& other) noexcept
-		: m_allocator{ other.m_allocator }
+		: m_allocator{ std::move(other.m_allocator) }
 		, m_data{ other.m_data }
 	{
 		other.m_data = nullptr;
@@ -41,7 +41,7 @@ public:
 		if (this == &other)
 			return *this;
 
-		m_allocator = other.m_allocator;
+		m_allocator = std::move(other.m_allocator);
 		m_data = other.m_data;
 		other.m_data = nullptr;
 
@@ -54,7 +54,7 @@ public:
 		if (this == &other)
 			return *this;
 
-		m_allocator = other.m_allocator;
+		m_allocator = std::move(other.m_allocator);
 		m_data = other.m_data;
 		other.m_data = nullptr;
 
@@ -164,7 +164,7 @@ unique_ptr<T> make_unique()
 	auto alloc = unique_ptr<type>::allocator_type{};
 	auto* ptr = alloc.allocate();
 	alloc.construct(ptr);
-	return unique_ptr<T>{ alloc, static_cast<type*>(ptr) };
+	return unique_ptr<T>{ std::move(alloc), static_cast<type*>(ptr) };
 }
 
 template <typename T, typename U>
@@ -174,6 +174,6 @@ unique_ptr<T> make_unique(U&& value)
 	auto alloc = unique_ptr<type>::allocator_type{};
 	auto* ptr = alloc.allocate();
 	alloc.construct(ptr, std::move(value));
-	return unique_ptr<T>{ alloc, static_cast<type*>(ptr) };
+	return unique_ptr<T>{ std::move(alloc), static_cast<type*>(ptr) };
 }
 }

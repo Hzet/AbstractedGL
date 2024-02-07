@@ -43,7 +43,7 @@ TEST(vector, vector)
 	const_bracket_method(vec);
 
 	// iterators
-	auto count = 0;
+	auto count = std::uint64_t{};
 	for (auto& v : vec)
 	{
 		if(v != count)
@@ -184,7 +184,7 @@ TEST(vector, vector_ptr)
 	const_bracket_method(vec);
 
 	// iterators
-	auto count = 0;
+	auto count = std::uint64_t{};
 	for (auto& v : vec)
 	{
 		if (v != &integer)
@@ -302,7 +302,7 @@ TEST(deque, deque)
 	const_bracket_method(deq);
 
 	// iterators
-	auto count = 0;
+	auto count = std::uint64_t{};
 	for (auto& v : deq)
 	{
 		if (v != count)
@@ -415,7 +415,7 @@ TEST(deque, deque_ptr)
 	const_bracket_method(deq);
 
 	// iterators
-	auto count = 0;
+	auto count = std::uint64_t{};
 	for (auto v : deq)
 	{
 		if (v != &address)
@@ -495,7 +495,7 @@ TEST(dictionary, dictionary)
 
 	// emplace 
 	for (auto i = 0; i < size; ++i)
-		dict.emplace(i, i);
+		dict.emplace({ i, i });
 
 	// size
 	if (dict.size() != size)
@@ -510,7 +510,7 @@ TEST(dictionary, dictionary)
 	dict.clear();
 
 	// empty
-	if(!dict.empty())
+	if (!dict.empty())
 		FAIL() << "Invalid dictionary size [ 1 ]";
 
 	// [] emplace
@@ -533,7 +533,8 @@ TEST(dictionary, dictionary)
 			FAIL() << "dictionary is unsorted [ 0 ]";
 
 	auto index = agl::simple_rand(0, size);
-	while (!dict.size() > 100)
+	/*
+	while (dict.size() > 100)
 	{
 		while (!arr[index])
 			index = agl::simple_rand(0, size - 1);
@@ -545,20 +546,34 @@ TEST(dictionary, dictionary)
 		if (dict.find(index) != dict.end())
 			FAIL() << "Invalid dictionary erase algorithm [ 0 ]";
 	}
-
+	*/
 	while (dict.size() < size)
 	{
 		auto rnd = agl::simple_rand(std::numeric_limits<std::int64_t>::lowest(), std::numeric_limits<std::int64_t>::max());
-		
+
 		if (dict.find(rnd) != dict.end())
 			continue;
 
-		dict.emplace(rnd, rnd);
+		dict.emplace({ rnd, rnd });
 	}
 
 	for (auto it = dict.cbegin() + 1; it != dict.cend(); ++it)
 		if ((it - 1)->first > it->first)
 			FAIL() << "dictionary is unsorted [ 1 ]";
+
+	dict = {};
+	for (auto i = 0; i < 5000; ++i)
+	{
+		auto rnd = agl::simple_rand(0, 20000);
+		while(dict.find(rnd) != dict.end())
+			rnd = agl::simple_rand(0, 20000);
+
+		dict.emplace({ rnd, rnd });
+
+		for (auto it = dict.cbegin() + 1; it != dict.cend(); ++it)
+			if ((it - 1)->first > it->first)
+				FAIL() << "dictionary is unsorted [ 2 ]";
+	}
 }
 
 TEST(set, set)

@@ -53,7 +53,7 @@ public:
 		// emplace new space
 		it_spaces = m_spaces.find(size);
 		if (it_spaces == m_spaces.end())
-			it_spaces = m_spaces.push({ size, set<std::byte*>{} });
+			it_spaces = m_spaces.emplace({ size, set<std::byte*>{} });
 		it_spaces->second.emplace(ptr);
 	}
 
@@ -84,7 +84,7 @@ public:
 				found->second.emplace(ptr);
 			else
 			{
-				auto s_it = m_spaces.push({ surplus, set<std::byte*>{} });
+				auto s_it = m_spaces.emplace({ surplus, set<std::byte*>{} });
 				s_it->second.emplace(ptr);
 			}
 		}
@@ -93,7 +93,7 @@ public:
 	}
 
 private:
-	using spaces_type = dictionary<std::uint64_t, set<std::byte*>>;
+	using spaces_type = dictionary<std::uint64_t, set<std::byte*>>; // size, pointers to blocks of 'size'
 
 private:
 	spaces_type m_spaces;
@@ -125,20 +125,51 @@ public:
 
 		allocator(pool* ptr = nullptr) noexcept
 			: m_pool{ ptr }
+			, m_object_count{ 0 }
 		{
 		}
-		template <typename U> allocator(allocator<U> const& other) noexcept
+		template <typename U>
+		allocator(allocator<U>&& other) noexcept
 			: m_pool{ other.m_pool }
+			, m_object_count{ other.m_object_count }
+		{
+			other.m_object_count = 0;
+		}
+		template <typename U>
+		allocator(allocator<U> const& other) noexcept
+			: m_pool{ other.m_pool }
+			, m_object_count{ 0 }
 		{
 		}
-		template <typename U> allocator& operator=(allocator<U> const& other) noexcept
+		template <typename U>
+		allocator& operator=(allocator<U>&& other) noexcept
 		{
+			if (this == &other)
+				return *this;
+
 			AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
 
 			m_pool = other.m_pool;
+			m_object_count = other.m_object_count;
+			other.m_object_count = 0;
 			return *this;
 		}
-		~allocator() noexcept = default;
+		template <typename U> 
+		allocator& operator=(allocator<U> const& other) noexcept
+		{
+			if (this == &other)
+				return *this;
+
+			AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
+
+			m_pool = other.m_pool;
+			m_object_count = 0;
+			return *this;
+		}
+		~allocator() noexcept
+		{
+			AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
+		}
 		[[nodiscard]] pointer allocate(size_type count = 1) noexcept
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
@@ -151,11 +182,13 @@ public:
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 			AGL_ASSERT(buffer != nullptr, "buffer handle is nullptr");
 
+			++m_object_count;
 			new (buffer) T(std::forward<TArgs>(args)...);
 		}
 		void deallocate(pointer ptr, size_type count = 1) noexcept
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+			AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
 
 			m_pool->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
 		}
@@ -163,6 +196,9 @@ public:
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 			AGL_ASSERT(ptr != nullptr, "ptr handle is nullptr");
+			AGL_ASSERT(m_object_count > 0, "invalid destruction call");
+
+			--m_object_count;
 
 			ptr->~T();
 		}
@@ -178,6 +214,7 @@ public:
 		friend bool operator!=(allocator<U> const&, allocator<W> const&) noexcept;
 
 	private:
+		std::uint64_t m_object_count;
 		pool* m_pool;
 	};
 
@@ -313,5 +350,17 @@ private:
 	std::uint64_t m_occupancy;
 	std::uint64_t m_size;
 };
+
+template <typename U, typename W>
+bool operator==(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) noexcept
+{
+	return lhs.m_pool == rhs.m_pool;
+}
+
+template <typename U, typename W>
+bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) noexcept
+{
+	return lhs.m_pool != rhs.m_pool;
+}
 }
 }

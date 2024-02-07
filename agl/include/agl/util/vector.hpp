@@ -150,7 +150,7 @@ public:
 		}
 		
 		for (auto i = 0; i < count; ++i)
-			make_copy(value);
+			make_copy(m_memory + i, value);
 	}
 	template <typename TInputIt, typename TEnable = impl::is_iterator_t<TInputIt>>
 	void assign(TInputIt first, TInputIt last) noexcept
@@ -165,27 +165,41 @@ public:
 		for (auto i = 0; i < count; ++i; ++first)
 			make_copy(m_memory + i, *first);
 	}
-	iterator begin() const noexcept
+	iterator begin() noexcept
 	{
 		return make_iterator<iterator>(m_memory);
+	}
+	const_iterator begin() const noexcept
+	{
+		return cbegin();
 	}
 	const_iterator cbegin() const noexcept
 	{
 		return make_iterator<const_iterator>(m_memory);
 	}
-	iterator end() const noexcept
+	iterator end() noexcept
 	{
 		return make_iterator<iterator>(m_memory + size());
+	}
+	const_iterator end() const noexcept
+	{
+		return cend();
 	}
 	const_iterator cend() const noexcept
 	{
 		return make_iterator<const_iterator>(m_memory + size());
 	}
-	reverse_iterator rbegin() const noexcept
+	reverse_iterator rbegin() noexcept
 	{
 		if (empty())
 			return make_iterator<reverse_iterator>(nullptr);
 		return make_iterator<reverse_iterator>(m_memory + size() - 1);
+	}
+	reverse_const_iterator rbegin() const noexcept
+	{
+		if (empty())
+			return make_iterator<reverse_const_iterator>(nullptr);
+		return make_iterator<reverse_const_iterator>(m_memory + size() - 1);
 	}
 	reverse_const_iterator crbegin() const noexcept
 	{
@@ -193,11 +207,17 @@ public:
 			return make_iterator<reverse_const_iterator>(nullptr);
 		return make_iterator<reverse_const_iterator>(m_memory + size() - 1);
 	}
-	reverse_iterator rend() const noexcept
+	reverse_iterator rend() noexcept
 	{
 		if (empty())
 			return make_iterator<reverse_iterator>(nullptr);
 		return make_iterator<reverse_iterator>(m_memory - 1);
+	}
+	reverse_const_iterator rend() const noexcept
+	{
+		if (empty())
+			return make_iterator<reverse_const_iterator>(nullptr);
+		return make_iterator<reverse_const_iterator>(m_memory - 1);
 	}
 	reverse_const_iterator crend() const noexcept
 	{
@@ -278,7 +298,7 @@ public:
 		if (m_memory == nullptr)
 			return;
 
-		for (auto i = difference_type{ 0 }; i < static_cast<difference_type>(size()); ++i)
+		for (auto i = difference_type{ 0 }; i < static_cast<difference_type>(capacity()); ++i)
 			m_allocator.destruct(m_memory + i);
 		m_allocator.deallocate(m_memory, m_capacity);
 		m_memory = nullptr;
@@ -474,9 +494,9 @@ private:
 		AGL_ASSERT(begin() <= from && from <= real_end(), "Index out of bounds");
 
 		auto const size = where - from;
-		auto w = reverse_iterator{ rbegin().m_ptr + size, m_memory, m_memory + capacity() }; // make it checked where end = capacity
+		auto w = reverse_iterator{ m_memory + this->size() + size - 1, m_memory, m_memory + capacity() }; // special iterator with wider range (0 - capacity) instead of (0 - size)
 		auto f = rbegin();
-		auto const end = make_iterator<reverse_iterator>(&(*(where--)));
+		auto const end = make_iterator<reverse_iterator>(&(*(--where)));
 
 		for (w, f; w != end; ++w, ++f)
 			*w = std::move(*f);
@@ -491,6 +511,8 @@ private:
 
 		for (auto i = size(); i < n; ++i)
 			m_allocator.construct(tmp_buffer + i);
+
+		clear();
 
 		m_allocator.deallocate(m_memory, m_capacity);
 		m_memory = tmp_buffer;

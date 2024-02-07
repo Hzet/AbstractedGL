@@ -14,7 +14,7 @@ mem::unique_ptr<T> make_unique(pool::allocator<W> allocator, U&& value) noexcept
 {
 	auto* ptr = allocator.allocate();
 	allocator.construct(ptr, std::move(value));
-	return unique_ptr<T>{ allocator, static_cast<W*>(ptr) };
+	return unique_ptr<T>{ std::move(allocator), static_cast<W*>(ptr) };
 }
 }
 }

@@ -103,11 +103,19 @@ public:
 	{
 		return m_data.back();
 	}
-	iterator begin() const noexcept
+	iterator begin() noexcept
 	{
 		return m_data.begin();
 	}
-	iterator rbegin() const noexcept
+	const_iterator begin() const noexcept
+	{
+		return m_data.begin();
+	}
+	iterator rbegin() noexcept
+	{
+		return m_data.rbegin();
+	}
+	const_iterator rbegin() const noexcept
 	{
 		return m_data.rbegin();
 	}
@@ -119,13 +127,21 @@ public:
 	{
 		return m_data.crbegin();
 	}
-	iterator end() const noexcept
+	iterator end() noexcept
 	{
 		return m_data.end();
 	}
-	iterator rend() const noexcept
+	const_iterator end() const noexcept
+	{
+		return m_data.cend();
+	}
+	iterator rend() noexcept
 	{
 		return m_data.rend();
+	}
+	const_iterator rend() const noexcept
+	{
+		return m_data.crend();
 	}
 	const_iterator cend() const noexcept
 	{
@@ -171,7 +187,7 @@ public:
 	{
 		return m_data.erase(first, last);
 	}
-	iterator push(value_type&& pair) noexcept
+	iterator emplace(value_type&& pair) noexcept
 	{
 		AGL_ASSERT(find(pair.first) == end(), "Key already stored");
 

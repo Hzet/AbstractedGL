@@ -54,7 +54,7 @@ TEST(util_type_id, get_id)
 
 TEST(util_type_id, get_name)
 {
-	EXPECT_STREQ(std::string{ agl::type_id<std::uint64_t>::get_name() }.c_str(), typeid(std::uint64_t).name());
+	EXPECT_STREQ(agl::type_id<std::uint64_t>::get_name().data(), typeid(std::uint64_t).name());
 	EXPECT_STREQ(std::string{ agl::type_id<std::tuple<int>>::get_name() }.c_str(), typeid(std::tuple<int>).name());
 	EXPECT_STREQ(std::string{ agl::type_id<std::tuple<std::tuple<int>>>::get_name() }.c_str(), typeid(std::tuple<std::tuple<int>>).name());
 
