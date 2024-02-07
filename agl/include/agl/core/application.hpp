@@ -1,4 +1,5 @@
 #pragma once
+#include "agl/util/async.hpp"
 #include "agl/util/dictionary.hpp"
 #include "agl/util/typeid.hpp"
 #include "agl/util/unique-ptr.hpp"
@@ -27,6 +28,18 @@ private:
 	type_id_t m_id;
 };
 
+template <typename T>
+class resource
+	: public application_resource
+{
+public:
+	using application_resource::application_resource;
+	resource() noexcept
+		: application_resource{ type_id<T>::get_id() }
+	{
+	}
+};
+
 extern unique_ptr<application> create_application();
 
 class application
@@ -41,7 +54,7 @@ public:
 	application() = default;
 	application(application&&) = default;
 	application(application const&) = delete;
-	application& operator=(application&&) = default;
+	application& operator=(application&&) = delete;
 	application& operator=(application const&) = delete;
 	virtual ~application() noexcept;
 
@@ -56,7 +69,7 @@ public:
 	T& get_resource() noexcept;
 
 	template <typename T>
-	bool has_resource() noexcept;
+	bool has_resource() const noexcept;
 
 	virtual void init();
 
@@ -70,23 +83,28 @@ private:
 	void run();
 
 private:
+	mutex* m_mutex;
 	properties m_properties;
 	dictionary<type_id_t, unique_ptr<application_resource>> m_resources;
+	vector<type_id_t> m_resources_order;
 };
 
-
 template <typename T>
-bool application::has_resource() noexcept
+bool application::has_resource() const noexcept
 {
-	return m_resources.find(type_id<T>::get_id()) != m_resources.end();
+	AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
+	std::lock_guard<std::mutex> lock{ *m_mutex };
+	return m_resources.find(type_id<T>::get_id()) != m_resources.cend();
 }
 template <typename T>
 void application::add_resource(T&& resource) noexcept
 {
 	using type = std::remove_cv_t<std::remove_reference_t<T>>; // for allocator needs
 	AGL_ASSERT(!has_resource<type>(), "resource already present");
+	AGL_ASSERT(!m_properties.is_open, "all resources must be initialized before the application opens");
 
 	auto& r = m_resources[type_id<type>::get_id()];
+	m_resources_order.push_back(type_id<type>::get_id());
 	r = make_unique<application_resource>(std::forward<type>(resource));
 	r->on_attach(this);
 }
@@ -95,17 +113,28 @@ template <typename T>
 void application::remove_resource() noexcept
 {
 	AGL_ASSERT(has_resource<T>(), "invalid resource");
+	AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
 
+	std::lock_guard<std::mutex> lock{ *m_mutex };
 	auto found = m_resources.find(type_id<T>::get_id());
 	found->second->on_detach(this);
 	m_resources.erase(found);
+
+	for(auto it = m_resources_order.cbegin(); it!= m_resources_order.cend(); ++it)
+		if (*it == type_id<T>::get_id())
+		{
+			m_resources_order.erase(it);
+			break;
+		}
 }
 
 template <typename T>
 T& application::get_resource() noexcept
 {
 	AGL_ASSERT(has_resource<T>(), "invalid resource");
+	AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
 
+	std::lock_guard<std::mutex> lock{ *m_mutex };
 	auto found = m_resources.find(type_id<T>::get_id());
 	return *reinterpret_cast<T*>(found->second.get());
 }

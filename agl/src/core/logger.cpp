@@ -16,13 +16,13 @@ const char* logger::get_logger_name(instance_index index) noexcept
 	return "UNKNOWN";
 }
 logger::logger() noexcept
-	: application_resource{ type_id<logger>::get_id() }
+	: resource<logger>{ }
 	, m_cond_var{ nullptr }
 	, m_mutex{ nullptr }
 {
 }
 logger::logger(logger&& other) noexcept
-	: application_resource{ std::move(other) }
+	: resource<logger>{ std::move(other) }
 {
 	if (this == &other)
 		return;
@@ -42,6 +42,20 @@ logger::logger(logger&& other) noexcept
 logger::~logger() noexcept
 {
 }
+bool logger::is_active() const noexcept
+{
+	AGL_ASSERT(m_thread != nullptr, "invalid thread object");
+	return m_thread->is_valid() && m_thread->is_running();
+}
+std::string logger::get_date() noexcept
+{
+	using namespace date;
+	using namespace std::chrono;
+	auto const now = floor<date::days>(system_clock::now());
+	auto ss = std::stringstream{};
+	ss << year_month_day{ now } << ' ' << make_time(system_clock::now() - now);
+	return ss.str();
+}
 void logger::on_attach(application* app) noexcept
 {
 	auto logger_thread = [&]
@@ -49,20 +63,30 @@ void logger::on_attach(application* app) noexcept
 			AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
 			AGL_ASSERT(m_cond_var != nullptr, "invalid cond_var");
 
-			std::unique_lock<std::mutex> lock{ *m_mutex };
-			auto fun = [&]
-				{
-					return !m_messages.empty();
-				};
-			m_cond_var->wait(lock, fun);
-			auto messages = m_messages;
-			m_messages.clear();
-			lock.unlock();
-
-			for (auto& msg : messages)
+			while (true)
 			{
-				auto& stream = *m_loggers[msg.destination].m_stream;
-				stream << msg.message << "\n";
+				std::unique_lock<std::mutex> lock{ *m_mutex };
+				auto stop_waiting = [&]
+					{
+						return !m_messages.empty() || m_thread->should_close();
+					};
+				m_cond_var->wait(lock, stop_waiting);
+				if (!m_messages.empty())
+				{
+					auto const messages = m_messages;
+					m_messages.clear();
+					lock.unlock();
+
+					for (auto& msg : messages)
+					{
+						auto& stream = *m_loggers[msg.destination].m_stream;
+						stream << msg.message << "\n";
+					}
+				}
+				else if (m_thread->should_close())
+				{
+					break;
+				}
 			}
 		};
 
@@ -72,9 +96,9 @@ void logger::on_attach(application* app) noexcept
 
 	// init mutex and cond_var
 	auto& threads = app->get_resource<agl::threads>();
-	m_thread = &threads.add_thread();
-	m_cond_var = &m_thread->push_condition_variable();
-	m_mutex = &m_thread->push_mutex();
+	m_thread = &threads.new_thread();
+	m_cond_var = &threads.new_condition_variable();
+	m_mutex = &threads.new_mutex();
 	m_thread->start_no_log(app, "logger", logger_thread);
 
 	info("Logger: OK");
@@ -83,7 +107,9 @@ void logger::on_detach(application* app) noexcept
 {
 	info("Logger: OFF");
 	auto& threads = app->get_resource<agl::threads>();
-	threads.remove_thread(*m_thread);
+	threads.delete_thread(*m_thread);
+	threads.delete_condition_variable(*m_cond_var);
+	threads.delete_mutex(*m_mutex);
 }
 void logger::on_update(application* app) noexcept
 {

@@ -2,6 +2,7 @@
 #include <iostream>
 #include <tuple>
 #include <sstream>
+#include "date/date.h"
 #include "agl/core/application.hpp"
 #include "agl/util/time.hpp"
 #include "agl/util/async.hpp"
@@ -12,7 +13,7 @@ namespace agl
 class thread;
 
 class logger
-	: public application_resource
+	: public resource<logger>
 {
 public:
 	logger() noexcept;
@@ -61,7 +62,9 @@ private:
 	};
 
 private:
+	static std::string get_date() noexcept;
 	static const char* get_logger_name(instance_index index) noexcept;
+	bool is_active() const noexcept;
 	virtual void on_attach(application* app) noexcept override;
 	virtual void on_detach(application* app) noexcept override;
 	virtual void on_update(application* app) noexcept override;
@@ -76,7 +79,7 @@ private:
 	static std::string produce_message(instance_index index, std::string const& message, TArgs&&... args) noexcept;
 
 	template <typename TTuple, std::uint64_t... TSequence>
-	static vector<std::string> parse_arguments(std::string const& message, TTuple&& tuple, std::index_sequence<TSequence...>) noexcept;
+	static vector<std::string> parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>) noexcept;
 
 private:
 	vector<message> m_messages;
@@ -120,13 +123,16 @@ std::string logger::to_string(T&& v) noexcept
 	ss << v;
 	return ss.str();
 }
+
 template <typename... TArgs>
 void logger::log(instance_index index, std::string const& message, TArgs&&... args) noexcept
 {
 	AGL_ASSERT(m_mutex != nullptr, "operation on uninitialized object");
 	AGL_ASSERT(m_cond_var != nullptr, "operation on uninitialized object");
+	AGL_ASSERT(is_active(), "logger is inactive");
 
-	auto const msg = produce_message(index, message, std::forward<TArgs>(args)...);
+	auto const msg = get_date() + " " + produce_message(index, message, std::forward<TArgs>(args)...);
+	auto time = std::chrono::system_clock::now();
 	{
 		std::lock_guard<std::mutex> lock{ *m_mutex };
 		m_messages.push_back({ index, msg });
@@ -137,7 +143,7 @@ template <typename... TArgs>
 std::string logger::produce_message(instance_index index, std::string const& message, TArgs&&... args) noexcept
 {
 	auto result = message;
-	auto const parsed = parse_arguments(message, std::forward_as_tuple(std::forward<TArgs>(args)...), std::make_index_sequence<sizeof... (TArgs)>{});
+	auto const parsed = parse_arguments(std::forward_as_tuple(std::forward<TArgs>(args)...), std::make_index_sequence<sizeof... (TArgs)>{});
 	auto found_l = std::uint64_t{};
 	auto arg_index = std::uint64_t{};
 	auto current_index = std::uint64_t{};
@@ -155,15 +161,16 @@ std::string logger::produce_message(instance_index index, std::string const& mes
 		else
 			arg_index = current_index++;
 
+		AGL_ASSERT(arg_index < parsed.size(), "too few arguments provided");
 		result.replace(result.cbegin() + found_l, result.cbegin() + found_r + 1, parsed[arg_index]);
 	}
-
-	auto const dt = to_string(get_datetime());
-
-	return dt + " [" + get_logger_name(index) + "] " + result;
+	result.insert(0, "] ");
+	result.insert(0, get_logger_name(index));
+	result.insert(0, "[");
+	return result;
 }
 template <typename TTuple, std::uint64_t... TSequence>
-vector<std::string> logger::parse_arguments(std::string const& message, TTuple&& tuple, std::index_sequence<TSequence...>) noexcept
+vector<std::string> logger::parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>) noexcept
 {
 	auto vec = vector<std::string>{};
 	(vec.push_back(to_string(std::get<TSequence>(tuple))), ...);
