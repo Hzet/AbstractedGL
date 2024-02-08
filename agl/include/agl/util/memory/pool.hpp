@@ -125,21 +125,32 @@ public:
 
 		allocator(pool* ptr = nullptr) noexcept
 			: m_pool{ ptr }
-			, m_object_count{ 0 }
 		{
+			m_alloc_count = 0;
+		}
+		allocator(allocator&& other) noexcept
+			: m_pool{ other.m_pool }
+		{
+			m_alloc_count = other.m_alloc_count;
+			other.m_alloc_count = 0;
 		}
 		template <typename U>
 		allocator(allocator<U>&& other) noexcept
 			: m_pool{ other.m_pool }
-			, m_object_count{ other.m_object_count }
 		{
-			other.m_object_count = 0;
+			m_alloc_count = other.m_alloc_count;
+			other.m_alloc_count = 0;
+		}
+		allocator(allocator const& other) noexcept
+			: m_pool{ other.m_pool }
+		{
+			m_alloc_count = 0;
 		}
 		template <typename U>
 		allocator(allocator<U> const& other) noexcept
 			: m_pool{ other.m_pool }
-			, m_object_count{ 0 }
 		{
+			m_alloc_count = 0;
 		}
 		template <typename U>
 		allocator& operator=(allocator<U>&& other) noexcept
@@ -150,8 +161,8 @@ public:
 			AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
 
 			m_pool = other.m_pool;
-			m_object_count = other.m_object_count;
-			other.m_object_count = 0;
+			m_alloc_count = other.m_alloc_count;
+			other.m_alloc_count = 0;
 			return *this;
 		}
 		template <typename U> 
@@ -162,44 +173,44 @@ public:
 
 			AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
 
+			m_alloc_count = 0;
 			m_pool = other.m_pool;
-			m_object_count = 0;
 			return *this;
 		}
 		~allocator() noexcept
 		{
-			AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
+			AGL_ASSERT(m_alloc_count == 0, "some memory was not deallocated");
 		}
-		[[nodiscard]] pointer allocate(size_type count = 1) noexcept
+		[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type)) noexcept
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 
-			return reinterpret_cast<T*>(m_pool->allocate(count * sizeof(T), alignof(T)));
+			m_alloc_count += count;
+			return reinterpret_cast<T*>(m_pool->allocate(count * sizeof(T), alignment));
 		}
 		template <typename... TArgs>
 		void construct(pointer buffer, TArgs&&... args) noexcept
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 			AGL_ASSERT(buffer != nullptr, "buffer handle is nullptr");
+			AGL_ASSERT(m_alloc_count > 0, "invalid construction call");
 
-			++m_object_count;
 			new (buffer) T(std::forward<TArgs>(args)...);
 		}
 		void deallocate(pointer ptr, size_type count = 1) noexcept
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
-			AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
+			AGL_ASSERT(m_alloc_count > 0, "invalid deallocation call");
 
+			m_alloc_count -= count;
 			m_pool->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
 		}
 		void destruct(pointer ptr) noexcept
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 			AGL_ASSERT(ptr != nullptr, "ptr handle is nullptr");
-			AGL_ASSERT(m_object_count > 0, "invalid destruction call");
-
-			--m_object_count;
-
+			AGL_ASSERT(m_alloc_count > 0, "invalid destruction call");
+			
 			ptr->~T();
 		}
 
@@ -214,7 +225,7 @@ public:
 		friend bool operator!=(allocator<U> const&, allocator<W> const&) noexcept;
 
 	private:
-		std::uint64_t m_object_count;
+		std::uint64_t m_alloc_count;
 		pool* m_pool;
 	};
 

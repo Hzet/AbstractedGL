@@ -42,19 +42,28 @@ public:
 
 public:
 	allocator() noexcept 
-		: m_object_count{ 0 }
 	{
+		m_alloc_count = 0;
+	}
+	allocator(allocator const&) noexcept
+	{
+		m_alloc_count = 0;
 	}
 	template <typename U>
 	allocator(allocator<U> const&) noexcept
-		: m_object_count{ 0 }
 	{
+		m_alloc_count = 0;
+	}
+	allocator(allocator&& other) noexcept
+	{
+		m_alloc_count = other.m_alloc_count;
+		other.m_alloc_count = 0;
 	}
 	template <typename U>
 	allocator(allocator<U>&& other) noexcept
-		: m_object_count{ other.m_object_count }
 	{
-		other.m_object_count = 0;
+		m_alloc_count = other.m_alloc_count;
+		other.m_alloc_count = 0;
 	}
 	template <typename U>
 	allocator& operator=(allocator<U>&& other) noexcept
@@ -62,8 +71,8 @@ public:
 		if (this == &other)
 			return *this;
 
-		m_object_count = other.m_object_count;
-		other.m_object_count = 0;
+		m_alloc_count = other.m_alloc_count;
+		other.m_alloc_count = 0;
 		return *this;
 	}
 	template <typename U>
@@ -72,12 +81,12 @@ public:
 		if (this == &other)
 			return *this;
 
-		m_object_count = 0;
+		m_alloc_count = 0;
 		return *this;
 	}
 	~allocator() noexcept 
 	{
-		AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
+		AGL_ASSERT(m_alloc_count == 0, "some objects were not destroyed");
 	}
 
 	[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type)) noexcept
@@ -86,22 +95,26 @@ public:
 		auto* ptr = std::malloc(size);
 		auto i = size;
 		std::align(alignment, size, ptr, i);
+		m_alloc_count += count;
 		return reinterpret_cast<pointer>(ptr);
 	}
-	void deallocate(pointer ptr, size_type size = 0) noexcept
+	void deallocate(pointer ptr, size_type count = 1) noexcept
 	{
-		AGL_ASSERT(m_object_count == 0, "some objects were not destroyed");
+		AGL_ASSERT(m_alloc_count > 0, "invalid deallocation call");
 
+		m_alloc_count -= count;
 		std::free(ptr);
 	}
 	template <typename... TArgs>
 	void construct(pointer buffer, TArgs&&... args) noexcept
 	{
+		AGL_ASSERT(m_alloc_count > 0, "invalid construction call");
+
 		new (buffer) value_type(std::forward<TArgs>(args)...);
 	}
 	void destruct(pointer ptr) noexcept
 	{
-		AGL_ASSERT(m_object_count > 0, "invalid destruction call");
+		AGL_ASSERT(m_alloc_count > 0, "invalid destruction call");
 
 		ptr->~T();
 	}
@@ -111,7 +124,7 @@ private:
 	friend class allocator;
 
 private:
-	std::uint64_t m_object_count;
+	std::uint64_t m_alloc_count;
 };
 
 template <typename T, typename U>

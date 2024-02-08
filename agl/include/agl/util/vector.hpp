@@ -143,7 +143,7 @@ public:
 	}
 	void assign(size_type count, const_reference value) noexcept
 	{
-		if (count != capacity())
+		if (count != size())
 		{
 			clear();
 			resize(count);
@@ -156,7 +156,7 @@ public:
 	void assign(TInputIt first, TInputIt last) noexcept
 	{
 		auto const count = last - first;
-		if (count != capacity())
+		if (count != size())
 		{
 			clear();
 			resize(count);
@@ -300,7 +300,7 @@ public:
 
 		for (auto i = difference_type{ 0 }; i < static_cast<difference_type>(capacity()); ++i)
 			m_allocator.destruct(m_memory + i);
-		m_allocator.deallocate(m_memory, m_capacity);
+		m_allocator.deallocate(m_memory, capacity());
 		m_memory = nullptr;
 		m_size = 0;
 		m_capacity = 0;
@@ -309,7 +309,7 @@ public:
 	{
 		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
 
-		if (pos == cend())
+		if (pos == cend() || empty())
 		{
 			push_back(value);
 			return make_iterator<iterator>(m_memory + m_size - 1);
@@ -325,14 +325,15 @@ public:
 	{
 		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
 
-		if (pos == cend())
+		if (pos == cend() || empty())
 		{
 			push_back(std::move(value));
 			return make_iterator<iterator>(m_memory + m_size - 1);
 		}
 		auto const index = pos - begin();
 		reserve(size() + 1);
-		move_elements_right(begin() + index + 1, begin() + index);
+		auto it = make_internal_iterator<iterator>(m_memory + index + 1);
+		move_elements_right(it, it - 1);
 		make_move(m_memory + index, std::forward<value_type&&>(value));
 		++m_size;
 		return make_iterator<iterator>(m_memory + index);
@@ -346,7 +347,7 @@ public:
 
 		auto const index = pos - begin();
 		auto const insert_size = std::distance(last - first);
-		if (pos == cend())
+		if (pos == cend() || empty())
 		{
 			reserve(size() + insert_size);
 			for (auto it = first; it != last; ++it)
@@ -400,18 +401,6 @@ public:
 			m_size -= erase_size;
 		return make_iterator<iterator>(m_memory + offset);
 	}
-	iterator emplace(const_iterator pos, value_type&& value) noexcept
-	{
-		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");
-
-		if (pos == cend())
-			return emplace_back(std::forward<value_type&&>(value));
-
-		m_allocator.destruct(&(*pos));
-		m_allocator.construct(&(*pos), std::forward<value_type&&>(value));
-
-		return 
-	}
 	void push_back(value_type&& value) noexcept
 	{
 		resize(size() + 1);
@@ -427,6 +416,7 @@ public:
 		AGL_ASSERT(!empty(), "erase on empty vector");
 
 		m_allocator.destruct(m_memory + size() - 1);
+		m_allocator.construct(m_memory + size() - 1);
 		--m_size;
 	}
 	void reserve(size_type n) noexcept
@@ -441,13 +431,18 @@ private:
 	{
 		return TIterator{ ptr, m_memory, m_memory + size() };
 	}
+	template <typename TIterator>
+	TIterator make_internal_iterator(T* ptr) const noexcept // returns iterator checked up to capacity()
+	{
+		return TIterator{ ptr, m_memory, m_memory + capacity() };
+	}
 	iterator real_end() const noexcept
 	{
 		return iterator{ m_memory + capacity(), m_memory, m_memory + capacity() };
 	}
 	void make_copy(pointer dest, const_reference src) noexcept
 	{
-		AGL_ASSERT(&(*begin()) <= dest && dest < &(*end()), "iterator out of range");
+		AGL_ASSERT(m_memory <= dest && dest < m_memory + capacity(), "iterator out of range");
 		
 		if constexpr (std::is_copy_constructible_v<value_type>)
 			m_allocator.construct(dest, src);
@@ -458,7 +453,7 @@ private:
 	}
 	void make_move(pointer dest, value_type&& src) noexcept
 	{
-		AGL_ASSERT(&(*begin()) <= dest && dest < &(*end()), "iterator out of range");
+		AGL_ASSERT(m_memory <= dest && dest < m_memory + capacity(), "iterator out of range");
 
 		if constexpr (std::is_move_constructible_v<value_type>)
 			m_allocator.construct(dest, std::forward<value_type&&>(src));
@@ -485,7 +480,7 @@ private:
 		AGL_ASSERT(begin() <= from && from <= end(), "Index out of bounds");
 
 		for (where, from; from != end(); ++where, ++from)
-			*where = std::move(*from);
+			make_move_or_copy(&(*where), std::move(*from));
 	}
 	void move_elements_right(iterator where, iterator from) noexcept
 	{
@@ -493,13 +488,13 @@ private:
 		AGL_ASSERT(begin() <= where && where < real_end(), "Index out of bounds");
 		AGL_ASSERT(begin() <= from && from <= real_end(), "Index out of bounds");
 
-		auto const size = where - from;
-		auto w = reverse_iterator{ m_memory + this->size() + size - 1, m_memory, m_memory + capacity() }; // special iterator with wider range (0 - capacity) instead of (0 - size)
-		auto f = rbegin();
-		auto const end = make_iterator<reverse_iterator>(&(*(--where)));
+		auto const offset = where - from;
+		auto w = make_internal_iterator<reverse_iterator>(m_memory + size() + offset - 1);
+		auto f = make_iterator<reverse_iterator>(m_memory + size() - 1);
+		auto const end = make_iterator<reverse_iterator>(&(*from));
 
 		for (w, f; w != end; ++w, ++f)
-			*w = std::move(*f);
+			make_move_or_copy(&(*w), std::move(*f));
 	}
 	void realloc(size_type n) noexcept
 	{
@@ -512,9 +507,14 @@ private:
 		for (auto i = size(); i < n; ++i)
 			m_allocator.construct(tmp_buffer + i);
 
-		clear();
+		if (capacity() > 0)
+		{
+			for (auto i = difference_type{ 0 }; i < static_cast<difference_type>(capacity()); ++i)
+				m_allocator.destruct(m_memory + i);
 
-		m_allocator.deallocate(m_memory, m_capacity);
+			m_allocator.deallocate(m_memory, capacity());
+		}
+
 		m_memory = tmp_buffer;
 		m_capacity = n;
 	}
