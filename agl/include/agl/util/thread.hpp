@@ -81,8 +81,8 @@ private:
 	friend class ::agl::threads;
 
 private:
-	bool m_is_running;
-	bool m_should_close;
+	std::atomic<bool> m_is_running;
+	std::atomic<bool> m_should_close;
 	std::string m_name;
 	std::uint64_t m_internal_id;
 };

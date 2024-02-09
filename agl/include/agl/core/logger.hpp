@@ -82,6 +82,7 @@ private:
 	static vector<std::string> parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>) noexcept;
 
 private:
+	std::atomic<std::uint64_t> m_messages_count;
 	vector<message> m_messages;
 	condition_variable* m_cond_var;
 	vector<instance> m_loggers;
@@ -137,6 +138,7 @@ void logger::log(instance_index index, std::string const& message, TArgs&&... ar
 		std::lock_guard<std::mutex> lock{ *m_mutex };
 		m_messages.push_back({ index, msg });
 	}
+	++m_messages_count;
 	m_cond_var->notify_one();
 }
 template <typename... TArgs>

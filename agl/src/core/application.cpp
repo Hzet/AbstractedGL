@@ -79,13 +79,6 @@ void application::run()
 	{
 		for(auto &r : m_resources)
 			r.second->on_update(this);
-
-		++i;
-		if (i >= 1)
-		{
-			log.info("stopping");
-			m_properties.is_open = false;
-		}
 	}
 
 	log.info("Closing...");

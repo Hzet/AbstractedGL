@@ -19,10 +19,12 @@ logger::logger() noexcept
 	: resource<logger>{ }
 	, m_cond_var{ nullptr }
 	, m_mutex{ nullptr }
+	, m_messages_count{ 0 }
 {
 }
 logger::logger(logger&& other) noexcept
 	: resource<logger>{ std::move(other) }
+	, m_messages_count{ other.m_messages_count.load() }
 {
 	if (this == &other)
 		return;
@@ -68,13 +70,14 @@ void logger::on_attach(application* app) noexcept
 				std::unique_lock<std::mutex> lock{ *m_mutex };
 				auto stop_waiting = [&]
 					{
-						return !m_messages.empty() || m_thread->should_close();
+						return m_messages_count > 0 || m_thread->should_close();
 					};
 				m_cond_var->wait(lock, stop_waiting);
-				if (!m_messages.empty())
+				if (m_messages_count > 0)
 				{
 					auto const messages = m_messages;
 					m_messages.clear();
+					m_messages_count = 0;
 					lock.unlock();
 
 					for (auto& msg : messages)

@@ -32,9 +32,9 @@ public:
 		auto& log = app->get_resource<logger>();
 		log.info("GLFW: Initializing");
 
-		//if (!glfwInit())
-			//app->get_resource<logger>().error("GLFW: Error");
-		//log.info("GLFW: OK");
+		if (!glfwInit())
+			app->get_resource<logger>().error("GLFW: Error");
+		log.info("GLFW: OK");
 	}
 
 	// render
