@@ -62,11 +62,13 @@ public:
 private:
 	spaces_t m_spaces;
 };
-// TODO: free_indexes must not store every index, but rather ranges of them. this will decrease amount of memory needed to track free spaces. 
+// TODO: free_indexes must not store every index, but rather ranges of them. 
+// this decreases amount of memory needed to track free spaces but increases complexity of the alg.
 template <typename T, typename TAlloc>
 class block
 {
 	using allocator_type = typename TAlloc::template rebind<T>;
+
 	using value_type = typename type_traits<T>::value_type;
 	using pointer = typename type_traits<T>::pointer;
 	using const_pointer = typename type_traits<T>::const_pointer;

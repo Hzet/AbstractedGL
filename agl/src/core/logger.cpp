@@ -41,9 +41,6 @@ logger::logger(logger&& other) noexcept
 	if (m_mutex != nullptr)
 		m_mutex->unlock();
 }
-logger::~logger() noexcept
-{
-}
 bool logger::is_active() const noexcept
 {
 	AGL_ASSERT(m_thread != nullptr, "invalid thread object");

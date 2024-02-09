@@ -20,9 +20,6 @@ public:
 	{
 	}
 	threads(threads&& other) noexcept = default;
-	~threads() noexcept
-	{
-	}
 	[[nodiscard]] thread& new_thread()
 	{
 		auto ptr = make_unique<thread>();
@@ -58,7 +55,6 @@ public:
 private:
 	virtual void on_attach(application* app) noexcept 
 	{
-		m_app = app;
 	};
 	virtual void on_update(application*) noexcept {};
 	virtual void on_detach(application*) noexcept 
@@ -68,7 +64,6 @@ private:
 	};
 
 private:
-	application* m_app;
 	vector<unique_ptr<condition_variable>> m_cond_vars;
 	vector<unique_ptr<mutex>> m_mutexes;
 	vector<unique_ptr<thread>> m_threads;

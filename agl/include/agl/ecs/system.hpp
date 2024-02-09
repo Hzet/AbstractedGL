@@ -22,8 +22,6 @@ namespace ecs
 		system(type_id_t id, std::string const& name, ecs::stage stage) noexcept;
 		system(system&& other) noexcept;
 		system& operator=(system&& other) noexcept;
-		system(system const&) noexcept = delete;
-		system& operator=(system const&) noexcept = delete;
 		virtual ~system() noexcept = default;
 
 		type_id_t id() const noexcept;

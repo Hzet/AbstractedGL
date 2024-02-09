@@ -283,7 +283,6 @@ public:
 	{
 		other.m_buffer = nullptr;
 	}
-	pool(pool const&) noexcept = delete;
 	pool& operator=(pool&& other) noexcept
 	{
 		if (this == &other)
@@ -298,7 +297,6 @@ public:
 		m_size = other.m_size;
 		return *this;
 	}
-	pool& operator=(pool const&) noexcept = delete;
 	~pool() noexcept
 	{
 		destroy();

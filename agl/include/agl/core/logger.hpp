@@ -19,9 +19,8 @@ public:
 	logger() noexcept;
 	logger(logger&& other) noexcept;
 	logger(logger const&) noexcept = delete;
-	logger& operator=(logger&&) noexcept = delete;
 	logger& operator=(logger const&) noexcept = delete;
-	~logger() noexcept;
+	~logger() noexcept = default;
 
 	template <typename... TArgs>
 	void debug(std::string const& message, TArgs&&... args) noexcept;

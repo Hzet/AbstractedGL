@@ -15,9 +15,7 @@ class application_resource
 public:
 	application_resource(type_id_t id = {}) noexcept;
 	application_resource(application_resource&&) noexcept = default;
-	application_resource(application_resource const&) noexcept = delete;
 	application_resource& operator=(application_resource&&) noexcept = default;
-	application_resource& operator=(application_resource const&) noexcept = delete;
 	virtual ~application_resource() noexcept = default;
 	virtual void on_attach(application*) noexcept = 0;
 	virtual void on_detach(application*) noexcept = 0;

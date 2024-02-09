@@ -26,8 +26,6 @@ public:
 	organizer(mem::pool::allocator<organizer> allocator) noexcept;
 	organizer(organizer&& other) noexcept;
 	organizer& operator=(organizer&& other) noexcept;
-	organizer(organizer const& other) noexcept = delete;
-	organizer& operator=(organizer const& other) noexcept = delete;
 	~organizer() noexcept = default;
 
 	template <typename T, typename = is_system<T>>

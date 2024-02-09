@@ -10,6 +10,8 @@ class thread
 {
 public:
 	thread() noexcept;
+	thread(thread&&) noexcept = default;
+	thread& operator=(thread&&) noexcept = default;
 	virtual ~thread()
 	{
 		close();
