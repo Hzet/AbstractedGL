@@ -200,7 +200,7 @@ public:
 	}
 	mapped_type& at(key_type key) noexcept
 	{
-		auto const found = find(key);
+		auto found = find(key);
 
 		AGL_ASSERT(found != end(), "Index out of bounds");
 
@@ -216,7 +216,7 @@ public:
 	}
 	mapped_type& operator[](key_type key) noexcept
 	{
-		auto const found = lower_bound(key);
+		auto found = lower_bound(key);
 
 		if (found == end() || !equal(found->first, key))
 			return m_data.insert(found, std::make_pair(key, mapped_type{}))->second;

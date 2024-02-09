@@ -76,7 +76,7 @@ private:
 	void log(instance_index index, std::string const& message, TArgs&&... args) noexcept;
 
 	template <typename... TArgs>
-	static std::string produce_message(instance_index index, std::string const& message, TArgs&&... args) noexcept;
+	static std::string produce_message(instance_index index, std::string message, TArgs&&... args) noexcept;
 
 	template <typename TTuple, std::uint64_t... TSequence>
 	static vector<std::string> parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>) noexcept;
@@ -140,9 +140,8 @@ void logger::log(instance_index index, std::string const& message, TArgs&&... ar
 	m_cond_var->notify_one();
 }
 template <typename... TArgs>
-std::string logger::produce_message(instance_index index, std::string const& message, TArgs&&... args) noexcept
+std::string logger::produce_message(instance_index index, std::string message, TArgs&&... args) noexcept
 {
-	auto result = message;
 	auto const parsed = parse_arguments(std::forward_as_tuple(std::forward<TArgs>(args)...), std::make_index_sequence<sizeof... (TArgs)>{});
 	auto found_l = std::uint64_t{};
 	auto arg_index = std::uint64_t{};
@@ -156,18 +155,21 @@ std::string logger::produce_message(instance_index index, std::string const& mes
 		auto found_r = message.find_first_of("}", found_l);
 		AGL_ASSERT(found_r != std::string::npos, "mismatched {} tokens");
 
-		if (found_r - found_l > 1)
+		auto const token_size = found_r - found_l + 1;
+		if (token_size > 2)
 			arg_index = std::stoi(message.substr(found_l + 1, found_r - found_l - 1));
 		else
 			arg_index = current_index++;
 
 		AGL_ASSERT(arg_index < parsed.size(), "too few arguments provided");
-		result.replace(result.cbegin() + found_l, result.cbegin() + found_r + 1, parsed[arg_index]);
+		message.replace(message.cbegin() + found_l, message.cbegin() + found_r + 1, parsed[arg_index]);
+
+		found_l += parsed[arg_index].size() - token_size;
 	}
-	result.insert(0, "] ");
-	result.insert(0, get_logger_name(index));
-	result.insert(0, "[");
-	return result;
+	message.insert(0, "] ");
+	message.insert(0, get_logger_name(index));
+	message.insert(0, "[");
+	return message;
 }
 template <typename TTuple, std::uint64_t... TSequence>
 vector<std::string> logger::parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>) noexcept

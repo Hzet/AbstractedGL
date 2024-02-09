@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include <type_traits>
 #include "agl/core/debug.hpp"
 #include "agl/util/iterator.hpp"
 #include "agl/util/memory/allocator.hpp"
@@ -19,7 +20,9 @@ struct iterator_traits
 {
 	using value_type = T;
 	using pointer = T*;
+	using const_pointer = T const*;
 	using reference = T&;
+	using const_reference = T const&;
 	using difference_type = std::uint64_t;
 };
 template <typename T>
@@ -27,7 +30,9 @@ struct const_iterator_traits
 {
 	using value_type = T;
 	using pointer = T const*;
+	using const_pointer = T const*;
 	using reference = T const&;
+	using const_reference = T const&;
 	using difference_type = std::uint64_t;
 };
 }
@@ -403,7 +408,7 @@ public:
 	}
 	void push_back(value_type&& value) noexcept
 	{
-		resize(size() + 1);
+ 		resize(size() + 1);
 		make_move(m_memory + size() - 1, std::forward<value_type&&>(value));
 	}
 	void push_back(const_reference value) noexcept
@@ -537,12 +542,17 @@ bool iterator_in_range(T* it, T* begin, T* end) noexcept
 template <typename T, typename TTraits>
 class vector_iterator
 {
+	template <typename U, typename UTraits>
+	static constexpr auto is_const_iterator_v = std::is_same_v<UTraits, impl::const_iterator_traits<U>>;
+
 public:
 	using traits = TTraits;
 	using value_type = typename traits::value_type;
 	using data_pointer = T*;
 	using pointer = typename traits::pointer;
+	using const_pointer = typename traits::const_pointer;
 	using reference = typename traits::reference;
+	using const_reference = typename traits::const_reference;
 	using difference_type = typename traits::difference_type;
 
 	vector_iterator() noexcept
@@ -559,21 +569,21 @@ public:
 	{
 		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin, m_end), "invalid iterator");
 	}
-	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
+	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && ! is_const_iterator_v<T, TTraits>)>>//std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
 	vector_iterator(vector_iterator<T, UTraits>&& other) noexcept
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
 	{
 	}
-	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
+	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && !is_const_iterator_v<T, TTraits>)>>
 	vector_iterator(vector_iterator<T, UTraits> const& other) noexcept
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
 	{
 	}
-	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
+	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && !is_const_iterator_v<T, TTraits>)>>
 	vector_iterator& operator=(vector_iterator<T, UTraits>&& other) noexcept
 	{
 		m_begin = other.m_begin;
@@ -581,7 +591,7 @@ public:
 		m_ptr = other.m_ptr;
 		return *this;
 	}
-	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
+	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && !is_const_iterator_v<T, TTraits>)>>
 	vector_iterator& operator=(vector_iterator<T, UTraits> const& other) noexcept
 	{
 		m_begin = other.m_begin;
@@ -663,14 +673,30 @@ public:
 		m_ptr -= offset;
 		return *this;
 	}
-	reference operator*() const noexcept
+	template <typename = std::enable_if_t<!is_const_iterator_v<T, TTraits>>>
+	reference operator*() noexcept
+	{
+		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "cannot dereference outside-range iterator");
+
+		return *m_ptr;
+	}	
+	const_reference operator*() const noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "cannot dereference outside-range iterator");
 
 		return *m_ptr;
 	}
-	pointer operator->() const noexcept
+	template <typename = std::enable_if_t<!is_const_iterator_v<T, TTraits>>>
+	pointer operator->() noexcept
+	{
+		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
+		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "Cannot dereference outside-range iterator");
+
+		return m_ptr;
+	}
+	const_pointer operator->() const noexcept
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "Cannot dereference outside-range iterator");
@@ -705,6 +731,7 @@ private:
 
 	template <typename U, typename W>
 	friend bool operator>=(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs) noexcept;
+
 
 private:
 	data_pointer m_begin;

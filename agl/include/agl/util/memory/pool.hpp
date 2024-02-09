@@ -4,6 +4,7 @@
 #include "agl/core/logger.hpp"
 #include "agl/util/set.hpp"
 #include "agl/util/dictionary.hpp"
+#include "agl/util/memory/allocator.hpp"
 
 namespace agl
 {
@@ -26,32 +27,11 @@ public:
 	void push(std::byte* ptr, std::uint64_t size) noexcept
 	{
 		// find and merge adjacent spaces
-		auto end_ptr = ptr + size;
-		auto it_spaces = m_spaces.begin();
-		for(it_spaces; it_spaces != m_spaces.end(); ++it_spaces)
-		{
-			// check for end_ptr in set
-			auto it_second = it_spaces->second.find(end_ptr);
-			if (it_second == it_spaces->second.end())
-				continue;
-
-			// remove pointer from set
-			it_spaces->second.erase(it_second);
-			
-			// calc new end pointer and add size to 'to be emplaced' space
-			end_ptr += it_spaces->first;
-			size += it_spaces->first;
-
-			// erase size gap if it was the last pointer to it
-			if (it_spaces->second.empty())
-				m_spaces.erase(it_spaces);
-
-			// find new end_ptr
-			it_spaces = m_spaces.begin();
-		}
+		size += find_erase_adjacent_right(ptr + size, size);
+		size += find_erase_adjacent_left(ptr);
 
 		// emplace new space
-		it_spaces = m_spaces.find(size);
+		auto it_spaces = m_spaces.find(size);
 		if (it_spaces == m_spaces.end())
 			it_spaces = m_spaces.emplace({ size, set<std::byte*>{} });
 		it_spaces->second.emplace(ptr);
@@ -94,6 +74,62 @@ public:
 
 private:
 	using spaces_type = dictionary<std::uint64_t, set<std::byte*>>; // size, pointers to blocks of 'size'
+
+private:
+	std::uint64_t find_erase_adjacent_right(std::byte* ptr, std::uint64_t size) noexcept
+	{
+		auto original_size = size;
+		auto it_spaces = m_spaces.begin();
+		for (it_spaces; it_spaces != m_spaces.end(); ++it_spaces)
+		{
+			// check for end_ptr in set
+			auto it_second = it_spaces->second.find(ptr);
+			if (it_second == it_spaces->second.end())
+				continue;
+
+			// remove pointer from set
+			it_spaces->second.erase(it_second);
+
+			// calc new end pointer and add size to 'to be emplaced' space
+			ptr += it_spaces->first;
+			size += it_spaces->first;
+
+			// erase size gap if it was the last pointer to it
+			if (it_spaces->second.empty())
+				m_spaces.erase(it_spaces);
+
+			// find new end_ptr
+			it_spaces = m_spaces.begin();
+		}
+
+		return size - original_size;
+	}
+
+	std::uint64_t find_erase_adjacent_left(std::byte* ptr) noexcept
+	{
+		auto result = std::uint64_t{};
+		for (auto it = m_spaces.begin(); it != m_spaces.end(); ++it)
+		{
+			auto it_ptrs = it->second.find(ptr - it->first);
+			if (it_ptrs == it->second.end())
+				continue;
+
+			it->second.erase(it_ptrs);
+
+			ptr -= it->first;
+			result += it->first;
+
+			if (it->second.empty())
+				m_spaces.erase(it);
+
+			if (m_spaces.empty())
+				break;
+			else
+				it = m_spaces.begin();
+		}
+
+		return result;
+	}
 
 private:
 	spaces_type m_spaces;
@@ -239,6 +275,7 @@ public:
 	}
 	pool(pool&& other) noexcept
 		: resource<pool>{ std::move(other) }
+		, m_allocator{ std::move(other.m_allocator) }
 		, m_buffer{ other.m_buffer }
 		, m_free_spaces{ std::move(other.m_free_spaces) }
 		, m_occupancy{ other.m_occupancy }
@@ -253,6 +290,7 @@ public:
 			return *this;
 
 		this->resource<pool>::operator=(std::move(other));
+		m_allocator = std::move(other.m_allocator);
 		m_buffer = other.m_buffer;
 		other.m_buffer = nullptr;
 		m_free_spaces = std::move(other.m_free_spaces);
@@ -285,7 +323,7 @@ public:
 		if (m_buffer != nullptr)
 			destroy();
 
-		m_buffer = reinterpret_cast<std::byte*>(std::malloc(m_size));
+		m_buffer = m_allocator.allocate(size);
 		m_size = size;
 
 		m_free_spaces.push(m_buffer, m_size);
@@ -299,7 +337,7 @@ public:
 
 		AGL_ASSERT(empty(), "Some objects were not deallocated");
 
-		std::free(m_buffer);
+		m_allocator.deallocate(m_buffer, m_size);
 		m_buffer = nullptr;
 		m_free_spaces = impl::free_space_tracker{};
 		m_occupancy = 0;
@@ -344,18 +382,19 @@ private:
 	virtual void on_attach(application* app) noexcept override 
 	{
 		auto& log = app->get_resource<agl::logger>();
-		log.info("Pool {} bytes: OK", size());
+		log.info("Pool {} bytes at {}: OK", size(), m_buffer);
 	}
 	virtual void on_detach(application* app) noexcept override
 	{
 		auto& log = app->get_resource<agl::logger>();
-		log.info("Pool {} bytes: OFF", size());
+		log.info("Pool {} bytes at {}: OFF", size(), m_buffer);
 	}
 	virtual void on_update(application*) noexcept override 
 	{
 	}
 
 private:
+	agl::mem::allocator<std::byte> m_allocator;
 	std::byte* m_buffer;
 	impl::free_space_tracker m_free_spaces;
 	std::uint64_t m_occupancy;
