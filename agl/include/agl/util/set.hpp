@@ -151,6 +151,12 @@ public:
 	{
 		m_data.resize(n);
 	}
+	template <typename... TArgs>
+	iterator emplace(TArgs... args) noexcept
+	{
+		auto const it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
+		m_data.emplace(it, std::forward<TArgs>(args)...);
+	}
 	template <typename U>
 	iterator find(U const& value) noexcept
 	{
@@ -189,12 +195,12 @@ public:
 
 		return *found;
 	}
-	iterator emplace(value_type&& value) noexcept
+	iterator insert(value_type&& value) noexcept
 	{
 		auto const it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 		return m_data.insert(it, std::move(value));
 	}
-	iterator emplace(value_type const& value) noexcept
+	iterator insert(value_type const& value) noexcept
 	{
 		auto const it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
 		return m_data.insert(it, value);

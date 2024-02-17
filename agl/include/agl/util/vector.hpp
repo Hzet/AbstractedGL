@@ -374,6 +374,34 @@ public:
 		m_size += insert_size;
 		return make_iterator<iterator>(m_memory + index);
 	}
+	template <typename... TArgs>
+	iterator emplace(const_iterator pos, TArgs&&... args) noexcept
+	{
+		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
+
+		if (pos == cend() || empty())
+		{
+			emplace_back(value);
+			return make_iterator<iterator>(m_memory + m_size - 1);
+		}
+		auto const index = pos - begin();
+		reserve(size() + 1);
+		move_elements_right(begin() + index + 1, begin() + index);
+		m_allocator.destruct(m_memory + index);
+		m_allocator.construct(m_memory + index, std::forward<TArgs>(args)...);
+		++m_size;
+
+		return make_iterator<iterator>(m_memory + index);
+	}
+	template <typename... TArgs>
+	iterator emplace_back(TArgs&&... args) noexcept
+	{
+		resize(size() + 1);
+		m_allocator.destruct(m_memory + size() - 1);
+		m_allocator.construct(m_memory + size() - 1, std::forward<TArgs>(args)...);
+
+		return make_iterator<iterator>(m_memory + size() - 1);
+	}
 	iterator erase(const_iterator pos) noexcept
 	{
 		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");

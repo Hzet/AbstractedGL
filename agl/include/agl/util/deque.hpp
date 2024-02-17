@@ -67,6 +67,7 @@ private:
 template <typename T, typename TAlloc>
 class block
 {
+public:
 	using allocator_type = typename TAlloc::template rebind<T>;
 
 	using value_type = typename type_traits<T>::value_type;
@@ -151,17 +152,11 @@ public:
 	{
 		clear();
 	}
-	const_pointer cbegin() const noexcept
+	bool pointer_in_bounds(const_pointer ptr) const noexcept
 	{
-		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
-
-		return m_memory;
-	}
-	const_pointer cend() const noexcept
-	{
-		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
-
-		return m_memory + block_size();
+		return m_memory != nullptr
+			&& m_memory <= ptr
+			&& m_memory + block_size() > ptr;
 	}
 	void clear() noexcept
 	{
@@ -221,6 +216,8 @@ public:
 	}
 	pointer push_back(value_type&& value) noexcept
 	{
+		AGL_ASSERT(!full(), "index out of bounds");
+
 		if (empty())
 			reserve(block_size());
 
@@ -230,14 +227,30 @@ public:
 
 		return m_memory + index;
 	}
-	pointer push_back(value_type const& value) noexcept
+	pointer push_back(const_reference value) noexcept
 	{
+		AGL_ASSERT(!full(), "index out of bounds");
+
 		if (empty())
 			reserve(block_size());
 
 		auto const index = m_free_spaces.pop();
 		make_copy(m_memory + index, value);
-		*(m_memory + index) = value;
+		++m_size;
+
+		return m_memory + index;
+	}
+	template <typename... TArgs>
+	pointer emplace_back(TArgs&&... args) noexcept
+	{
+		AGL_ASSERT(!full(), "index out of bounds");
+
+		if (empty()) // you can do better by delegating block creation to deque
+			reserve(block_size());
+		
+		auto const index = m_free_spaces.pop();
+		m_allocator.destruct(m_memory + index);
+		m_allocator.construct(m_memory + index, std::forward<TArgs>(args)...);
 		++m_size;
 
 		return m_memory + index;
@@ -256,7 +269,7 @@ public:
 	}
 	reference operator[](size_type index) noexcept
 	{
-		AGL_ASSERT(index < block_size(), "Index out of bounds");
+		AGL_ASSERT(!full(), "index out of bounds");
 
 		return *(m_memory + index);
 	}
@@ -268,6 +281,19 @@ public:
 	}
 
 private:
+	const_pointer cbegin() const noexcept
+	{
+		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
+
+		return m_memory;
+	}
+	const_pointer cend() const noexcept
+	{
+		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
+
+		return m_memory + block_size();
+	}
+
 	void make_copy(pointer dest, const_reference src) noexcept
 	{
 		if constexpr (std::is_copy_constructible_v<value_type>)
@@ -334,8 +360,9 @@ public:
 	using difference_type = typename type_traits<T>::difference_type;
 
 private:
-	using block_allocator = typename allocator_type::template rebind<impl::block<T, allocator_type>>;
-	using block_vector = vector<impl::block<T, allocator_type>, block_allocator>;
+	using block = typename impl::block<T, allocator_type>;
+	using block_allocator = typename allocator_type::template rebind<block>;
+	using block_vector = vector<block, block_allocator>;
 	using index_allocator = typename allocator_type::template rebind<T*>;
 	using index_vector = vector<T*, index_allocator>;
 
@@ -452,32 +479,36 @@ public:
 				m_blocks.erase(it_block);
 		}
 	}
+	template <typename... TArgs>
+	iterator emplace(const_iterator pos, TArgs... args) noexcept
+	{
+		auto* ptr = find_and_emplace(std::forward<TArgs>(args)...);
+		return m_indexes.insert(pos.m_it, ptr);
+	}
+	template <typename... TArgs>
+	iterator emplace_back(const_iterator pos, TArgs... args) noexcept
+	{
+		auto* ptr = find_and_emplace(std::forward<TArgs>(args)...);
+		return m_indexes.push_back(pos.m_it, ptr);
+	}
+	iterator insert(const_iterator pos, value_type&& value) noexcept
+	{
+		auto* ptr = find_and_push(std::move(value));
+		return m_indexes.insert(pos.m_it, ptr);
+	}
+	iterator insert(const_iterator pos, const_reference value) noexcept
+	{
+		auto* ptr = find_and_push(value);
+		return m_indexes.insert(pos.m_it, ptr);
+	}
 	void push_back(value_type&& value) noexcept
 	{
-		for (auto& block : m_blocks)
-			if (!block.full())
-			{
-				auto* ptr = block.push_back(std::move(value));
-				m_indexes.push_back(ptr);
-				return;
-			}
-
-		m_blocks.push_back(impl::block<T, allocator_type>{ block_size(), get_allocator() });
-		auto* ptr = m_blocks.back().push_back(std::forward<value_type&&>(value));
+		auto* ptr = find_and_push(std::move(value));
 		m_indexes.push_back(ptr);
 	}
 	void push_back(const_reference value) noexcept
 	{
-		for (auto& block : m_blocks)
-			if (!block.full())
-			{
-				auto* ptr = block.push_back(value);
-				m_indexes.push_back(ptr);
-				return;
-			}
-
-		m_blocks.push_back(impl::block<T, allocator_type>{ block_size(), get_allocator() });
-		auto* ptr = m_blocks.back().push_back(value);
+		auto* ptr = find_and_push(value);
 		m_indexes.push_back(ptr);
 	}
 	iterator begin() noexcept
@@ -570,11 +601,36 @@ private:
 	typename block_vector::iterator find_block(const_iterator pos) noexcept
 	{
 		for (auto it = m_blocks.begin(); it != m_blocks.end(); ++it)
-			if (it->cbegin() <= &(*pos) && &(*pos) <= it->cend())
+			if(it->pointer_in_bounds(&(*pos)))
 				return it;
 
 		AGL_ASSERT(false, "Index out of range");
 		return m_blocks.end();
+	}
+	block& free_block() noexcept // gets first free block or creates new one
+	{
+		for (auto& block : m_blocks)
+			if (!block.full())
+				return block;
+	
+		auto allocator = typename block::allocator_type{ get_allocator() };
+		return *m_blocks.emplace_back(block_size(), allocator);
+	}
+	typename block::pointer find_and_push(const_reference value) noexcept
+	{
+		auto& block = free_block();
+		return block.push_back(value);
+	}
+	typename block::pointer find_and_push(value_type&& value) noexcept
+	{
+		auto& block = free_block();
+		return block.push_back(std::move(value));
+	}
+	template <typename... TArgs>
+	typename block::pointer find_and_emplace(TArgs&&... args) noexcept
+	{
+		auto& block = free_block();
+		return block.emplace(std::forward<TArgs>(args)...);
 	}
 
 private:
