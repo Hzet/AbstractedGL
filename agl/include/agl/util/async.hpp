@@ -4,10 +4,10 @@
 
 namespace agl
 {
-namespace impl
-{
-class thread;
-}
+/**
+ * @brief 
+ * std::mutex wrapper.
+ */
 class mutex
 {
 public:
@@ -53,6 +53,10 @@ private:
 	std::mutex m_mutex;
 };
 
+/**
+ * @brief 
+ * std::condition_variable wrapper
+ */
 class condition_variable
 {
 public:

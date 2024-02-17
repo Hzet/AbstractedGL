@@ -3,6 +3,13 @@
 
 namespace agl
 {
+/**
+ * @brief
+ * Shares properties with 'std::set'. Uses 'std::lower_bound' as search algorithm.
+ * @tparam T 
+ * @tparam TComp 
+ * @tparam TAlloc 
+ */
 template <typename T, typename TComp = std::less<T>, typename TAlloc = mem::allocator<T>>
 class set
 {

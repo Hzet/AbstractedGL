@@ -12,7 +12,27 @@ namespace agl
 {
 class thread;
 
-class logger
+
+/**
+ * @brief 
+ * A facility to provide thread-safe messaging system. So far it supports five different outputs it can write to.
+ * Logger is a resource, thus is managed and owned by the 'application' itself.
+ * Logger creates a new thread 'on_attach' listening for new messages, this is where the data is written. 
+ * It is being terminated after call to 'on_detach'.
+ * It ensures that all the messages are written upon closing the listening thread.
+ * 
+ * It supports Java like params, that can be embedded in message body. These divide into two categories:
+ * - empty braces {} -  inserts parameter that corresponds to current parameter index, which is incremented each time empty braces are being used in one call, i.e. 'info("{} world, {} to the users", "hello", "greetings");' results in "hello world, greetings to the users".
+ *	 Indexed braces does not affect current parameter index, i.e. 'info("{} world, {0} users, have a {} day", "hello", "nice");' results in "hello world, hello users, have a nice day".
+ * - indexed braces {0} - inserts parameter that corresponds to provided parameter index, i.e. 'info("{0} world! {0} users!", "hello");' results in "hello world! hello users!".
+ * 
+ * Output streams are initiated in 'on_attach' method and are controlled by the AGL itself.
+ * 
+ * @dependencies
+ * - 'application'
+ * - 'threads' resource
+ */
+class logger final
 	: public resource<logger>
 {
 public:

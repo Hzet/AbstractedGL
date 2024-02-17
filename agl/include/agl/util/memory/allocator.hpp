@@ -21,6 +21,12 @@ public:
 };
 namespace mem
 {
+/**
+ * @brief 
+ * Stateless allocator. Allocates the memory calling 'std::malloc', deallocates with 'std::free'.
+ * Allocated buffers are aligned according to the alignment of 'T', but no objects are constructed nor deleted upon calling 'construct' or 'destruct' respectively.
+ * @tparam T 
+ */
 template <typename T>
 class allocator
 {

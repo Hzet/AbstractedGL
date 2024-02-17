@@ -5,6 +5,10 @@
 
 namespace agl
 {
+/**
+ * @brief 
+ * Represents the value returned by 'type_id::get_id'.
+ */
 class type_id_t
 {
 public:
@@ -90,6 +94,11 @@ private:
 };
 }
 
+/**
+ * @brief 
+ * Provides a compile time method for users to identify types. Uses 'remove_cvref' on types.
+ * @tparam T 
+ */
 template <typename T>
 class type_id
 {

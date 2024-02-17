@@ -6,6 +6,10 @@ namespace agl
 {
 class threads;
 
+/**
+ * @brief 
+ * Thread abstraction. Provides easy methods to check thread id, whether thread is running, etc.. In addition it ensures that the thread is no longer running after the destructor is being called.
+ */
 class thread
 {
 public:

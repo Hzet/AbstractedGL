@@ -10,6 +10,14 @@ namespace agl
 {
 namespace ecs
 {
+/**
+ * @brief 
+ * 
+ * @dependencies
+ * 'application'
+ * 'pool'
+ * 'logger'
+ */
 class organizer
 	: public resource<organizer>
 {

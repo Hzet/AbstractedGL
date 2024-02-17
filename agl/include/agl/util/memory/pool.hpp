@@ -19,11 +19,7 @@ public:
 	{
 		return !m_spaces.empty();
 	}
-	/// <summary>
-	/// Adds item to the collection. If the space, that the object represents, overlaps with space of another object, the objects will be joined together.
-	/// </summary>
-	/// <param name="ptr"></param>
-	/// <param name="size"></param>
+	// Adds item to the collection. If the space, that the object represents, overlaps with space of another object, the objects will be joined together.
 	void push(std::byte* ptr, std::uint64_t size) noexcept
 	{
 		// find and merge adjacent spaces
@@ -36,13 +32,8 @@ public:
 			it_spaces = m_spaces.emplace({ size, set<std::byte*>{} });
 		it_spaces->second.emplace(ptr);
 	}
-
-	/// <summary>
-	/// Pops item of 'minimal_size' from the collection. If there are only items having more space than requested, 
-	/// the object with requested amount of space will be returned and the remaining space pushed back to the collection.
-	/// </summary>
-	/// <param name="minimal_size"></param>
-	/// <returns></returns>
+	// Pops item of 'minimal_size' from the collection. If there are only items having more space than requested, 
+	// the object with requested amount of space will be returned and the remaining space pushed back to the collection.
 	std::byte* pop(std::uint64_t size) noexcept
 	{
 		auto it = std::lower_bound(m_spaces.begin(), m_spaces.end(), size, m_spaces.key_value_comp());
@@ -136,6 +127,15 @@ private:
 };
 }
 
+/**
+ * @brief 
+ * Provides a pool of memory, which can serve as a fast storage. Is not thread-safe.
+ * Is a resource.
+ * 
+ * @dependecies
+ * 'application'
+ * 'logger'
+ */
 class pool
 	: public resource<pool>
 {

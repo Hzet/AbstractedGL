@@ -3,6 +3,12 @@
 
 namespace agl
 {
+/**
+ * @brief 
+ * Shares properties with 'std::unique_ptr'.
+ * @tparam T 
+ * @tparam TAlloc 
+ */
 template <typename T, typename TAlloc = mem::allocator<T>>
 class unique_ptr final
 {

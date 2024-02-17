@@ -312,6 +312,13 @@ class deque_reverse_iterator;
 template <typename T>
 class deque_reverse_const_iterator;
 
+
+/**
+ * @brief 
+ * Shares properties with std::deque, with the difference that the size of a block is customizable on the creation of the data structure.
+ * @tparam T 
+ * @tparam TAlloc 
+ */
 template <typename T, typename TAlloc = agl::mem::allocator<T>>
 class deque
 {

@@ -37,6 +37,12 @@ struct const_iterator_traits
 };
 }
 
+/**
+ * @brief 
+ * Shares properties with 'std::vector'.
+ * @tparam T 
+ * @tparam TAlloc 
+ */
 template <typename T, typename TAlloc = mem::allocator<T>>
 class vector
 {

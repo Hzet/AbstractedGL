@@ -5,6 +5,14 @@
 
 namespace agl
 {
+/**
+ * @brief 
+ * Shares properties with 'std::map'. Search algorithm is 'std::lower_bound'.
+ * @tparam TKey 
+ * @tparam TValue 
+ * @tparam TComp 
+ * @tparam TAlloc 
+ */
 template <typename TKey, typename TValue, typename TComp = std::less<TKey>, typename TAlloc = mem::allocator<std::pair<TKey, TValue>>>
 class dictionary
 {
