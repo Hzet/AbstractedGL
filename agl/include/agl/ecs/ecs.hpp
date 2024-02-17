@@ -74,11 +74,13 @@ void organizer::push_component(entity& ent, TArgs&&... args) noexcept
 
 	if (storage == nullptr)
 	{
-		storage = mem::make_unique<component_storage_base>(m_components.get_allocator(), component_storage<T>{});
-		storage->storage = mem::deque<T>{ sizeof(T) * 500, mem::pool::allocator<T>{ m_components.get_allocator() } };
+		auto allocator = mem::pool::allocator<T>{ m_components.get_allocator() };
+		storage = mem::make_unique<component_storage_base>(allocator, component_storage<T>{});
+		storage->storage = mem::deque<T>{ sizeof(T) * 500, std::move(allocator) };
 	}
 	auto& deq = *reinterpret_cast<component_storage<T>>(container.get());
-	deq.push_back(T{ std::forward<TArgs>(args)... });
+	T component{ std::forward<TArgs>(args)... };
+	//deq.push_back();
 	ent.m_data->push_component<T>(&deq.back());
 }
 template <typename T>

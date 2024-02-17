@@ -30,7 +30,7 @@ public:
 		auto it_spaces = m_spaces.find(size);
 		if (it_spaces == m_spaces.end())
 			it_spaces = m_spaces.emplace({ size, set<std::byte*>{} });
-		it_spaces->second.emplace(ptr);
+		it_spaces->second.insert(ptr);
 	}
 	// Pops item of 'minimal_size' from the collection. If there are only items having more space than requested, 
 	// the object with requested amount of space will be returned and the remaining space pushed back to the collection.
@@ -52,11 +52,11 @@ public:
 			auto* ptr = result + size;
 			auto found = m_spaces.find(surplus); // where to insert new ptr
 			if (found != m_spaces.end())
-				found->second.emplace(ptr);
+				found->second.insert(ptr);
 			else
 			{
 				auto s_it = m_spaces.emplace({ surplus, set<std::byte*>{} });
-				s_it->second.emplace(ptr);
+				s_it->second.insert(ptr);
 			}
 		}
 
