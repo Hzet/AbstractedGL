@@ -7,6 +7,15 @@ namespace agl
 {
 namespace ecs
 {
+class component_base
+{
+public:
+	virtual ~component_base() = default;
+	virtual void on_attach(application* app) const noexcept {};
+	virtual void on_detach(application* app) const noexcept {};
+	virtual void on_update(application* app) const noexcept {};
+};
+
 // make this CRTP
 class component_storage_base
 {

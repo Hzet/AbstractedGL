@@ -79,9 +79,8 @@ void organizer::push_component(entity& ent, TArgs&&... args) noexcept
 		storage->storage = mem::deque<T>{ sizeof(T) * 500, std::move(allocator) };
 	}
 	auto& deq = *reinterpret_cast<component_storage<T>>(container.get());
-	T component{ std::forward<TArgs>(args)... };
-	//deq.push_back();
-	ent.m_data->push_component<T>(&deq.back());
+	auto& component = *deq.emplace_back(std::forward<TArgs>(args)...);
+	ent.m_data->push_component<T>(&component);
 }
 template <typename T>
 void organizer::pop_component(entity& ent, T* ptr) noexcept
