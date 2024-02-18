@@ -154,8 +154,9 @@ public:
 	template <typename... TArgs>
 	iterator emplace(TArgs... args) noexcept
 	{
+		T value{ std::forward<TArgs>(args)... };
 		auto const it = std::lower_bound(m_data.cbegin(), m_data.cend(), value, key_comp());
-		m_data.emplace(it, std::forward<TArgs>(args)...);
+		return m_data.emplace(it, std::move(value));
 	}
 	template <typename U>
 	iterator find(U const& value) noexcept

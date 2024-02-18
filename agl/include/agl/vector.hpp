@@ -381,7 +381,7 @@ public:
 
 		if (pos == cend() || empty())
 		{
-			emplace_back(value);
+			emplace_back(std::forward<TArgs>(args)...);
 			return make_iterator<iterator>(m_memory + m_size - 1);
 		}
 		auto const index = pos - begin();
