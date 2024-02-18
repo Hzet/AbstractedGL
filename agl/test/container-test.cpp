@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 #include <vector>
 
-#include "agl/util/vector.hpp"
-#include "agl/util/deque.hpp"
-#include "agl/util/set.hpp"
+#include "agl/vector.hpp"
+#include "agl/deque.hpp"
+#include "agl/set.hpp"
 #include "agl/util/random.hpp"
-#include "agl/util/dictionary.hpp"
+#include "agl/dictionary.hpp"
 
 auto const size = 10000;
 

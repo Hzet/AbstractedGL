@@ -1,6 +1,6 @@
 #pragma once
-#include "agl/util/deque.hpp"
-#include "agl/util/memory/pool.hpp"
+#include "agl/deque.hpp"
+#include "agl/memory/pool.hpp"
 
 namespace agl
 {

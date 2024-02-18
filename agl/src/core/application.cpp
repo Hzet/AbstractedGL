@@ -1,5 +1,5 @@
 #include "agl/core/threads.hpp"
-#include "agl/util/memory/pool.hpp"
+#include "agl/memory/pool.hpp"
 #include "agl/ecs/ecs.hpp"
 #include "agl/ecs/systems/gl-renderer.hpp"
 

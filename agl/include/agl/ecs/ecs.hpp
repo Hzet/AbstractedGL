@@ -4,7 +4,7 @@
 #include "agl/ecs/components.hpp"
 #include "agl/ecs/entity.hpp"
 #include "agl/ecs/system.hpp"
-#include "agl/util/memory/unique-ptr.hpp"
+#include "agl/memory/unique-ptr.hpp"
 
 namespace agl
 {

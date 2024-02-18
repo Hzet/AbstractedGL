@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
-#include <agl/util/memory/pool.hpp>
+#include <agl/memory/pool.hpp>
 #include <agl/util/random.hpp>
-#include <agl/util/vector.hpp>
-#include <agl/util/set.hpp>
+#include <agl/vector.hpp>
+#include <agl/set.hpp>
 #include <algorithm>
 #include <array>
 

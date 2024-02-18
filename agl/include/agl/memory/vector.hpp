@@ -1,6 +1,6 @@
 #pragma once
-#include "agl/util/memory/pool.hpp"
-#include "agl/util/vector.hpp"
+#include "agl/memory/pool.hpp"
+#include "agl/vector.hpp"
 
 namespace agl
 {

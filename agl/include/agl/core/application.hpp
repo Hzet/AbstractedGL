@@ -1,8 +1,8 @@
 #pragma once
 #include "agl/util/async.hpp"
-#include "agl/util/dictionary.hpp"
+#include "agl/dictionary.hpp"
 #include "agl/util/typeid.hpp"
-#include "agl/util/unique-ptr.hpp"
+#include "agl/unique-ptr.hpp"
 
 int main(int, char**);
 

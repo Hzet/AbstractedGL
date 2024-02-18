@@ -3,7 +3,7 @@
 #include <type_traits>
 #include "agl/core/debug.hpp"
 #include "agl/util/iterator.hpp"
-#include "agl/util/memory/allocator.hpp"
+#include "agl/memory/allocator.hpp"
 
 namespace agl
 {

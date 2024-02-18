@@ -1,5 +1,5 @@
 #pragma once
-#include "agl/util/vector.hpp"
+#include "agl/vector.hpp"
 
 namespace agl
 {

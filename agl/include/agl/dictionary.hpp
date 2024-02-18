@@ -1,7 +1,7 @@
 #pragma once
 #include <algorithm>
-#include "agl/util/memory/allocator.hpp"
-#include "agl/util/vector.hpp"
+#include "agl/memory/allocator.hpp"
+#include "agl/vector.hpp"
 
 namespace agl
 {

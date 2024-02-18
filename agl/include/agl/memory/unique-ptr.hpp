@@ -1,6 +1,6 @@
 #pragma once
-#include "agl/util/unique-ptr.hpp"
-#include "agl/util/memory/pool.hpp"
+#include "agl/unique-ptr.hpp"
+#include "agl/memory/pool.hpp"
 
 namespace agl
 {

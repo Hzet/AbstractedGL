@@ -5,7 +5,7 @@
 #include "date/date.h"
 #include "agl/core/application.hpp"
 #include "agl/util/async.hpp"
-#include "agl/util/deque.hpp"
+#include "agl/deque.hpp"
 
 namespace agl
 {

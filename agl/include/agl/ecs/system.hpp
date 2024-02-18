@@ -15,6 +15,12 @@ namespace ecs
 		std::string name;
 	};
 
+	struct signal
+	{
+		std::uint64_t id;
+		bool value;
+	};
+
 	class system
 	{
 	public:
@@ -37,6 +43,7 @@ namespace ecs
 		type_id_t m_id;
 		std::string m_name;
 		ecs::stage m_stage;
+
 	};
 }
 }

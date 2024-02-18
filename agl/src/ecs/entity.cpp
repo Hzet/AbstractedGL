@@ -1,4 +1,4 @@
-#include "agl/ecs//entity.hpp"
+#include "agl/ecs/entity.hpp"
 
 namespace agl
 {

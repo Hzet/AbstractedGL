@@ -37,9 +37,9 @@ namespace impl
 		auto result = max - min;
 
 		if constexpr (std::is_floating_point_v<TNumeric>)
-			result = std::fmod(std::fabs(rand), std::fabs(result));
+			result = glm::fmod(glm::fabs(rand), glm::fabs(result));
 		else if constexpr (std::is_signed_v<TNumeric>)
-			result = std::abs(rand) % std::abs(result);
+			result = glm::abs(rand) % glm::abs(result);
 		else if constexpr (std::is_unsigned_v<TNumeric>)
 			result = rand % result;
 

@@ -1,5 +1,5 @@
 #pragma once
-#include "agl/util/memory/allocator.hpp"
+#include "agl/memory/allocator.hpp"
 
 namespace agl
 {

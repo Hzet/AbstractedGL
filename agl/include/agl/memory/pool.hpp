@@ -2,9 +2,9 @@
 #include <cstddef>
 #include "agl/core/application.hpp"
 #include "agl/core/logger.hpp"
-#include "agl/util/set.hpp"
-#include "agl/util/dictionary.hpp"
-#include "agl/util/memory/allocator.hpp"
+#include "agl/set.hpp"
+#include "agl/dictionary.hpp"
+#include "agl/memory/allocator.hpp"
 
 namespace agl
 {
