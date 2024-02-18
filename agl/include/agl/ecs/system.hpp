@@ -2,6 +2,7 @@
 #include <cstdint>
 #include <string>
 #include "agl/util/typeid.hpp"
+#include "agl/memory/set.hpp"
 
 namespace agl
 {
@@ -21,6 +22,22 @@ namespace ecs
 		bool value;
 	};
 
+	struct signal_comp
+	{
+		bool operator()(signal const& lhs, std::uint64_t id) const noexcept
+		{
+			return lhs.id < id;
+		}
+		bool operator()(std::uint64_t id, signal const& rhs) const noexcept
+		{
+			return id < rhs.id;
+		}
+		bool operator()(signal const& lhs, signal const& rhs) const noexcept
+		{
+			return lhs.id < rhs.id;
+		}
+	};
+
 	class system
 	{
 	public:
@@ -38,12 +55,17 @@ namespace ecs
 		virtual void on_update(application*) noexcept = 0;
 		stage stage() const noexcept;
 		void stage(ecs::stage s) noexcept;
+		bool read_signal(std::uint64_t id) noexcept;
+		void set_signal(std::uint64_t id, bool value) noexcept;
+
+	protected:
+		void create_signal(std::uint64_t id, bool start_value);
 
 	private:
 		type_id_t m_id;
 		std::string m_name;
 		ecs::stage m_stage;
-
+		mem::set<signal, signal_comp> m_signals;
 	};
 }
 }

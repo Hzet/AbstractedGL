@@ -46,5 +46,20 @@ void system::stage(ecs::stage s) noexcept
 {
 	m_stage = s;
 }
+bool system::read_signal(std::uint64_t id) noexcept
+{
+	auto found = m_signals.find(id);
+	found->value = !found->value; // switch value 
+	return !found->value; // return previous 
+}
+void system::set_signal(std::uint64_t id, bool value) noexcept
+{
+	auto found = m_signals.find(id);
+	found->value = value;
+}
+void system::create_signal(std::uint64_t id, bool start_value)
+{
+	m_signals.emplace(id, start_value);
+}
 }
 }
