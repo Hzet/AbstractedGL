@@ -7,6 +7,7 @@ namespace ecs
 {
 organizer::organizer(mem::pool::allocator<organizer> allocator) noexcept
 	: resource<organizer>{}
+	, m_allocator{ allocator }
 	, m_components{ components::allocator_type{ allocator } }
 	, m_entities{ 1024, entities::allocator_type{ allocator } }
 	, m_systems{ systems::allocator_type{ allocator } }
@@ -59,6 +60,10 @@ void organizer::on_update(application* app) noexcept
 {
 	for (auto& sys : m_systems)
 		sys->on_update(app);
+}
+typename organizer::allocator_type organizer::get_allocator() const noexcept
+{
+	return m_allocator;
 }
 }
 }

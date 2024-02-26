@@ -56,12 +56,15 @@ public:
 	template <typename T>
 	void remove_system(application* app) noexcept;
 
+	allocator_type get_allocator() const noexcept;
+
 private:
 	virtual void on_attach(application*) noexcept override;
 	virtual void on_detach(application*) noexcept override;
 	virtual void on_update(application*) noexcept override;
 
 private:
+	allocator_type m_allocator;
 	components m_components;
 	entities m_entities;
 	systems m_systems;

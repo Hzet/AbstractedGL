@@ -1,0 +1,20 @@
+#pragma once
+#include <cstdint>
+#include <glad/glad.h>
+
+namespace agl
+{
+namespace opengl
+{
+enum clear_type : std::uint32_t
+{
+	CLEAR_COLOR = GL_COLOR_BUFFER_BIT,
+	CLEAR_DEPTH = GL_DEPTH_BUFFER_BIT,
+	CLEAR_STENCIL = GL_STENCIL_BUFFER_BIT,
+	CLEAR_4100 = CLEAR_COLOR | CLEAR_DEPTH,
+	CLEAR_4400 = CLEAR_COLOR | CLEAR_STENCIL,
+	CLEAR_0500 = CLEAR_DEPTH | CLEAR_STENCIL,
+	CLEAR_4500 = CLEAR_COLOR | CLEAR_DEPTH | CLEAR_STENCIL
+};
+}
+}

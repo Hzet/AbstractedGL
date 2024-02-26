@@ -1,7 +1,7 @@
 #include "agl/core/threads.hpp"
 #include "agl/memory/pool.hpp"
 #include "agl/ecs/ecs.hpp"
-#include "agl/ecs/systems/gl-renderer.hpp"
+#include "agl/render/opengl/renderer.hpp"
 
 namespace agl
 {
@@ -61,7 +61,7 @@ void application::init()
 	{ // ECS
 		auto& pool = get_resource<mem::pool>();
 		auto organizer = ecs::organizer{ pool.make_allocator<ecs::organizer>() };
-		organizer.add_system<opengl_renderer>(this, opengl_renderer{});
+		organizer.add_system<opengl::renderer>(this, opengl::renderer{});
 		add_resource(organizer);
 	}
 

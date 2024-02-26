@@ -81,7 +81,7 @@ private:
 	void run();
 
 private:
-	mutex* m_mutex;
+	unique_ptr<mutex> m_mutex;
 	properties m_properties;
 	dictionary<type_id_t, unique_ptr<application_resource>> m_resources;
 	vector<type_id_t> m_resources_order;
