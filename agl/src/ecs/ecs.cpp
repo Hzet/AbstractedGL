@@ -30,7 +30,21 @@ organizer& organizer::operator=(organizer&& other) noexcept
 
 	return *this;
 }
+bool organizer::has_system(type_id_t id); const noexcept
+{
+	for (auto const& sys : m_systems)
+		if (sys->id() == type_id<T>::get_id())
+			return true;
+	return false;
+}
+void organizer::add_system(application* app, unique_ptr<system> sys) noexcept
+{
+	AGL_ASSERT(!has_system(sys->id()), "System already present");
 
+	auto allocator = mem::pool::allocator<T>{ m_systems.get_allocator() };
+	m_systems.emplace_back(std::move(sys));
+	m_systems.back()->on_attach(app);
+}
 entity organizer::make_entity()
 {
 	auto data = impl::entity_data{ m_entities.get_allocator() };

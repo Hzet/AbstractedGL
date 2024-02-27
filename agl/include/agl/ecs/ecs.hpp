@@ -5,11 +5,26 @@
 #include "agl/ecs/entity.hpp"
 #include "agl/ecs/system.hpp"
 #include "agl/memory/unique-ptr.hpp"
+#include "agl/util/typeid.hpp"
 
 namespace agl
 {
 namespace ecs
 {
+namespace impl
+{
+template <typename T, typename T = using std::enable_if_t<std::is_base_of_v<system, T>>>
+struct is_system
+{
+	using type = std::true_type;
+};
+template <typename T>
+struct is_system<T, void>
+{
+	static_assert(false, "type " type_id<T>::get_name() "is not a system")
+};
+}
+
 /**
  * @brief 
  * 
@@ -28,7 +43,7 @@ private:
 	using allocator_type = mem::pool::allocator<organizer>;
 	using system_allocator = mem::pool::allocator<system>;
 	template <typename T>
-	using is_system = std::enable_if_t<std::is_base_of_v<system, T>>;
+	using is_system_t = typename impl::is_system<T>::type;
 
 public:
 	organizer(mem::pool::allocator<organizer> allocator) noexcept;
@@ -36,12 +51,11 @@ public:
 	organizer& operator=(organizer&& other) noexcept;
 	~organizer() noexcept = default;
 
-	template <typename T, typename = is_system<T>>
-	void add_system(application* app, T sys) noexcept;
+	void add_system(application* app, system* sys) noexcept;
 
 	template <typename T, typename = is_system<T>>
 	bool has_system() const noexcept;
-
+	bool has_system(type_id_t id); const noexcept;
 	entity make_entity();
 
 	template <typename T>
@@ -106,19 +120,7 @@ mem::vector<entity> organizer::view() noexcept
 template <typename T, typename>
 bool organizer::has_system() const noexcept
 {
-	for (auto const& sys : m_systems)
-		if (sys->id() == type_id<T>::get_id())
-			return true;
-	return false;
-}
-template <typename T, typename>
-void organizer::add_system(application* app, T sys) noexcept
-{
-	AGL_ASSERT(!has_system<T>(), "System already present");
-
-	auto allocator = mem::pool::allocator<T>{ m_systems.get_allocator() };
-	m_systems.push_back(mem::make_unique<system>(allocator, sys));
-	m_systems.back()->on_attach(app);
+	return has_system(type_id_t<T>::get_id());
 }
 template <typename T>
 void organizer::remove_system(application* app) noexcept
