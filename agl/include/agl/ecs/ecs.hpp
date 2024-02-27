@@ -51,9 +51,11 @@ public:
 	organizer& operator=(organizer&& other) noexcept;
 	~organizer() noexcept = default;
 
-	void add_system(application* app, system* sys) noexcept;
-
-	template <typename T, typename = is_system<T>>
+	system& add_system(application* app, unique_ptr<system_base> sys) noexcept;
+	template <typename T, typename = is_system_t<T>>
+	system& get_system() noexcept;
+	system& get_system(type_id_t id) noexcept;
+	template <typename T, typename = is_system_t<T>>
 	bool has_system() const noexcept;
 	bool has_system(type_id_t id); const noexcept;
 	entity make_entity();
@@ -73,6 +75,7 @@ public:
 	allocator_type get_allocator() const noexcept;
 
 private:
+	system* get_system_impl(type_id_t id) noexcept;
 	virtual void on_attach(application*) noexcept override;
 	virtual void on_detach(application*) noexcept override;
 	virtual void on_update(application*) noexcept override;
@@ -83,7 +86,11 @@ private:
 	entities m_entities;
 	systems m_systems;
 };
-
+template <typename T, typename>
+system& organizer::get_system() noexcept
+{
+	return get_system(type_id<T>::get_id());
+}
 template <typename T, typename... TArgs>
 void organizer::push_component(entity& ent, TArgs&&... args) noexcept
 {
