@@ -14,12 +14,35 @@ namespace mem
 template <typename T>
 using unique_ptr = ::agl::unique_ptr<T, pool::allocator<T>>;
 
-template <typename T, typename U, typename W = std::remove_cv_t<std::remove_reference_t<U>>>
+template <typename T, typename U, typename W = remove_cvref_t<U>>
 mem::unique_ptr<T> make_unique(pool::allocator<W> allocator, U&& value) noexcept
 {
 	auto* ptr = allocator.allocate();
 	allocator.construct(ptr, std::move(value));
-	return unique_ptr<T>{ std::move(allocator), static_cast<W*>(ptr) };
+	return unique_ptr<T>{ std::move(allocator), static_cast<T*>(ptr) };
+}
+template <typename T>
+mem::unique_ptr<T> make_unique(pool::allocator<T> allocator) noexcept
+{
+	auto* ptr = allocator.allocate();
+	allocator.construct(ptr, std::move(value));
+	return unique_ptr<T>{ std::move(allocator), static_cast<T*>(ptr) };
+}
+template <typename T, typename U, typename W = remove_cvref_t<U>>
+mem::unique_ptr<T> make_unique(mem::pool& pool, U&& value) noexcept
+{
+	auto allocator = pool.make_allocator<W>();
+	auto* ptr = allocator.allocate();
+	allocator.construct(ptr, std::move(value));
+	return unique_ptr<T>{ std::move(allocator), static_cast<T*>(ptr) };
+}
+template <typename T>
+mem::unique_ptr<T> make_unique(mem::pool& pool) noexcept
+{
+	auto allocator = pool.make_allocator<T>();
+	auto* ptr = allocator.allocate();
+	allocator.construct(ptr, std::move(value));
+	return unique_ptr<T>{ std::move(allocator), static_cast<T*>(ptr) };
 }
 }
 }

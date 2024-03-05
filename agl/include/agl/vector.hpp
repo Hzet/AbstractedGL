@@ -173,7 +173,7 @@ public:
 			resize(count);
 		}
 
-		for (auto i = 0; i < count; ++i; ++first)
+		for (auto i = 0; i < count; ++i, ++first)
 			make_copy(m_memory + i, *first);
 	}
 	iterator begin() noexcept
@@ -457,6 +457,10 @@ public:
 		m_allocator.destruct(m_memory + size() - 1);
 		m_allocator.construct(m_memory + size() - 1);
 		--m_size;
+	}
+	void pop_front() noexcept
+	{
+		erase(cbegin());
 	}
 	void reserve(size_type n) noexcept
 	{

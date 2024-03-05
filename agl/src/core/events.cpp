@@ -1,4 +1,5 @@
 #include "agl/core/events.hpp"
+#include "agl/core/threads.hpp"
 #include "agl/core/logger.hpp"
 
 namespace agl
@@ -6,8 +7,6 @@ namespace agl
 events::events()
 	: resource<events>{}
 {
-	m_button_pressed.reserve(sizeof(key_types));
-	
 	for (auto button : button_types)
 		m_button_pressed.emplace({ button, false });
 	
@@ -17,7 +16,7 @@ events::events()
 void events::push_event(event e) noexcept
 {
 	std::lock_guard<mutex> lock{ *m_mutex };
-	m_events_queue.push_back(e);
+	m_event_queue.push_back(e);
 }
 void events::set_button_pressed(button_type button, bool status) noexcept
 {
@@ -38,24 +37,30 @@ bool events::is_key_pressed(key_type key) const noexcept
 event events::poll_event() noexcept
 {
 	std::lock_guard<mutex> lock{ *m_mutex };
-	auto e = m_events_queue.front();
-	m_events_queue.pop_front();
+	auto e = m_event_queue.front();
+	m_event_queue.pop_front();
 	return e;
 }
 void events::on_attach(application* app) noexcept
 {
+	auto& threads = app->get_resource<agl::threads>();
+	m_mutex = &threads.new_mutex();
+	
 	auto& logger = app->get_resource<agl::logger>();
 	logger.info("Events: ON");
 }
-void events::on_detach(application*) noexcept
+void events::on_detach(application* app) noexcept
 {
 	auto& logger = app->get_resource<agl::logger>();
 	logger.info("Events: OFF");
+
+	auto& threads = app->get_resource<agl::threads>();
+	threads.delete_mutex(*m_mutex);
 }
 void events::on_update(application* app) noexcept
 {
 }
-vector<button_type> evets::button_types = {
+const vector<button_type> events::button_types = {
 	BUTTON_LEFT,
 	BUTTON_RIGHT,
 	BUTTON_MID,
@@ -63,9 +68,9 @@ vector<button_type> evets::button_types = {
 	BUTTON_5,
 	BUTTON_6,
 	BUTTON_7,
-	BUTTON_,
+	BUTTON_8,
 };
-vector<key_type> events::key_types = {
+const vector<key_type> events::key_types = {
 	SPACE,
 	APOSTROPHE,
 	COMMA,

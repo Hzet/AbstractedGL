@@ -35,7 +35,7 @@ public:
 	}
 
 	template <typename U>//, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
-	unique_ptr(unique_ptr<U>&& other) noexcept
+	unique_ptr(unique_ptr&& other) noexcept
 		: m_allocator{ std::move(other.m_allocator) }
 		, m_data{ other.m_data }
 	{
@@ -156,11 +156,6 @@ private:
 	pointer m_data;
 };
 
-namespace impl
-{
-
-}
-
 template <typename T>
 unique_ptr<T> make_unique()
 {
@@ -170,7 +165,7 @@ unique_ptr<T> make_unique()
 	auto alloc = unique_ptr<type>::allocator_type{};
 	auto* ptr = alloc.allocate();
 	alloc.construct(ptr);
-	return unique_ptr<T>{ std::move(alloc), static_cast<type*>(ptr) };
+	return unique_ptr<T>{ std::move(alloc), static_cast<T*>(ptr) };
 }
 
 template <typename T, typename U>
@@ -180,6 +175,6 @@ unique_ptr<T> make_unique(U&& value)
 	auto alloc = unique_ptr<type>::allocator_type{};
 	auto* ptr = alloc.allocate();
 	alloc.construct(ptr, std::move(value));
-	return unique_ptr<T>{ std::move(alloc), static_cast<type*>(ptr) };
+	return unique_ptr<T>{ std::move(alloc), static_cast<T*>(ptr) };
 }
 }

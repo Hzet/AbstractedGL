@@ -8,9 +8,9 @@ namespace ecs
 organizer::organizer(mem::pool::allocator<organizer> allocator) noexcept
 	: resource<organizer>{}
 	, m_allocator{ allocator }
-	, m_components{ components::allocator_type{ allocator } }
-	, m_entities{ 1024, entities::allocator_type{ allocator } }
-	, m_systems{ systems::allocator_type{ allocator } }
+	, m_components{ allocator }
+	, m_entities{ 1024, allocator }
+	, m_systems{ allocator }
 {
 }
 organizer::organizer(organizer&& other) noexcept
@@ -30,24 +30,31 @@ organizer& organizer::operator=(organizer&& other) noexcept
 
 	return *this;
 }
-system* organizer::get_system_impl(type_id_t id) noexcept
+system_base* organizer::get_system_impl(type_id_t id) noexcept
 {
-	for (auto const& sys : m_systems)
-		if (sys->id() == type_id<T>::get_id())
+	for (auto& sys : m_systems)
+		if (sys->id() == id)
 			return sys.get();
 	return nullptr;
 }
-bool organizer::has_system(type_id_t id); const noexcept
+system_base const* organizer::get_system_impl(type_id_t id) const noexcept
+{
+	for (auto const& sys : m_systems)
+		if (sys->id() == id)
+			return sys.get();
+	return nullptr;
+}
+bool organizer::has_system(type_id_t id) const noexcept
 {
 	return get_system_impl(id) != nullptr;
 }
-system& organizer::get_system(type_id_t id) noexcept
+system_base& organizer::get_system(type_id_t id) noexcept
 {
 	AGL_ASSERT(has_system(id), "system not found");
 
-	return get_system_impl(id);
+	return *get_system_impl(id);
 }
-system& organizer::add_system(application* app, unique_ptr<system_base> sys) noexcept
+void organizer::add_system(application* app, mem::unique_ptr<system_base> sys) noexcept
 {
 	AGL_ASSERT(!has_system(sys->id()), "System already present");
 

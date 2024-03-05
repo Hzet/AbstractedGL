@@ -61,7 +61,7 @@ void application::init()
 	{ // ECS
 		auto& pool = get_resource<mem::pool>();
 		auto organizer = ecs::organizer{ pool.make_allocator<ecs::organizer>() };
-		organizer.add_system<opengl::renderer>(this, opengl::renderer{});
+		//organizer.add_system<opengl::renderer>(this, opengl::renderer{});
 		add_resource(organizer);
 	}
 

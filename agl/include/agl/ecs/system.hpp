@@ -75,6 +75,19 @@ class system
 	: public system_base
 {
 public:
+	system() noexcept
+		: system_base()
+	{
+	}
+	system(system&& other) noexcept
+		: system_base{ std::move(other) }
+	{
+	}
+	system& operator=(system&& other) noexcept
+	{
+		this->system_base::operator=(std::move(other));
+		return *this;
+	}
 	system(std::string name, ecs::stage stage) noexcept
 		: system_base{ type_id<T>::get_id(), name, stage }
 	{

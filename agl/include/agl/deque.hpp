@@ -486,10 +486,10 @@ public:
 		return m_indexes.insert(pos.m_it, ptr);
 	}
 	template <typename... TArgs>
-	iterator emplace_back(const_iterator pos, TArgs... args) noexcept
+	iterator emplace_back(TArgs... args) noexcept
 	{
 		auto* ptr = find_and_emplace(std::forward<TArgs>(args)...);
-		return m_indexes.push_back(pos.m_it, ptr);
+		return m_indexes.insert(m_indexes.cend(), ptr);
 	}
 	iterator insert(const_iterator pos, value_type&& value) noexcept
 	{
@@ -630,7 +630,7 @@ private:
 	typename block::pointer find_and_emplace(TArgs&&... args) noexcept
 	{
 		auto& block = free_block();
-		return block.emplace(std::forward<TArgs>(args)...);
+		return block.emplace_back(std::forward<TArgs>(args)...);
 	}
 
 private:

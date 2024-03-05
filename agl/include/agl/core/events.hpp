@@ -2,10 +2,9 @@
 #include "agl/core/application.hpp"
 #include "agl/dictionary.hpp"
 #include "agl/util/async.hpp"
+#include "agl/render/window.hpp"
 
 namespace agl
-{
-namespace opengl
 {
 enum event_type
 {
@@ -239,10 +238,9 @@ public:
 	static const vector<key_type> key_types;
 
 private:
-	mutex m_mutex;
+	mutex* m_mutex;
 	dictionary<button_type, bool> m_button_pressed;
 	dictionary<key_type, bool> m_key_pressed;
 	vector<event> m_event_queue;
 };
-}
 }

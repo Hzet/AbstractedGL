@@ -12,7 +12,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAGL_DEBUG")
 set(BUILD_SHARED_LIBS OFF)
 
-option(AGL_BUILD_TESTS OFF)
+option(AGL_BUILD_TESTS OFF) # if AGL_BUILD_TESTS and AGL_BUILD_EDITOR are both ON, the error will occur
+option(AGL_BUILD_EDITOR OFF) # if AGL_BUILD_TESTS and AGL_BUILD_EDITOR are both ON, the error will occur
 #set(AGL_BUILD_TESTS ON CACHE BOOL "" FORCE) # for dev reasons TODO: hash out on realease build
 
 # AGL
@@ -50,7 +51,7 @@ find_package(OpenGL 4.2 REQUIRED)
 FetchContent_Declare(
   glfw
   GIT_REPOSITORY https://github.com/glfw/glfw.git
-  GIT_TAG        3.2.1
+  GIT_TAG        7b6aead9fb88b3623e3b3725ebb42670cbe4c579
 )
 FetchContent_GetProperties(glfw)
 
@@ -139,6 +140,10 @@ target_link_libraries(
 	PRIVATE AGL_LIB
 )
 
+if(AGL_BUILD_TESTS AND AGL_BUILD_EDITOR)
+	message(FATAL_ERROR "AGL_BUILD_TESTS and AGL_BUILD_EDITOR can not be both set to 'ON'")
+endif()
+
 # TESTS
 # -----
 if(AGL_BUILD_TESTS)
@@ -179,3 +184,39 @@ if(AGL_BUILD_TESTS)
 
 endif()
 
+if(AGL_BUILD_EDITOR)
+	file (
+		GLOB_RECURSE 
+		AGL_EDITOR_HEADERS
+		CONFIGURE_DEPENDS 
+		"editor/include/*.hpp" 
+		"editor/include/*.inl"
+	)
+	file (
+		GLOB_RECURSE 
+		AGL_EDITOR_SOURCES
+		CONFIGURE_DEPENDS 
+		"editor/src/*.cpp"
+	)
+
+	add_library(
+		AGL_EDITOR
+		${AGL_EDITOR_HEADERS}
+		${AGL_EDITOR_SOURCES}
+	)
+
+	add_dependencies(
+		AGL_EDITOR
+		AGL_LIB
+	)
+
+	target_link_libraries(
+		AGL_EDITOR
+		PRIVATE AGL_LIB
+	)
+
+	target_link_libraries(
+		AGL_MAIN
+		PRIVATE AGL_EDITOR
+	)
+endif()
