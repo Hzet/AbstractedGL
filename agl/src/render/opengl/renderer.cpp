@@ -1,11 +1,6 @@
-#include <GLFW/glfw3.h>
 #include "agl/core/events.hpp"
-#include "agl/core/logger.hpp"
 #include "agl/ecs/ecs.hpp"
-#include "agl/render/opengl/call.hpp"
 #include "agl/render/opengl/renderer.hpp"
-#include "agl/render/opengl/feature-type.hpp"
-#include "agl/render/opengl/window.hpp"
 
 namespace agl
 {
@@ -34,6 +29,24 @@ static void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum seve
 
 logger* renderer::m_logger = nullptr;
 
+renderer::renderer()
+	: agl::renderer{ "opengl_renderer", ecs::RENDER }
+{
+}
+
+renderer::renderer(renderer&& other) noexcept
+	: agl::renderer{ std::move(other) }
+	, m_current_window{ other.m_current_window }
+	, m_app{ other.m_app }
+{
+}
+renderer& renderer::operator=(renderer&& other) noexcept
+{
+	this->agl::renderer::operator=(std::move(other));
+	m_current_window = other.m_current_window;
+	m_app = other.m_app;
+	return *this;
+}
 window* renderer::create_window(std::string const& title, glm::uvec2 const& resolution, window::update_fun fun)
 {
 	auto* handle = glfwCreateWindow(resolution.x, resolution.y, title.c_str(), nullptr, nullptr);
@@ -42,12 +55,15 @@ window* renderer::create_window(std::string const& title, glm::uvec2 const& reso
 		throw std::exception{ "could not open window" };
 
 	auto& ecs = m_app->get_resource<ecs::organizer>();
+	auto& pool = m_app->get_resource<mem::pool>();
 	auto wnd_ent = ecs.make_entity();
 	{
-		auto wnd = window{ handle, title, resolution, fun };
-		ecs.push_component<window>(wnd_ent, std::move(wnd));
+		auto ptr = mem::make_unique<agl::window>(pool, opengl::window{ handle, title, resolution, fun });
+		ecs.push_component<mem::unique_ptr<agl::window>>(m_app, wnd_ent, std::move(ptr));
 	}
-	auto& wnd = wnd_ent.get_component<window>(0);
+
+	auto& ptr = wnd_ent.get_component<mem::unique_ptr<agl::window>>(0);
+	auto& wnd = *reinterpret_cast<opengl::window*>(ptr.get());
 	make_window_current(&wnd);
 
 	// initialize GLAD library
@@ -68,6 +84,8 @@ window* renderer::create_window(std::string const& title, glm::uvec2 const& reso
 	AGL_OPENGL_CALL(glDebugMessageCallback(gl_debug_callback, reinterpret_cast<void*>(&wnd.m_data)));
 	AGL_OPENGL_CALL(glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE));
 #endif
+
+	return &wnd;
 }
 
 void renderer::on_attach(application* app) noexcept
@@ -176,6 +194,8 @@ constexpr const char* glfw_error_to_string(int code)
 	case GLFW_PLATFORM_ERROR: return "GLFW_PLATFORM_ERROR";
 	case GLFW_FORMAT_UNAVAILABLE: return "GLFW_FORMAT_UNAVAILABLE";
 	}
+	AGL_ASSERT(false, "invalid glfw error code");
+	return "GLFW_UNKNOWN_ERROR";
 }
 
 
@@ -230,7 +250,7 @@ void glfw_window_focus_callback(GLFWwindow* window, int focused)
 	auto e = event{};
 	e.type = focused ? WINDOW_GAINED_FOCUS : WINDOW_LOST_FOCUS;
 	e.wnd = data->window;
-	data->events->push(e);
+	data->events->push_event(e);
 }
 
 void glfw_framebuffer_size_callback(GLFWwindow* window, int width, int height)
@@ -250,7 +270,7 @@ void glfw_window_iconify_callback(GLFWwindow* window, int iconified)
 	e.type = iconified ? WINDOW_MINIMIZED : WINDOW_RESTORED;
 	e.wnd = data->window;
 	data->window->m_properties.minimized = iconified;
-	data->events->push(e);
+	data->events->push_event(e);
 }
 
 /*void glfw_window_key_input_callback(GLFWwindow *window, int key, int scancode, int action, int mods)
@@ -287,7 +307,7 @@ void glfw_window_maximize_callback(GLFWwindow* window, int maximized)
 	auto e = event{};
 	e.type = maximized ? WINDOW_MAXIMIZED : WINDOW_RESTORED;
 	e.wnd = data->window;
-	data->events->push(e);
+	data->events->push_event(e);
 }
 
 void glfw_window_scale_callback(GLFWwindow* window, float xscale, float yscale)
@@ -302,7 +322,7 @@ void glfw_window_scale_callback(GLFWwindow* window, float xscale, float yscale)
 	e.type = WINDOW_RESCALED;
 	e.scale = { xscale, yscale };
 	e.wnd = data->window;
-	data->events->push(e);
+	data->events->push_event(e);
 }
 
 void glfw_window_scroll_input_callback(GLFWwindow* window, double xoffset, double yoffset)
@@ -313,7 +333,7 @@ void glfw_window_scroll_input_callback(GLFWwindow* window, double xoffset, doubl
 	e.type = MOUSE_SCROLL_MOVED;
 	e.scroll = { static_cast<float>(xoffset), static_cast<float>(yoffset) };
 	e.wnd = data->window;
-	data->events->push(e);
+	data->events->push_event(e);
 }
 
 void glfw_window_size_callback(GLFWwindow* window, int width, int height)
@@ -328,7 +348,7 @@ void glfw_window_size_callback(GLFWwindow* window, int width, int height)
 	e.type = WINDOW_RESIZED;
 	e.size = { static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height) };
 	e.wnd = data->window;
-	data->events->push(e);
+	data->events->push_event(e);
 }
 
 #ifdef AGL_DEBUG

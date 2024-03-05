@@ -1,19 +1,21 @@
 #pragma once
-#include <GLFW/glfw3.h>
 #include <string>
 #include "agl/render/window.hpp"
 #include "agl/render/opengl/call.hpp"
 #include "agl/render/opengl/clear-type.hpp"
 #include "agl/render/opengl/feature-type.hpp"
 
+struct GLFWwindow;
+
 namespace agl
 {
-class application;
 class events;
 class logger;
 
 namespace opengl
 {
+class renderer;
+
 class window
 	: public agl::window
 {

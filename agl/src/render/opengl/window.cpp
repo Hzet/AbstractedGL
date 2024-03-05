@@ -2,17 +2,18 @@
 #include "agl/core/application.hpp"
 #include "agl/core/events.hpp"
 #include "agl/core/logger.hpp"
+#include <GLFW/glfw3.h>
 
 namespace agl
 {
 namespace opengl
 {
-window::window()
+window::window() noexcept
 	: agl::window{}
 	, m_handle{ nullptr }
 {
 }
-window::window(GLFWwindow* handle, std::string const& title, glm::uvec2 const& resolution, update_fun fun)
+window::window(GLFWwindow* handle, std::string const& title, glm::uvec2 const& resolution, update_fun fun) noexcept
 	: agl::window{ title, resolution, fun }
 	, m_handle{ handle }
 {
@@ -25,7 +26,6 @@ window::window(window&& other) noexcept
 	, m_data{ other.m_data }
 	, m_clear_type{ other.m_clear_type }
 	, m_handle{ other.m_handle }
-	, m_update_fun{ other.m_on_update }
 {
 	other.m_handle = nullptr;
 }

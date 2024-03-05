@@ -1,5 +1,6 @@
 #pragma once
 #include <glm/glm.hpp>
+#include "agl/core/application.hpp"
 
 namespace agl
 {
@@ -20,7 +21,7 @@ public:
 	using update_fun = void(*)(agl::application*);
 
 public:
-	window()
+	window() noexcept
 		: m_update_fun(nullptr)
 	{
 	}

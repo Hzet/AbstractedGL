@@ -1,9 +1,13 @@
 #pragma once 
-#include <glad/glad.h>
+#include <cstdint>
 #include "agl/core/debug.hpp"
 
 #ifdef AGL_DEBUG
 namespace agl
+{
+namespace opengl
+{
+namespace impl
 {
 /// <summary>
 /// Read OpenGL error until it is GL_NO_ERROR
@@ -27,7 +31,8 @@ bool gl_check_error(std::uint64_t value);
 /// </returns>
 std::uint64_t gl_get_last_error();
 }
-
+}
+}
 
 /// <summary>
 /// Simplified define to put OpenGL call in. 
@@ -35,9 +40,14 @@ std::uint64_t gl_get_last_error();
 /// </summary>
 #define AGL_OPENGL_CALL(call) \
 		do { \
-			::agl::gl_clear_error(); \
+			using namespace ::agl::opengl::impl; \
+			gl_clear_error(); \
 			call; \
-			AGL_ASSERT(::agl::gl_check_error(::agl::gl_get_last_error()), "Failed to execute OpenGL call!\n", "Error code: [", ::agl::gl_get_last_error(), "]\n"); \
+			if (!gl_check_error(gl_get_last_error())) \
+			{ \
+				auto code = gl_get_last_error(); \
+				AGL_ASSERT(false, "Failed to execute OpenGL call!\n"); \
+			} \
 		} while(false)
 #else
 #define AGL_OPENGL_CALL(call) call
