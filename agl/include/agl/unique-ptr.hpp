@@ -128,27 +128,40 @@ public:
 
 	reference operator*() noexcept
 	{
+		AGL_ASSERT(m_data != nullptr, "invalid pointer");
+
 		return *m_data;
 	}
 
 	const_reference operator*() const noexcept
 	{
+		AGL_ASSERT(m_data != nullptr, "invalid pointer");
+
 		return *m_data;
 	}
 
 	pointer operator->() noexcept
 	{
+		AGL_ASSERT(m_data != nullptr, "invalid pointer");
+		
 		return m_data;
 	}
 
 	const_pointer operator->() const noexcept
 	{
+		AGL_ASSERT(m_data != nullptr, "invalid pointer");
+		
 		return m_data;
 	}
 
 	bool operator==(std::nullptr_t) const noexcept
 	{
 		return m_data == nullptr;
+	}
+
+	bool operator!=(std::nullptr_t) const noexcept
+	{
+		return m_data != nullptr;
 	}
 
 private:

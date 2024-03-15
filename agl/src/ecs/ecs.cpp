@@ -15,6 +15,7 @@ organizer::organizer(mem::pool::allocator<organizer> allocator) noexcept
 }
 organizer::organizer(organizer&& other) noexcept
 	: resource<organizer>{ std::move(other) }
+	, m_allocator{ std::move(other.m_allocator) }
 	, m_components{ std::move(other.m_components) }
 	, m_entities{ std::move(other.m_entities) }
 	, m_systems{ std::move(other.m_systems) }
@@ -24,6 +25,7 @@ organizer& organizer::operator=(organizer&& other) noexcept
 {
 	this->resource<organizer>::operator=(std::move(other));
 
+	m_allocator = std::move(other.m_allocator);
 	m_components = std::move(other.m_components);
 	m_entities = std::move(other.m_entities);
 	m_systems = std::move(other.m_systems);
@@ -54,25 +56,73 @@ system_base& organizer::get_system(type_id_t id) noexcept
 
 	return *get_system_impl(id);
 }
-void organizer::add_system(application* app, mem::unique_ptr<system_base> sys) noexcept
+void organizer::add_system(application* app, mem::unique_ptr<system_base> sys)
 {
 	AGL_ASSERT(!has_system(sys->id()), "System already present");
 
 	m_systems.emplace_back(std::move(sys));
+	m_systems.back()->set_organizer(this);
 	m_systems.back()->on_attach(app);
 }
 entity organizer::make_entity()
 {
-	auto data = impl::entity_data{ m_entities.get_allocator() };
+	auto data = impl::entity_data{ get_allocator(), m_entities.size() };
 	m_entities.push_back(std::move(data));
 	return entity{ &m_entities.back() };
 }
-void organizer::on_attach(application* app) noexcept 
+void organizer::destroy_entity(entity& ent)
+{
+	if (ent.empty())
+		return;
+	
+	auto type_ids = ent.get_component_ids();
+	for (auto type_id : type_ids)
+		pop_components(type_id, ent);
+
+	m_entities.erase(m_entities.cbegin() + ent.m_data->m_index);
+	ent = entity{};
+}
+void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t index) noexcept
+{
+	AGL_ASSERT(m_components.find(type_id) != m_components.end(), "invalid component type");
+	AGL_ASSERT(ent.has_component(type_id), "queried component type is not attached to this entity");
+
+	auto& components = m_components.at(type_id);
+	auto* ptr = ent.m_data->m_components.at(type_id).at(index);
+	ent.m_data->pop_component(type_id, index);
+	components->pop_component(ptr);
+}
+void organizer::pop_components(type_id_t type_id, entity& ent) noexcept
+{
+	AGL_ASSERT(m_components.find(type_id) != m_components.end(), "invalid component type");
+	AGL_ASSERT(ent.has_component(type_id), "queried component type is not attached to this entity");
+
+	auto& storage = m_components.at(type_id);
+	auto ent_components = ent.m_data->m_components.find(type_id);
+
+	AGL_ASSERT(ent_components != ent.m_data->m_components.end(), "entity has no component of type 'type_id'");
+
+	for (auto* ptr : ent_components->second)
+		storage->pop_component(ptr);
+
+	ent_components->second.clear();
+	ent.m_data->m_components.erase(ent_components);
+}
+std::uint64_t organizer::get_component_count(type_id_t type_id) const noexcept
+{
+	auto found = m_components.find(type_id);
+
+	if (found == m_components.end())
+		return 0;
+
+	return found->second->size();
+}
+void organizer::on_attach(application* app) 
 {
 	auto& log = app->get_resource<agl::logger>();
 	log.info("ECS: OK");
 }
-void organizer::on_detach(application* app) noexcept 
+void organizer::on_detach(application* app) 
 {
 	auto& log = app->get_resource<agl::logger>();
 

@@ -7,18 +7,18 @@ namespace agl
 {
 namespace ecs
 {
+class organizer;
+
 namespace impl
 {
 class entity_data
 {
 public:
-	entity_data(mem::dictionary<type_id_t, mem::vector<std::byte*>>::allocator_type const& allocator = {}) noexcept;
+	entity_data(mem::dictionary<type_id_t, mem::vector<std::byte*>>::allocator_type const& allocator = {}, std::uint64_t index = std::numeric_limits<std::uint64_t>::max()) noexcept;
 	entity_data(entity_data&&) = default;
 	entity_data& operator=(entity_data&&) = default;
 
-	template <typename... TArgs>
-	bool has_component() const noexcept;
-	bool has_component(type_id_t id) const noexcept;
+	bool has_component(type_id_t type_id) const noexcept;
 
 	vector<type_id_t> get_component_ids() const noexcept;
 	
@@ -28,25 +28,29 @@ public:
 	template <typename T>
 	T const& get_component(std::uint64_t index) const noexcept;
 
-	template <typename T>
-	void pop_component(T* ptr) noexcept;
+	void pop_components(type_id_t type_id) noexcept;
+	void pop_component(type_id_t type_id, std::uint64_t index) noexcept;
 
 	template <typename T>
 	void push_component(T* ptr) noexcept;
 
-	template <typename T>
-	std::uint64_t size() const noexcept;
+	std::uint64_t size(type_id_t type_id) const noexcept;
+
+	bool is_valid() const noexcept;
+
+private:
+	friend class ecs::organizer;
 
 private:
 	template <typename TTuple, std::uint64_t... TSequence>
 	void has_component_impl(std::index_sequence<TSequence...>) const noexcept;
 
 private:
+	std::uint64_t m_index;
 	mem::dictionary<type_id_t, mem::vector<std::byte*>> m_components;
 
 };
 }
-
 class entity
 {
 public:
@@ -54,7 +58,7 @@ public:
 	
 	template <typename T>
 	bool has_component() const noexcept;
-	bool has_component(type_id_t id) const noexcept;
+	bool has_component(type_id_t type_id) const noexcept;
 
 	vector<type_id_t> get_component_ids() const noexcept;
 	template <typename T>
@@ -65,6 +69,9 @@ public:
 
 	template <typename T>
 	std::uint64_t size() const noexcept;
+	std::uint64_t size(type_id_t type_id) const noexcept;
+
+	bool empty() const noexcept;
 
 private:
 	friend class organizer;
@@ -86,13 +93,6 @@ T const& entity_data::get_component(std::uint64_t index) const noexcept
 {
 	return *reinterpret_cast<T*>(m_components.at(type_id<T>::get_id())[index]);
 }
-
-template <typename T>
-std::uint64_t entity_data::size() const noexcept
-{
-	return m_components.at(type_id<T>::get_id()).size();
-}
-
 template <typename T>
 void entity_data::push_component(T* ptr) noexcept
 {
@@ -107,19 +107,6 @@ void entity_data::push_component(T* ptr) noexcept
 	m_components[type_id<T>::get_id()].push_back(reinterpret_cast<std::byte*>(ptr));
 }
 
-template <typename T>
-void entity_data::pop_component(T* ptr) noexcept
-{
-	auto found = std::lower_bound
-		m_components.at(type_id<T>::get_id()).erase();
-}
-
-template <typename... TArgs>
-bool entity_data::has_component() const noexcept
-{
-	return has_component<std::tuple<TArgs...>>(std::make_index_sequence<sizeof...(TArgs)>{});
-}
-
 template <typename TTuple, std::uint64_t... TSequence>
 void entity_data::has_component_impl(std::index_sequence<TSequence...>) const noexcept
 {
@@ -130,7 +117,7 @@ void entity_data::has_component_impl(std::index_sequence<TSequence...>) const no
 template <typename T>
 bool entity::has_component() const noexcept
 {
-	return m_data->has_component<T>();
+	return has_component(type_id<T>::get_id());
 }
 
 template <typename T>
@@ -148,7 +135,7 @@ T const& entity::get_component(std::uint64_t index) const noexcept
 template <typename T>
 std::uint64_t entity::size() const noexcept
 {
-	return m_data->size<T>();
+	return size(type_id<T>::get_id());
 }
 }
 }

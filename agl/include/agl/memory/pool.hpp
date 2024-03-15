@@ -316,7 +316,7 @@ public:
 
 		return ptr;
 	}
-	bool create(std::uint64_t size) noexcept
+	void create(std::uint64_t size)
 	{
 		if (m_buffer != nullptr)
 			destroy();
@@ -326,14 +326,16 @@ public:
 
 		m_free_spaces.push(m_buffer, m_size);
 
-		return m_buffer != nullptr;
+		if (m_buffer == nullptr)
+			throw std::exception{ logger::combine_message("Insufficient memory error - requested {} bytes", size).c_str() };
 	}
 	void destroy() noexcept
 	{
 		if (m_buffer == nullptr)
 			return;
 
-		AGL_ASSERT(empty(), "Some objects were not deallocated");
+		// TODO: this pool doesnt account for differences in objects sizes resulting from usage of polymorphic types
+		//AGL_ASSERT(empty(), "Some objects were not deallocated");
 
 		m_allocator.deallocate(m_buffer, m_size);
 		m_buffer = nullptr;
@@ -377,12 +379,12 @@ public:
 	}
 
 private:
-	virtual void on_attach(application* app) noexcept override 
+	virtual void on_attach(application* app) override 
 	{
 		auto& log = app->get_resource<agl::logger>();
 		log.info("Pool {} bytes at {}: OK", size(), m_buffer);
 	}
-	virtual void on_detach(application* app) noexcept override
+	virtual void on_detach(application* app) override
 	{
 		auto& log = app->get_resource<agl::logger>();
 		log.info("Pool {} bytes at {}: OFF", size(), m_buffer);

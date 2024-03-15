@@ -1,7 +1,5 @@
 #ifdef AGL_DEBUG
-
 #include "agl/render/opengl/call.hpp"
-#include <glad/glad.h>
 
 namespace agl
 {

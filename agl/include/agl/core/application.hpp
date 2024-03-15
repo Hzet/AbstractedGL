@@ -17,8 +17,8 @@ public:
 	application_resource(application_resource&&) noexcept = default;
 	application_resource& operator=(application_resource&&) noexcept = default;
 	virtual ~application_resource() noexcept = default;
-	virtual void on_attach(application*) noexcept = 0;
-	virtual void on_detach(application*) noexcept = 0;
+	virtual void on_attach(application*) = 0;
+	virtual void on_detach(application*) = 0;
 	virtual void on_update(application*) noexcept = 0;
 	type_id_t type() const noexcept;
 
@@ -54,10 +54,10 @@ public:
 	application(application const&) = delete;
 	application& operator=(application&&) = delete;
 	application& operator=(application const&) = delete;
-	virtual ~application() noexcept;
+	~application();
 
 	template <typename T>
-	void add_resource(T&& resource) noexcept;
+	void add_resource(T&& resource);
 
 	void close();
 
@@ -67,12 +67,13 @@ public:
 	T& get_resource() noexcept;
 
 	template <typename T>
-	bool has_resource() const noexcept;
+	bool has_resource() noexcept;
 
-	virtual void init();
+	void init();
+	bool good() const noexcept;
 
 	template <typename T>
-	void remove_resource() noexcept;
+	void remove_resource();
 
 private:
 	friend int ::main(int, char**);
@@ -81,21 +82,21 @@ private:
 	void run();
 
 private:
-	mutex* m_mutex;
+	bool m_good;
+	unique_ptr<std::mutex> m_mutex;
 	properties m_properties;
 	dictionary<type_id_t, unique_ptr<application_resource>> m_resources;
 	vector<type_id_t> m_resources_order;
 };
 
 template <typename T>
-bool application::has_resource() const noexcept
+bool application::has_resource() noexcept
 {
-	AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
 	std::lock_guard<std::mutex> lock{ *m_mutex };
-	return m_resources.find(type_id<T>::get_id()) != m_resources.cend();
+	return m_resources.find(type_id<T>::get_id()) != m_resources.end();
 }
 template <typename T>
-void application::add_resource(T&& resource) noexcept
+void application::add_resource(T&& resource)
 {
 	using type = std::remove_cv_t<std::remove_reference_t<T>>; // for allocator needs
 	AGL_ASSERT(!has_resource<type>(), "resource already present");
@@ -108,10 +109,9 @@ void application::add_resource(T&& resource) noexcept
 }
 
 template <typename T>
-void application::remove_resource() noexcept
+void application::remove_resource()
 {
 	AGL_ASSERT(has_resource<T>(), "invalid resource");
-	AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
 
 	std::lock_guard<std::mutex> lock{ *m_mutex };
 	auto found = m_resources.find(type_id<T>::get_id());
@@ -129,8 +129,7 @@ void application::remove_resource() noexcept
 template <typename T>
 T& application::get_resource() noexcept
 {
-	AGL_ASSERT(has_resource<T>(), "invalid resource");
-	AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
+	AGL_ASSERT(has_resource<T>(), "resource not present");
 
 	std::lock_guard<std::mutex> lock{ *m_mutex };
 	auto found = m_resources.find(type_id<T>::get_id());

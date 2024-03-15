@@ -10,6 +10,8 @@ class application;
 
 namespace ecs
 {
+class organizer;
+
 enum stage : std::uint64_t 
 {
 	PRE_RENDER,
@@ -52,22 +54,30 @@ public:
 	type_id_t id() const noexcept;
 	std::string const& name() const noexcept;
 	void name(std::string const& name);
-	virtual void on_attach(application*) noexcept = 0;
-	virtual void on_detach(application*) noexcept = 0;
+	virtual void on_attach(application*) = 0;
+	virtual void on_detach(application*) = 0;
 	virtual void on_update(application*) noexcept = 0;
 	stage stage() const noexcept;
 	void stage(ecs::stage s) noexcept;
 	bool read_signal(std::uint64_t id) noexcept;
 	void set_signal(std::uint64_t id, bool value) noexcept;
+	organizer& get_organizer() noexcept;
 
 protected:
 	void create_signal(std::uint64_t id, bool start_value);
 
 private:
+	friend class organizer;
+
+private:
+	void set_organizer(organizer* org);
+
+private:
 	type_id_t m_id;
 	std::string m_name;
-	ecs::stage m_stage;
+	organizer* m_organizer;
 	mem::set<signal, signal_comp> m_signals;
+	ecs::stage m_stage;
 };
 
 template <typename T>
@@ -88,8 +98,9 @@ public:
 		this->system_base::operator=(std::move(other));
 		return *this;
 	}
-	system(std::string name, ecs::stage stage) noexcept
-		: system_base{ type_id<T>::get_id(), name, stage }
+	system(ecs::stage stage) noexcept
+		: system_base{ type_id<T>::get_id(), std::string{ type_id<T>::get_name() }, stage
+}
 	{
 	}
 	virtual ~system() noexcept = default;

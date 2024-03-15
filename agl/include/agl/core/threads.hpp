@@ -62,15 +62,15 @@ public:
 		m_cond_vars.erase(m_cond_vars.cbegin() + cond_var.id());
 	}
 private:
-	virtual void on_attach(application* app) noexcept 
+	virtual void on_attach(application* app) 
 	{
 	};
-	virtual void on_update(application*) noexcept {};
-	virtual void on_detach(application*) noexcept 
+	virtual void on_detach(application*) 
 	{
 		while (!m_threads.empty())
 			m_threads.erase(m_threads.cend() - 1);
 	};
+	virtual void on_update(application*) noexcept {};
 
 private:
 	vector<unique_ptr<condition_variable>> m_cond_vars;

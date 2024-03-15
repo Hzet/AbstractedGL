@@ -152,6 +152,18 @@ public:
 	{
 		clear();
 	}
+	const_pointer cbegin() const noexcept
+	{
+		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
+
+		return m_memory;
+	}
+	const_pointer cend() const noexcept
+	{
+		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
+
+		return m_memory + block_size();
+	}
 	bool pointer_in_bounds(const_pointer ptr) const noexcept
 	{
 		return m_memory != nullptr
@@ -166,7 +178,7 @@ public:
 		for (auto i = 0; i < block_size(); ++i)
 			m_allocator.destruct(m_memory + i);
 
-		m_allocator.deallocate(m_memory);
+		m_allocator.deallocate(m_memory, block_size());
 		m_memory = nullptr;
 		m_free_spaces.clear();
 		m_size = 0;
@@ -281,19 +293,6 @@ public:
 	}
 
 private:
-	const_pointer cbegin() const noexcept
-	{
-		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
-
-		return m_memory;
-	}
-	const_pointer cend() const noexcept
-	{
-		AGL_ASSERT(m_memory != nullptr, "Invalid memory pointer");
-
-		return m_memory + block_size();
-	}
-
 	void make_copy(pointer dest, const_reference src) noexcept
 	{
 		if constexpr (std::is_copy_constructible_v<value_type>)
@@ -452,11 +451,17 @@ public:
 	{
 		return size() == 0;
 	}
+	void erase(const_pointer ptr) noexcept
+	{
+		auto it = find_block(ptr);
+		it->erase(ptr);
+
+	}
 	void erase(const_iterator pos) noexcept
 	{
 		AGL_ASSERT(m_indexes.cbegin() <= pos.m_it && pos.m_it < m_indexes.cend(), "Index out of bounds");
 		
-		auto it = find_block(pos);
+		auto it = find_block(&(*pos));
 		auto const index = &(*pos) - it->cbegin();
 		
 		it->erase(&(*pos));
@@ -472,7 +477,7 @@ public:
 
 		for (auto it = first; it != last; ++it)
 		{
-			auto it_block = find_block(pos);
+			auto it_block = find_block(&(*pos));
 			it_block->erase(pos);
 
 			if (it_block->empty())
@@ -598,10 +603,10 @@ private:
 	/// </summary>
 	/// <param name="value_index"></param>
 	/// <returns></returns>
-	typename block_vector::iterator find_block(const_iterator pos) noexcept
+	typename block_vector::iterator find_block(const_pointer ptr) noexcept
 	{
 		for (auto it = m_blocks.begin(); it != m_blocks.end(); ++it)
-			if(it->pointer_in_bounds(&(*pos)))
+			if(it->pointer_in_bounds(ptr))
 				return it;
 
 		AGL_ASSERT(false, "Index out of range");

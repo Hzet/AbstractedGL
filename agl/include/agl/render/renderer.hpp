@@ -10,20 +10,9 @@ class renderer
 {
 public:
 	using ecs::system<renderer>::system;
-	/*
-	renderer(renderer&& other) noexcept
-		: system<renderer>{ std::move(other) }
-	{
-	}
-	renderer& operator=(renderer&& other) noexcept
-	{
-		this->ecs::system<renderer>::operator=(std::move(other));
-		return *this;
-	}
 
-	virtual ~renderer() noexcept = default;
-	*/
-	virtual window* create_window(std::string const& title, glm::uvec2 const& resolution, window::update_fun fun) = 0;
-	//virtual window* get_current_window() noexcept = 0;
+	virtual window& create_window(glm::uvec2 const& resolution, std::string const& title) = 0;
+	virtual window& get_window(std::uint64_t index = 0) noexcept = 0;
+
 };
 }

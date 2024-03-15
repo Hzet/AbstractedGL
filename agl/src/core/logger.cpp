@@ -55,7 +55,7 @@ std::string logger::get_date() noexcept
 	ss << year_month_day{ now } << ' ' << make_time(system_clock::now() - now);
 	return ss.str();
 }
-void logger::on_attach(application* app) noexcept
+void logger::on_attach(application* app)
 {
 	auto logger_thread = [&]
 		{
@@ -103,7 +103,7 @@ void logger::on_attach(application* app) noexcept
 
 	info("Logger: OK");
 }
-void logger::on_detach(application* app) noexcept
+void logger::on_detach(application* app)
 {
 	info("Logger: OFF");
 	auto& threads = app->get_resource<agl::threads>();

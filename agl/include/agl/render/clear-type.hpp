@@ -1,6 +1,6 @@
+/*
 #pragma once
 #include <cstdint>
-#include <glad/glad.h>
 
 namespace agl
 {
@@ -18,3 +18,4 @@ enum clear_type : std::uint32_t
 };
 }
 }
+*/

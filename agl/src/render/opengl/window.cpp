@@ -1,94 +1,82 @@
+#include "agl/render/opengl/call.hpp"
 #include "agl/render/opengl/window.hpp"
-#include "agl/core/application.hpp"
 #include "agl/core/events.hpp"
-#include "agl/core/logger.hpp"
-#include <GLFW/glfw3.h>
 
 namespace agl
 {
 namespace opengl
 {
-window::window() noexcept
-	: agl::window{}
-	, m_handle{ nullptr }
-{
-}
-window::window(GLFWwindow* handle, std::string const& title, glm::uvec2 const& resolution, update_fun fun) noexcept
-	: agl::window{ title, resolution, fun }
-	, m_handle{ handle }
-{
-	m_properties.running = true;
-	m_properties.minimized = false;
-	m_properties.maximized = false;
-}
-window::window(window&& other) noexcept
-	: agl::window{ std::move(other) }
-	, m_data{ other.m_data }
-	, m_clear_type{ other.m_clear_type }
-	, m_handle{ other.m_handle }
-{
-	other.m_handle = nullptr;
-}
-window& window::operator=(window&& other) noexcept
-{
-	if (this == &other)
-		return *this;
+static constexpr std::uint32_t get_opengl_feature_code(feature_type feature);
 
-	this->agl::window::operator=(std::move(other));
-	m_clear_type = other.m_clear_type;
-	m_data = other.m_data;
-	m_handle = other.m_handle;
-	other.m_handle = nullptr;
-	m_update_fun = other.m_on_update;
-	return *this;
-}
-window::~window() noexcept
+void window::create(glm::uvec2 resolution, std::string const& title)
 {
-	if (m_handle == nullptr)
-		return;
+	this->agl::window::create(resolution, title);
 
-	close();
+	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
+		throw std::exception{ "Failed to initialize OpenGL context!" };
+
+	auto gl_version = std::string{};
+	auto glsl_version = std::string{};
+	AGL_OPENGL_CALL(gl_version = reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+	AGL_OPENGL_CALL(glsl_version = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+	gl_version = "OpenGL: " + gl_version;
+	glsl_version = "GLSL: " + glsl_version;
+	set_version(gl_version, glsl_version);
+}
+void window::feature_disable(feature_type feature)
+{
+	AGL_OPENGL_CALL(glDisable(get_opengl_feature_code(feature)));
+}
+void window::feature_enable(feature_type feature)
+{
+	AGL_OPENGL_CALL(glEnable(get_opengl_feature_code(feature)));
+}
+bool window::feature_status(feature_type feature)
+{
+	auto status = bool{};
+	AGL_OPENGL_CALL(status = glIsEnabled(get_opengl_feature_code(feature)));
+	return status;
+}
+void window::hint_api_version(std::uint64_t major, std::uint64_t minor)
+{
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
 }
 
-void window::should_close()
+static constexpr std::uint32_t get_opengl_feature_code(feature_type feature)
 {
-	AGL_ASSERT(m_handle != nullptr, "invalid window handle");
-	AGL_OPENGL_CALL(glfwWindowShouldClose(m_handle));
-}
-void window::close()
-{
-	glfwDestroyWindow(m_handle);
-	m_properties.running = false;
-	m_handle = nullptr;
-}
-void window::clear()
-{
-	AGL_OPENGL_CALL(glClearColor(m_properties.clear_color.x, m_properties.clear_color.y, m_properties.clear_color.z, m_properties.clear_color.w));
-	AGL_OPENGL_CALL(glClear(m_clear_type));
-}
-clear_type window::get_clear_type() const
-{
-	return m_clear_type;
-}
-void window::set_clear_type(clear_type type)
-{
-	m_clear_type = type;
-}
-void window::display()
-{
-	glfwSwapBuffers(m_handle);
-}
-void window::disable_feature(feature_type feature)
-{
-	AGL_OPENGL_CALL(glDisable(feature));
-}
-void window::enable_feature(feature_type feature)
-{
-	AGL_OPENGL_CALL(glEnable(feature));
-}
-GLFWwindow* window::get_handle() noexcept
-{
-	return m_handle;
+	switch (feature)
+	{
+	case FEATURE_BLEND: return GL_BLEND;
+	case FEATURE_COLOR_LOGIC_OP: return GL_COLOR_LOGIC_OP;
+	case FEATURE_CULL_FACE: return GL_CULL_FACE;
+	case FEATURE_DEBUG_OUTPUT: return GL_DEBUG_OUTPUT;
+	case FEATURE_DEBUG_OUTPUT_SYNCHRONOUS: return GL_DEBUG_OUTPUT_SYNCHRONOUS;
+	case FEATURE_DEPTH_CLAMP: return GL_DEPTH_CLAMP;
+	case FEATURE_DEPTH_TEST: return GL_DEPTH_TEST;
+	case FEATURE_DITHER: return GL_DITHER;
+	case FEATURE_FRAMEBUFFER_SRGB: return GL_FRAMEBUFFER_SRGB;
+	case FEATURE_LINE_SMOOTH: return GL_LINE_SMOOTH;
+	case FEATURE_MULTISAMPLE: return GL_MULTISAMPLE;
+	case FEATURE_POLYGON_OFFSET_FILL: return GL_POLYGON_OFFSET_FILL;
+	case FEATURE_POLYGON_OFFSET_LINE: return GL_POLYGON_OFFSET_LINE;
+	case FEATURE_POLYGON_OFFSET_POINT: return GL_POLYGON_OFFSET_POINT;
+	case FEATURE_POLYGON_SMOOTH: return GL_POLYGON_SMOOTH;
+	case FEATURE_PRIMITIVE_RESTART: return GL_PRIMITIVE_RESTART;
+	case FEATURE_PRIMITIVE_RESTART_FIXED_INDEX: return GL_PRIMITIVE_RESTART_FIXED_INDEX;
+	case FEATURE_RASTERIZER_DISCARD: return GL_RASTERIZER_DISCARD;
+	case FEATURE_SAMPLE_ALPHA_TO_COVERAGE: return GL_SAMPLE_ALPHA_TO_COVERAGE;
+	case FEATURE_SAMPLE_ALPHA_TO_ONE: return GL_SAMPLE_ALPHA_TO_ONE;
+	case FEATURE_SAMPLE_COVERAGE: return GL_SAMPLE_COVERAGE;
+	case FEATURE_SAMPLE_SHADING: return GL_SAMPLE_SHADING;
+	case FEATURE_SAMPLE_MASK: return GL_SAMPLE_MASK;
+	case FEATURE_SCISSOR_TEST: return GL_SCISSOR_TEST;
+	case FEATURE_STENCIL_TEST: return GL_STENCIL_TEST;
+	case FEATURE_TEXTURE_CUBE_MAP_SEAMLESS: return GL_TEXTURE_CUBE_MAP_SEAMLESS;
+	case FEATURE_PROGRAM_POINT_SIZE: return GL_PROGRAM_POINT_SIZE;
+	}
+	AGL_ASSERT(false, "invalid feature type");
+	return 0;
 }
 }
 }

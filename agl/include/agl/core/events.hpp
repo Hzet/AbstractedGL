@@ -6,6 +6,45 @@
 
 namespace agl
 {
+enum button_type;
+struct event;
+enum event_type;
+enum key_type;
+
+// init and manage GLFW events
+class events final
+	: public resource<events>
+{
+public:
+	static void set_window_callbacks(window* window);
+
+	events();
+	events(events&&) = default;
+	events& operator=(events&&) = default;
+	~events() noexcept = default;
+	void push_event(event e) noexcept;
+	void set_button_pressed(button_type button, bool status) noexcept;
+	void set_key_pressed(key_type key, bool status) noexcept;
+	bool is_button_pressed(button_type button) const noexcept;
+	bool is_key_pressed(key_type key) const noexcept;
+	event poll_event() noexcept;
+
+public:
+	static const vector<button_type> button_types;
+	static const vector<key_type> key_types;
+
+private:
+	virtual void on_attach(application*) override;
+	virtual void on_detach(application*) override;
+	virtual void on_update(application*) noexcept override;
+
+private:
+	unique_ptr<std::mutex> m_mutex;
+	dictionary<button_type, bool> m_button_pressed;
+	dictionary<key_type, bool> m_key_pressed;
+	vector<event> m_event_queue;
+};
+
 enum event_type
 {
 	INVALID_EVENT,
@@ -215,32 +254,5 @@ struct event
 		scale_factor scale;
 		std::uint32_t character;
 	};
-};
-
-class events final
-	: public resource<events>
-{
-public:
-	events();
-	~events() noexcept = default;
-	void push_event(event e) noexcept;
-	void set_button_pressed(button_type button, bool status) noexcept;
-	void set_key_pressed(key_type key, bool status) noexcept;
-	bool is_button_pressed(button_type button) const noexcept;
-	bool is_key_pressed(key_type key) const noexcept;
-	event poll_event() noexcept;
-	virtual void on_attach(application*) noexcept override;
-	virtual void on_detach(application*) noexcept override;
-	virtual void on_update(application*) noexcept override;
-
-public:
-	static const vector<button_type> button_types;
-	static const vector<key_type> key_types;
-
-private:
-	mutex* m_mutex;
-	dictionary<button_type, bool> m_button_pressed;
-	dictionary<key_type, bool> m_key_pressed;
-	vector<event> m_event_queue;
 };
 }

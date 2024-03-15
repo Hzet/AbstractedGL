@@ -29,7 +29,7 @@ public:
 	organizer& operator=(organizer&& other) noexcept;
 	~organizer() noexcept = default;
 
-	void add_system(application* app, mem::unique_ptr<system_base> sys) noexcept;
+	void add_system(application* app, mem::unique_ptr<system_base> sys);
 	template <typename T, typename = is_system_t<T>>
 	T& get_system() noexcept;
 	system_base& get_system(type_id_t id) noexcept;
@@ -37,18 +37,25 @@ public:
 	bool has_system() const noexcept;
 	bool has_system(type_id_t id) const noexcept;
 	entity make_entity();
+	void destroy_entity(entity& ent);
 
 	template <typename T>
-	void pop_component(application* app, entity& ent, T* ptr) noexcept;
-
+	void pop_components(entity& ent) noexcept;
+	void pop_components(type_id_t type_id, entity& ent) noexcept;
+	template <typename T>
+	void pop_component(entity& ent, std::uint64_t index) noexcept;
+	void pop_component(type_id_t type_id, entity& ent, std::uint64_t index) noexcept;
 	template <typename T, typename... TArgs>
-	void push_component(application* app, entity& ent, TArgs... args) noexcept;
+	void push_component(entity& ent, TArgs... args) noexcept;
+	template <typename T>
+	std::uint64_t get_component_count() const noexcept;
+	std::uint64_t get_component_count(type_id_t type_id) const noexcept;
 
 	template <typename... TArgs>
 	mem::vector<entity> view() noexcept;
 
 	template <typename T>
-	void remove_system(application* app) noexcept;
+	void remove_system(application* app);
 
 	allocator_type get_allocator() const noexcept;
 
@@ -57,8 +64,8 @@ private:
 	system_base const* get_system_impl(type_id_t id) const noexcept;
 	template <typename T>
 	mem::deque<T>& get_storage() noexcept;
-	virtual void on_attach(application*) noexcept override;
-	virtual void on_detach(application*) noexcept override;
+	virtual void on_attach(application*) override;
+	virtual void on_detach(application*) override;
 	virtual void on_update(application*) noexcept override;
 
 private:
@@ -76,23 +83,28 @@ T& organizer::get_system() noexcept
 	AGL_ASSERT(result != nullptr, "invalid system cast");
 
 	return *result;
+}
 
+template <typename T>
+void organizer::pop_components(entity& ent) noexcept
+{
+	pop_components(type_id<T>::get_id(), ent);
 }
 template <typename T, typename... TArgs>
-void organizer::push_component(application* app, entity& ent, TArgs... args) noexcept
+void organizer::push_component(entity& ent, TArgs... args) noexcept
 {
+	AGL_ASSERT(!ent.empty(), "entity is uninitialized");
+
 	auto& storage = get_storage<T>();
 	auto it = storage.emplace_back(std::forward<TArgs>(args)...);
 	ent.m_data->push_component<T>(&(*it));
 }
 template <typename T>
-void organizer::pop_component(application* app, entity& ent, T* ptr) noexcept
+void organizer::pop_component(entity& ent, std::uint64_t index) noexcept
 {
-	AGL_ASSERT(m_components[type_id<T>::get_id()] != nullptr, "invalid component type");
+	AGL_ASSERT(!ent.empty(), "entity is uninitialized");
 
-	auto& storage = get_storage<T>();
-	ent.m_data->pop_component<T>(ptr);
-	m_components[type_id<T>::get_id()]->pop(ptr);
+	pop_component(type_id<T>::get_id(), ent, index);
 }
 template <typename... TArgs>
 mem::vector<entity> organizer::view() noexcept
@@ -103,6 +115,11 @@ mem::vector<entity> organizer::view() noexcept
 			result.push_back(entity{ &e });
 
 	return result;
+}
+template <typename T>
+std::uint64_t organizer::get_component_count() const noexcept
+{
+	return get_component_count(type_id<T>::get_id());
 }
 template <typename T, typename>
 bool organizer::has_system() const noexcept
@@ -116,15 +133,15 @@ mem::deque<T>& organizer::get_storage() noexcept
 	if (ptr == nullptr)
 	{
 		auto storage = component_storage<T>{};
-		storage.storage = mem::deque<T>{ sizeof(T) * 500, m_components.get_allocator() };
-		auto allocator = mem::pool::allocator<component_storage<T>>{ m_components.get_allocator() };
+		storage.storage = mem::deque<T>{ sizeof(T) * 10, get_allocator() };
+		auto allocator = mem::pool::allocator<component_storage<T>>{ get_allocator() };
 		ptr = mem::make_unique<component_storage_base>(allocator, std::move(storage));
 	}
 	auto& storage = *dynamic_cast<component_storage<T>*>(ptr.get());
 	return storage.storage;
 }
 template <typename T>
-void organizer::remove_system(application* app) noexcept
+void organizer::remove_system(application* app)
 {
 	for (auto it = m_systems.cbegin(); it != m_systems.cend(); ++it)
 		if ((*it)->id() == type_id<T>::get_id())

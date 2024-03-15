@@ -1,6 +1,7 @@
 #pragma once 
-#include <cstdint>
 #include "agl/core/debug.hpp"
+#include <cstdint>
+#include <glad/glad.h>
 
 #ifdef AGL_DEBUG
 namespace agl

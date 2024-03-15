@@ -35,6 +35,9 @@ class logger final
 	: public resource<logger>
 {
 public:
+	template <typename... TArgs>
+	static std::string combine_message(std::string str, TArgs&&... args) noexcept;
+	
 	logger() noexcept;
 	logger(logger&& other) noexcept;
 	logger(logger const&) noexcept = delete;
@@ -83,8 +86,8 @@ private:
 	static std::string get_date() noexcept;
 	static const char* get_logger_name(instance_index index) noexcept;
 	bool is_active() const noexcept;
-	virtual void on_attach(application* app) noexcept override;
-	virtual void on_detach(application* app) noexcept override;
+	virtual void on_attach(application* app) override;
+	virtual void on_detach(application* app) override;
 	virtual void on_update(application* app) noexcept override;
 
 	template <typename T>
@@ -159,8 +162,9 @@ void logger::log(instance_index index, std::string const& message, TArgs&&... ar
 	++m_messages_count;
 	m_cond_var->notify_one();
 }
+
 template <typename... TArgs>
-std::string logger::produce_message(instance_index index, std::string message, TArgs&&... args) noexcept
+std::string logger::combine_message(std::string message, TArgs&&... args) noexcept
 {
 	auto const parsed = parse_arguments(std::forward_as_tuple(std::forward<TArgs>(args)...), std::make_index_sequence<sizeof... (TArgs)>{});
 	auto found_l = std::uint64_t{};
@@ -186,6 +190,13 @@ std::string logger::produce_message(instance_index index, std::string message, T
 
 		found_l += parsed[arg_index].size() - token_size;
 	}
+	return message;
+}
+
+template <typename... TArgs>
+std::string logger::produce_message(instance_index index, std::string message, TArgs&&... args) noexcept
+{
+	message = combine_message(message, std::forward<TArgs>(args)...);
 	message.insert(0, "] ");
 	message.insert(0, get_logger_name(index));
 	message.insert(0, "[");
