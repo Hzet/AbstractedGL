@@ -21,13 +21,13 @@ public:
 	events();
 	events(events&&) = default;
 	events& operator=(events&&) = default;
-	~events() noexcept = default;
-	void push_event(event e) noexcept;
-	void set_button_pressed(button_type button, bool status) noexcept;
-	void set_key_pressed(key_type key, bool status) noexcept;
-	bool is_button_pressed(button_type button) const noexcept;
-	bool is_key_pressed(key_type key) const noexcept;
-	event poll_event() noexcept;
+	~events() = default;
+	void push_event(event e);
+	void set_button_pressed(button_type button, bool status);
+	void set_key_pressed(key_type key, bool status);
+	bool is_button_pressed(button_type button) const;
+	bool is_key_pressed(key_type key) const;
+	event poll_event();
 
 public:
 	static const vector<button_type> button_types;
@@ -36,7 +36,7 @@ public:
 private:
 	virtual void on_attach(application*) override;
 	virtual void on_detach(application*) override;
-	virtual void on_update(application*) noexcept override;
+	virtual void on_update(application*) override;
 
 private:
 	unique_ptr<std::mutex> m_mutex;

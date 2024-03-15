@@ -11,11 +11,11 @@ application::~application()
 	close();
 }
 
-application_resource::application_resource(type_id_t id) noexcept
+application_resource::application_resource(type_id_t id)
 	: m_id{ id }
 {
 }
-type_id_t application_resource::type() const noexcept
+type_id_t application_resource::type() const
 {
 	return m_id;
 }
@@ -41,7 +41,7 @@ application::properties const& application::get_properties() const
 {
 	return m_properties;
 }
-bool application::good() const noexcept
+bool application::good() const
 {
 	return m_good;
 }

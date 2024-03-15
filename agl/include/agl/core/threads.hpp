@@ -18,17 +18,17 @@ class threads final
 	: public resource<threads>
 {
 public:
-	static std::uint64_t invalid_id() noexcept
+	static std::uint64_t invalid_id()
 	{
 		return std::numeric_limits<std::uint64_t>::max();
 	}
 
 public:
-	threads() noexcept
+	threads()
 		: resource<threads>{ type_id<threads>::get_id() }
 	{
 	}
-	threads(threads&& other) noexcept = default;
+	threads(threads&& other) = default;
 	[[nodiscard]] thread& new_thread()
 	{
 		auto ptr = make_unique<thread>();
@@ -70,7 +70,7 @@ private:
 		while (!m_threads.empty())
 			m_threads.erase(m_threads.cend() - 1);
 	};
-	virtual void on_update(application*) noexcept {};
+	virtual void on_update(application*) {};
 
 private:
 	vector<unique_ptr<condition_variable>> m_cond_vars;

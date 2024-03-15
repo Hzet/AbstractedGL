@@ -41,40 +41,40 @@ public:
 	{
 		comp_type comp;
 
-		bool operator()(value_type const& lhs, key_type const& rhs) const noexcept
+		bool operator()(value_type const& lhs, key_type const& rhs) const
 		{
 			return comp(lhs.first, rhs);
 		}
-		bool operator()(key_type const& lhs, value_type const& rhs) const noexcept
+		bool operator()(key_type const& lhs, value_type const& rhs) const
 		{
 			return comp(lhs, rhs.first);
 		}
 	};
 
 public:
-	dictionary() noexcept
+	dictionary()
 	{
 	}
-	explicit dictionary(allocator_type allocator) noexcept
+	explicit dictionary(allocator_type allocator)
 		: m_data{ allocator }
 	{
 	}
-	explicit dictionary(comp_type const& comp, allocator_type const& allocator) noexcept
+	explicit dictionary(comp_type const& comp, allocator_type const& allocator)
 		: m_comp{ .comp = comp }
 		, m_data{ allocator }
 	{
 	}
-	dictionary(dictionary&& other) noexcept
+	dictionary(dictionary&& other)
 		: m_comp{ std::move(other.m_comp) }
 		, m_data{ std::move(other.m_data) }
 	{
 	}
-	dictionary(dictionary const& other) noexcept
+	dictionary(dictionary const& other)
 		: m_comp{ other.m_comp }
 		, m_data{ other.m_data }
 	{
 	}
-	dictionary& operator=(dictionary&& other) noexcept
+	dictionary& operator=(dictionary&& other)
 	{
 		if (this == &other)
 			return *this;
@@ -83,7 +83,7 @@ public:
 		m_data = std::move(other.m_data);
 		return *this;
 	}
-	dictionary& operator=(dictionary const& other) noexcept
+	dictionary& operator=(dictionary const& other)
 	{
 		if (this == &other)
 			return *this;
@@ -92,86 +92,86 @@ public:
 		m_data = other.m_data;
 		return *this;
 	}
-	~dictionary() noexcept
+	~dictionary()
 	{
 	}
-	reference front() noexcept
-	{
-		return m_data.front();
-	}
-	const_reference front() const noexcept
+	reference front()
 	{
 		return m_data.front();
 	}
-	reference back() noexcept
+	const_reference front() const
+	{
+		return m_data.front();
+	}
+	reference back()
 	{
 		return m_data.back();
 	}
-	const_reference back() const noexcept
+	const_reference back() const
 	{
 		return m_data.back();
 	}
-	iterator begin() noexcept
+	iterator begin()
 	{
 		return m_data.begin();
 	}
-	const_iterator begin() const noexcept
+	const_iterator begin() const
 	{
 		return m_data.begin();
 	}
-	iterator rbegin() noexcept
+	iterator rbegin()
 	{
 		return m_data.rbegin();
 	}
-	const_iterator rbegin() const noexcept
+	const_iterator rbegin() const
 	{
 		return m_data.rbegin();
 	}
-	const_iterator cbegin() const noexcept
+	const_iterator cbegin() const
 	{
 		return m_data.cbegin();
 	}
-	const_iterator crbegin() const noexcept
+	const_iterator crbegin() const
 	{
 		return m_data.crbegin();
 	}
-	iterator end() noexcept
+	iterator end()
 	{
 		return m_data.end();
 	}
-	const_iterator end() const noexcept
+	const_iterator end() const
 	{
 		return m_data.cend();
 	}
-	iterator rend() noexcept
+	iterator rend()
 	{
 		return m_data.rend();
 	}
-	const_iterator rend() const noexcept
+	const_iterator rend() const
 	{
 		return m_data.crend();
 	}
-	const_iterator cend() const noexcept
+	const_iterator cend() const
 	{
 		return m_data.cend();
 	}
-	const_iterator crend() const noexcept
+	const_iterator crend() const
 	{
 		return m_data.crend();
 	}
-	void clear() noexcept
+	void clear()
 	{
 		m_data.clear();
 	}
-	comp_type key_comp() const noexcept
+	comp_type key_comp() const
 	{
 		return m_comp.comp;
 	}	
-	key_value_comp_type key_value_comp() const noexcept
+	key_value_comp_type key_value_comp() const
 	{
 		return m_comp;
 	}
-	iterator find(key_type key) noexcept
+	iterator find(key_type key)
 	{
 		auto found = lower_bound(key);
 
@@ -179,7 +179,7 @@ public:
 			return end();
 		return found;
 	}
-	const_iterator find(key_type key) const noexcept
+	const_iterator find(key_type key) const
 	{
 		auto const found = lower_bound(key);
 
@@ -187,26 +187,26 @@ public:
 			return cend();
 		return found;
 	}
-	iterator erase(const_iterator pos) noexcept
+	iterator erase(const_iterator pos)
 	{
 		return m_data.erase(pos);
 	}
-	iterator erase(const_iterator first, const_iterator last) noexcept
+	iterator erase(const_iterator first, const_iterator last)
 	{
 		return m_data.erase(first, last);
 	}
-	iterator emplace(value_type&& pair) noexcept
+	iterator emplace(value_type&& pair)
 	{
 		AGL_ASSERT(find(pair.first) == end(), "Key already stored");
 
 		auto const it = lower_bound(pair.first);
 		return m_data.insert(it, std::forward<value_type>(pair));
 	}
-	bool empty() const noexcept
+	bool empty() const
 	{
 		return m_data.empty();
 	}
-	mapped_type& at(key_type key) noexcept
+	mapped_type& at(key_type key)
 	{
 		auto found = find(key);
 
@@ -214,7 +214,7 @@ public:
 
 		return found->second;
 	}
-	mapped_type const& at(key_type key) const noexcept
+	mapped_type const& at(key_type key) const
 	{
 		auto const found = find(key);
 
@@ -222,7 +222,7 @@ public:
 
 		return found->second;
 	}
-	mapped_type& operator[](key_type key) noexcept
+	mapped_type& operator[](key_type key)
 	{
 		auto found = lower_bound(key);
 
@@ -230,7 +230,7 @@ public:
 			return m_data.insert(found, std::make_pair(key, mapped_type{}))->second;
 		return found->second;
 	}
-	mapped_type const& operator[](key_type key) const noexcept
+	mapped_type const& operator[](key_type key) const
 	{
 		auto const found = lower_bound(key);
 
@@ -238,25 +238,25 @@ public:
 
 		return found->second;
 	}
-	size_type size() const noexcept
+	size_type size() const
 	{
 		return m_data.size();
 	}
-	allocator_type get_allocator() const noexcept
+	allocator_type get_allocator() const
 	{
 		return m_data.get_allocator();
 	}
 
 private:
-	iterator lower_bound(key_type key) noexcept
+	iterator lower_bound(key_type key)
 	{
 		return std::lower_bound(m_data.begin(), m_data.end(), key, key_value_comp());
 	}
-	const_iterator lower_bound(key_type key) const noexcept
+	const_iterator lower_bound(key_type key) const
 	{
 		return std::lower_bound(m_data.cbegin(), m_data.cend(), key, key_value_comp());
 	}
-	bool equal(TKey const& lhs, TKey const& rhs) const noexcept
+	bool equal(TKey const& lhs, TKey const& rhs) const
 	{
 		return !m_comp.comp(lhs, rhs) && !m_comp.comp(rhs, lhs);
 	}

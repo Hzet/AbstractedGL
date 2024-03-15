@@ -19,27 +19,27 @@ void window_size_callback(GLFWwindow*, int, int);
 class window
 {
 public:
-	window() noexcept;
-	window(window&& other) noexcept;
-	window& operator=(window&& other) noexcept;
-	virtual ~window() noexcept;
+	window();
+	window(window&& other);
+	window& operator=(window&& other);
+	virtual ~window();
 
-	virtual void close() noexcept;
+	virtual void close();
 	virtual void create(glm::uvec2 resolution, std::string const& title);
-	glm::uvec2 frame_buffer_size() const noexcept;
-	GLFWwindow* get_handle() noexcept;
+	glm::uvec2 frame_buffer_size() const;
+	GLFWwindow* get_handle();
 	virtual void hint_api_version(std::uint64_t major, std::uint64_t minor) = 0;
-	bool is_minimized() const noexcept;
-	bool is_maximized() const noexcept;
-	bool is_focused() const noexcept;
-	bool is_open() const noexcept;
-	bool should_close() const noexcept;
-	virtual void resize(glm::uvec2 const& size) noexcept;
-	glm::uvec2 const& size() const noexcept;
-	std::string const& title() const noexcept;
-	virtual std::string const& get_api_version() const noexcept;
-	virtual std::string const& get_shading_language_version() const noexcept;
-	void set_version(std::string const& api_version, std::string const& shading_language_version) noexcept;
+	bool is_minimized() const;
+	bool is_maximized() const;
+	bool is_focused() const;
+	bool is_open() const;
+	bool should_close() const;
+	virtual void resize(glm::uvec2 const& size);
+	glm::uvec2 const& size() const;
+	std::string const& title() const;
+	virtual std::string const& get_api_version() const;
+	virtual std::string const& get_shading_language_version() const;
+	void set_version(std::string const& api_version, std::string const& shading_language_version);
 
 	virtual void feature_disable(feature_type feature) = 0;
 	virtual void feature_enable(feature_type feature) = 0;

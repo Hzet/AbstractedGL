@@ -61,14 +61,14 @@ public:
 	using reverse_iterator = vector_reverse_iterator<T, impl::iterator_traits<T>>;
 	using reverse_const_iterator = vector_reverse_iterator<T, impl::const_iterator_traits<T>>;
 
-	vector() noexcept
+	vector()
 		: m_allocator{ }
 		, m_capacity{ 0 }
 		, m_memory{ nullptr }
 		, m_size{ 0 }
 	{
 	}
-	explicit vector(allocator_type const& alloc) noexcept
+	explicit vector(allocator_type const& alloc)
 		: m_allocator{ alloc }
 		, m_capacity{ 0 }
 		, m_memory{ nullptr }
@@ -76,15 +76,15 @@ public:
 	{
 	}
 	template <typename TInputIt, typename TEnable = impl::is_iterator<TInputIt>>
-	vector(TInputIt first, TInputIt last) noexcept
+	vector(TInputIt first, TInputIt last)
 	{
 		assign(first, last);
 	}
-	vector(std::initializer_list<T> list) noexcept
+	vector(std::initializer_list<T> list)
 	{
 		assign(list.begin(), list.end());
 	}
-	vector(vector&& other) noexcept
+	vector(vector&& other)
 		: m_allocator{ std::move(other.m_allocator) }
 		, m_capacity{ other.m_capacity }
 		, m_memory{ other.m_memory }
@@ -94,7 +94,7 @@ public:
 		other.m_size = 0;
 		other.m_memory = nullptr;
 	}
-	vector(vector const& other) noexcept
+	vector(vector const& other)
 		: vector{ other.m_allocator }
 	{
 		if (other.m_memory == nullptr)
@@ -104,7 +104,7 @@ public:
 		for (auto const& v : other)
 			push_back(v);
 	}
-	vector& operator=(vector&& other) noexcept
+	vector& operator=(vector&& other)
 	{
 		if (this == &other)
 			return *this;
@@ -120,7 +120,7 @@ public:
 		other.m_size = 0;
 		return *this;
 	}
-	vector& operator=(vector const& other) noexcept
+	vector& operator=(vector const& other)
 	{
 		if (this == &other)
 			return *this;
@@ -138,21 +138,21 @@ public:
 	{
 		clear();
 	}
-	reference at(size_type index) noexcept
+	reference at(size_type index)
 	{
 		AGL_ASSERT(index < size(), "Index out of bounds");
 		AGL_ASSERT(m_memory != nullptr, "Index out of bounds");
 
 		return *(m_memory + index);
 	}
-	const_reference at() const noexcept
+	const_reference at() const
 	{
 		AGL_ASSERT(index < size(), "Index out of bounds");
 		AGL_ASSERT(m_memory != nullptr, "Index out of bounds");
 
 		return *(m_memory + index);
 	}
-	void assign(size_type count, const_reference value) noexcept
+	void assign(size_type count, const_reference value)
 	{
 		if (count != size())
 		{
@@ -164,7 +164,7 @@ public:
 			make_copy(m_memory + i, value);
 	}
 	template <typename TInputIt, typename TEnable = impl::is_iterator_t<TInputIt>>
-	void assign(TInputIt first, TInputIt last) noexcept
+	void assign(TInputIt first, TInputIt last)
 	{
 		auto const count = last - first;
 		if (count != size())
@@ -176,135 +176,135 @@ public:
 		for (auto i = 0; i < count; ++i, ++first)
 			make_copy(m_memory + i, *first);
 	}
-	iterator begin() noexcept
+	iterator begin()
 	{
 		return make_iterator<iterator>(m_memory);
 	}
-	const_iterator begin() const noexcept
+	const_iterator begin() const
 	{
 		return cbegin();
 	}
-	const_iterator cbegin() const noexcept
+	const_iterator cbegin() const
 	{
 		return make_iterator<const_iterator>(m_memory);
 	}
-	iterator end() noexcept
+	iterator end()
 	{
 		return make_iterator<iterator>(m_memory + size());
 	}
-	const_iterator end() const noexcept
+	const_iterator end() const
 	{
 		return cend();
 	}
-	const_iterator cend() const noexcept
+	const_iterator cend() const
 	{
 		return make_iterator<const_iterator>(m_memory + size());
 	}
-	reverse_iterator rbegin() noexcept
+	reverse_iterator rbegin()
 	{
 		if (empty())
 			return make_iterator<reverse_iterator>(nullptr);
 		return make_iterator<reverse_iterator>(m_memory + size() - 1);
 	}
-	reverse_const_iterator rbegin() const noexcept
+	reverse_const_iterator rbegin() const
 	{
 		if (empty())
 			return make_iterator<reverse_const_iterator>(nullptr);
 		return make_iterator<reverse_const_iterator>(m_memory + size() - 1);
 	}
-	reverse_const_iterator crbegin() const noexcept
+	reverse_const_iterator crbegin() const
 	{
 		if (empty())
 			return make_iterator<reverse_const_iterator>(nullptr);
 		return make_iterator<reverse_const_iterator>(m_memory + size() - 1);
 	}
-	reverse_iterator rend() noexcept
+	reverse_iterator rend()
 	{
 		if (empty())
 			return make_iterator<reverse_iterator>(nullptr);
 		return make_iterator<reverse_iterator>(m_memory - 1);
 	}
-	reverse_const_iterator rend() const noexcept
+	reverse_const_iterator rend() const
 	{
 		if (empty())
 			return make_iterator<reverse_const_iterator>(nullptr);
 		return make_iterator<reverse_const_iterator>(m_memory - 1);
 	}
-	reverse_const_iterator crend() const noexcept
+	reverse_const_iterator crend() const
 	{
 		if (empty())
 			return make_iterator<reverse_const_iterator>(nullptr);
 		return make_iterator<reverse_const_iterator>(m_memory - 1);
 	}
-	reference operator[](size_type index) noexcept
+	reference operator[](size_type index)
 	{
 		return *(m_memory + index);
 	}
-	const_reference operator[](size_type index) const noexcept
+	const_reference operator[](size_type index) const
 	{
 		return *(m_memory + index);
 	}
-	reference front() noexcept
+	reference front()
 	{
 		AGL_ASSERT(!empty(), "Index out of bounds");
 
 		return *m_memory;
 	}
-	const_reference front() const noexcept
+	const_reference front() const
 	{
 		AGL_ASSERT(!empty(), "Index out of bounds");
 
 		return *m_memory;
 	}
-	reference back() noexcept
+	reference back()
 	{
 		AGL_ASSERT(!empty(), "Index out of bounds");
 
 		return *(m_memory + m_size - 1);
 	}
-	const_reference back() const noexcept
+	const_reference back() const
 	{
 		AGL_ASSERT(!empty(), "Index out of bounds");
 
 		return *(m_memory + m_size - 1);
 	}
-	pointer data() noexcept
+	pointer data()
 	{
 		return m_memory;
 	}
-	const_pointer data() const noexcept
+	const_pointer data() const
 	{
 		return m_memory
 	}
-	bool empty() const noexcept
+	bool empty() const
 	{
 		return m_size == 0;
 	}
-	allocator_type get_allocator() const noexcept
+	allocator_type get_allocator() const
 	{
 		return m_allocator;
 	}
-	size_type size() const noexcept
+	size_type size() const
 	{
 		return m_size;
 	}
-	void resize(size_type n) noexcept
+	void resize(size_type n)
 	{
 		if (n > capacity())
 			reserve(n);
 		m_size = n;
 	}
-	size_type capacity() const noexcept
+	size_type capacity() const
 	{
 		return m_capacity;
 	}
-	void shrink_to_fit() noexcept
+	void shrink_to_fit()
 	{
 		if (capacity() == size())
 			return;
 		realloc(size());
 	}
-	void clear() noexcept
+	void clear()
 	{
 		if (m_memory == nullptr)
 			return;
@@ -316,7 +316,7 @@ public:
 		m_size = 0;
 		m_capacity = 0;
 	}
-	iterator insert(const_iterator pos, const_reference value) noexcept
+	iterator insert(const_iterator pos, const_reference value)
 	{
 		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
 
@@ -332,7 +332,7 @@ public:
 		++m_size;
 		return make_iterator<iterator>(m_memory + index);
 	}
-	iterator insert(const_iterator pos, value_type&& value) noexcept
+	iterator insert(const_iterator pos, value_type&& value)
 	{
 		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
 
@@ -350,7 +350,7 @@ public:
 		return make_iterator<iterator>(m_memory + index);
 	}
 	template <typename TInputIt, typename TEnable = impl::is_iterator<TInputIt>>
-	iterator insert(const_iterator pos, TInputIt first, TInputIt last) noexcept
+	iterator insert(const_iterator pos, TInputIt first, TInputIt last)
 	{
 		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
 		AGL_ASSERT(cbegin() <= first && first <= cend(), "Index out of bounds");
@@ -375,7 +375,7 @@ public:
 		return make_iterator<iterator>(m_memory + index);
 	}
 	template <typename... TArgs>
-	iterator emplace(const_iterator pos, TArgs&&... args) noexcept
+	iterator emplace(const_iterator pos, TArgs&&... args)
 	{
 		AGL_ASSERT(cbegin() <= pos && pos <= cend(), "Index out of bounds");
 
@@ -394,7 +394,7 @@ public:
 		return make_iterator<iterator>(m_memory + index);
 	}
 	template <typename... TArgs>
-	iterator emplace_back(TArgs&&... args) noexcept
+	iterator emplace_back(TArgs&&... args)
 	{
 		resize(size() + 1);
 		m_allocator.destruct(m_memory + size() - 1);
@@ -402,7 +402,7 @@ public:
 
 		return make_iterator<iterator>(m_memory + size() - 1);
 	}
-	iterator erase(const_iterator pos) noexcept
+	iterator erase(const_iterator pos)
 	{
 		AGL_ASSERT(cbegin() <= pos && pos < cend(), "Iterator out of bounds");
 
@@ -419,7 +419,7 @@ public:
 		--m_size;
 		return it;
 	}
-	iterator erase(const_iterator first, const_iterator last) noexcept
+	iterator erase(const_iterator first, const_iterator last)
 	{
 		AGL_ASSERT(cbegin() <= first && first < cend(), "Iterator out of bounds");
 		AGL_ASSERT(cbegin() <= last && last < cend(), "Iterator out of bounds");
@@ -440,17 +440,17 @@ public:
 			m_size -= erase_size;
 		return make_iterator<iterator>(m_memory + offset);
 	}
-	void push_back(value_type&& value) noexcept
+	void push_back(value_type&& value)
 	{
  		resize(size() + 1);
 		make_move(m_memory + size() - 1, std::forward<value_type&&>(value));
 	}
-	void push_back(const_reference value) noexcept
+	void push_back(const_reference value)
 	{
 		resize(size() + 1);
 		make_copy(m_memory + size() - 1, value);
 	}
-	void pop_back() noexcept
+	void pop_back()
 	{
 		AGL_ASSERT(!empty(), "erase on empty vector");
 
@@ -458,11 +458,11 @@ public:
 		m_allocator.construct(m_memory + size() - 1);
 		--m_size;
 	}
-	void pop_front() noexcept
+	void pop_front()
 	{
 		erase(cbegin());
 	}
-	void reserve(size_type n) noexcept
+	void reserve(size_type n)
 	{
 		if (n <= capacity())
 			return;
@@ -470,20 +470,20 @@ public:
 	}
 private:
 	template <typename TIterator>
-	TIterator make_iterator(T* ptr) const noexcept
+	TIterator make_iterator(T* ptr) const
 	{
 		return TIterator{ ptr, m_memory, m_memory + size() };
 	}
 	template <typename TIterator>
-	TIterator make_internal_iterator(T* ptr) const noexcept // returns iterator checked up to capacity()
+	TIterator make_internal_iterator(T* ptr) const // returns iterator checked up to capacity()
 	{
 		return TIterator{ ptr, m_memory, m_memory + capacity() };
 	}
-	iterator real_end() const noexcept
+	iterator real_end() const
 	{
 		return iterator{ m_memory + capacity(), m_memory, m_memory + capacity() };
 	}
-	void make_copy(pointer dest, const_reference src) noexcept
+	void make_copy(pointer dest, const_reference src)
 	{
 		AGL_ASSERT(m_memory <= dest && dest < m_memory + capacity(), "iterator out of range");
 		
@@ -494,7 +494,7 @@ private:
 		else
 			static_assert(false, "invalid use of copy function - type is not copyable");
 	}
-	void make_move(pointer dest, value_type&& src) noexcept
+	void make_move(pointer dest, value_type&& src)
 	{
 		AGL_ASSERT(m_memory <= dest && dest < m_memory + capacity(), "iterator out of range");
 
@@ -505,18 +505,18 @@ private:
 		else
 			static_assert(false, "invalid use of copy function - type is not movalbe");
 	}
-	void make_move_or_copy(pointer dest, value_type&& src) noexcept
+	void make_move_or_copy(pointer dest, value_type&& src)
 	{
 		make_move(dest, std::forward<value_type&&>(src));
 	}
-	void make_move_or_copy(pointer dest, const_reference src) noexcept
+	void make_move_or_copy(pointer dest, const_reference src)
 	{
 		make_copy(dest, src);
 	}
 	/// <summary>
 	/// Moves element 'from' and all the elements right to it to the position 'where'
 	/// </summary>
-	void move_elements_left(iterator where, iterator from) noexcept
+	void move_elements_left(iterator where, iterator from)
 	{
 		AGL_ASSERT(where <= from, "Invalid data");
 		AGL_ASSERT(begin() <= where && where < end(), "Index out of bounds");
@@ -525,7 +525,7 @@ private:
 		for (where, from; from != end(); ++where, ++from)
 			make_move_or_copy(&(*where), std::move(*from));
 	}
-	void move_elements_right(iterator where, iterator from) noexcept
+	void move_elements_right(iterator where, iterator from)
 	{
 		AGL_ASSERT(where > from, "Invalid data");
 		AGL_ASSERT(begin() <= where && where < real_end(), "Index out of bounds");
@@ -539,7 +539,7 @@ private:
 		for (w, f; w != end; ++w, ++f)
 			make_move_or_copy(&(*w), std::move(*f));
 	}
-	void realloc(size_type n) noexcept
+	void realloc(size_type n)
 	{
 		auto* tmp_buffer = m_allocator.allocate(n);
 
@@ -571,7 +571,7 @@ private:
 namespace impl
 {
 template <typename T>
-bool iterator_in_range(T* it, T* begin, T* end) noexcept
+bool iterator_in_range(T* it, T* begin, T* end)
 {
 	return begin <= it && it <= end;
 }
@@ -593,13 +593,13 @@ public:
 	using const_reference = typename traits::const_reference;
 	using difference_type = typename traits::difference_type;
 
-	vector_iterator() noexcept
+	vector_iterator()
 		: m_begin{ nullptr }
 		, m_end{ nullptr }
 		, m_ptr{ nullptr }
 	{
 	}
-	vector_iterator(data_pointer ptr, data_pointer begin, data_pointer end) noexcept
+	vector_iterator(data_pointer ptr, data_pointer begin, data_pointer end)
 		: m_begin{ begin }
 		, m_end{ end }
 		, m_ptr{ ptr }
@@ -608,21 +608,21 @@ public:
 		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin, m_end), "invalid iterator");
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && ! is_const_iterator_v<T, TTraits>)>>//std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
-	vector_iterator(vector_iterator<T, UTraits>&& other) noexcept
+	vector_iterator(vector_iterator<T, UTraits>&& other)
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
 	{
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && !is_const_iterator_v<T, TTraits>)>>
-	vector_iterator(vector_iterator<T, UTraits> const& other) noexcept
+	vector_iterator(vector_iterator<T, UTraits> const& other)
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
 	{
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && !is_const_iterator_v<T, TTraits>)>>
-	vector_iterator& operator=(vector_iterator<T, UTraits>&& other) noexcept
+	vector_iterator& operator=(vector_iterator<T, UTraits>&& other)
 	{
 		m_begin = other.m_begin;
 		m_end = other.m_end;
@@ -630,17 +630,17 @@ public:
 		return *this;
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(is_const_iterator_v<T, UTraits> && !is_const_iterator_v<T, TTraits>)>>
-	vector_iterator& operator=(vector_iterator<T, UTraits> const& other) noexcept
+	vector_iterator& operator=(vector_iterator<T, UTraits> const& other)
 	{
 		m_begin = other.m_begin;
 		m_end = other.m_end; 
 		m_ptr = other.m_ptr;
 		return *this;
 	}
-	~vector_iterator() noexcept
+	~vector_iterator()
 	{
 	}
-	vector_iterator& operator++() noexcept
+	vector_iterator& operator++()
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid operation");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past end");
@@ -648,7 +648,7 @@ public:
 		m_ptr += 1;
 		return *this;
 	}
-	vector_iterator operator++(int) const noexcept
+	vector_iterator operator++(int) const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid operation");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past end");
@@ -656,14 +656,14 @@ public:
 		auto result = vector_iterator{ *this };
 		return ++result;
 	}
-	vector_iterator operator+(difference_type offset) const noexcept
+	vector_iterator operator+(difference_type offset) const
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin, m_end), "iterator out of range");
 
 		return vector_iterator{ m_ptr + offset, m_begin, m_end };
 	}
-	vector_iterator& operator+=(difference_type offset) noexcept
+	vector_iterator& operator+=(difference_type offset)
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin, m_end), "iterator out of range");
@@ -671,7 +671,7 @@ public:
 		m_ptr += offset;
 		return *this;
 	}
-	vector_iterator& operator--() noexcept
+	vector_iterator& operator--()
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin + 1, m_end), "cannot decrement past begin");
@@ -679,7 +679,7 @@ public:
 		m_ptr -= 1;
 		return *this;
 	}
-	vector_iterator operator--(int) const noexcept
+	vector_iterator operator--(int) const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin + 1, m_end), "cannot decrement past begin");
@@ -687,7 +687,7 @@ public:
 		auto result = vector_iterator{ *this };
 		return --result;
 	}
-	difference_type operator-(vector_iterator rhs) const noexcept
+	difference_type operator-(vector_iterator rhs) const
 	{
 		AGL_ASSERT((m_ptr == nullptr && rhs.m_ptr == nullptr) || (m_ptr != nullptr && rhs.m_ptr != nullptr), "invalid operation");
 		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr, m_begin, m_end), "invalid iterator");
@@ -696,14 +696,14 @@ public:
 
 		return m_ptr - rhs.m_ptr;
 	}
-	vector_iterator operator-(difference_type offset) const noexcept
+	vector_iterator operator-(difference_type offset) const
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr - offset, m_begin, m_end), "iterator out of range");
 
 		return vector_iterator{ m_ptr - offset, m_begin, m_end };
 	}
-	vector_iterator& operator-=(difference_type offset) noexcept
+	vector_iterator& operator-=(difference_type offset)
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr - offset, m_begin, m_end), "iterator out of range");
@@ -712,14 +712,14 @@ public:
 		return *this;
 	}
 	template <typename = std::enable_if_t<!is_const_iterator_v<T, TTraits>>>
-	reference operator*() noexcept
+	reference operator*()
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "cannot dereference outside-range iterator");
 
 		return *m_ptr;
 	}	
-	const_reference operator*() const noexcept
+	const_reference operator*() const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "cannot dereference outside-range iterator");
@@ -727,14 +727,14 @@ public:
 		return *m_ptr;
 	}
 	template <typename = std::enable_if_t<!is_const_iterator_v<T, TTraits>>>
-	pointer operator->() noexcept
+	pointer operator->()
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "Cannot dereference outside-range iterator");
 
 		return m_ptr;
 	}
-	const_pointer operator->() const noexcept
+	const_pointer operator->() const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "Invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end), "Cannot dereference outside-range iterator");
@@ -753,22 +753,22 @@ private:
 	friend class vector_reverse_iterator;
 
 	template <typename U, typename W>
-	friend bool operator==(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs) noexcept;
+	friend bool operator==(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator!=(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs) noexcept;
+	friend bool operator!=(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator<(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs) noexcept;
+	friend bool operator<(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator<=(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs) noexcept;
+	friend bool operator<=(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator>(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs) noexcept;
+	friend bool operator>(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator>=(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs) noexcept;
+	friend bool operator>=(vector_iterator<U, W> const& lhs, vector_iterator<U, W> const& rhs);
 
 
 private:
@@ -778,32 +778,32 @@ private:
 };
 
 template <typename T, typename U>
-bool operator==(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs) noexcept
+bool operator==(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr == rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator!=(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs) noexcept
+bool operator!=(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr != rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator<(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs) noexcept
+bool operator<(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr < rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator<=(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs) noexcept
+bool operator<=(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr <= rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator>(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs) noexcept
+bool operator>(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr > rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator>=(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs) noexcept
+bool operator>=(vector_iterator<T, U> const& lhs, vector_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr >= rhs.m_ptr;
 }
@@ -819,13 +819,13 @@ public:
 	using reference = typename traits::reference;
 	using difference_type = typename traits::difference_type;
 
-	vector_reverse_iterator() noexcept
+	vector_reverse_iterator()
 		: m_begin{ nullptr }
 		, m_end{ nullptr }
 		, m_ptr{ nullptr }
 	{
 	}
-	vector_reverse_iterator(data_pointer ptr, data_pointer begin, data_pointer end) noexcept
+	vector_reverse_iterator(data_pointer ptr, data_pointer begin, data_pointer end)
 		: m_begin{ begin }
 		, m_end{ end }
 		, m_ptr{ ptr }
@@ -834,28 +834,28 @@ public:
 		AGL_ASSERT((m_ptr == nullptr && m_begin == nullptr && m_end == nullptr) || impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "invalid iterator");
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
-	explicit vector_reverse_iterator(vector_iterator<T, UTraits> const& other) noexcept
+	explicit vector_reverse_iterator(vector_iterator<T, UTraits> const& other)
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
 	{
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>> && std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
-	vector_reverse_iterator(vector_reverse_iterator<T, UTraits>&& other) noexcept
+	vector_reverse_iterator(vector_reverse_iterator<T, UTraits>&& other)
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
 	{
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
-	vector_reverse_iterator(vector_reverse_iterator<T, UTraits> const& other) noexcept
+	vector_reverse_iterator(vector_reverse_iterator<T, UTraits> const& other)
 		: m_begin{ other.m_begin }
 		, m_end{ other.m_end }
 		, m_ptr{ other.m_ptr }
 	{
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
-	vector_reverse_iterator& operator=(vector_reverse_iterator<T, UTraits>&& other) noexcept
+	vector_reverse_iterator& operator=(vector_reverse_iterator<T, UTraits>&& other)
 	{
 		m_ptr = other.m_ptr;
 		m_begin = other.m_begin;
@@ -863,17 +863,17 @@ public:
 		return *this;
 	}
 	template <typename UTraits, typename TEnable = std::enable_if_t<!(std::is_same_v<UTraits, impl::const_iterator_traits<T>>&& std::is_same_v<TTraits, impl::iterator_traits<T>>)>>
-	vector_reverse_iterator& operator=(vector_reverse_iterator<T, UTraits> const& other) noexcept
+	vector_reverse_iterator& operator=(vector_reverse_iterator<T, UTraits> const& other)
 	{
 		m_ptr = other.m_ptr;
 		m_begin = other.m_begin;
 		m_end = other.m_end;
 		return *this;
 	}
-	~vector_reverse_iterator() noexcept
+	~vector_reverse_iterator()
 	{
 	}
-	vector_reverse_iterator& operator++() noexcept
+	vector_reverse_iterator& operator++()
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid operation");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past rend");
@@ -881,7 +881,7 @@ public:
 		m_ptr -= 1;
 		return *this;
 	}
-	vector_reverse_iterator operator++(int) const noexcept
+	vector_reverse_iterator operator++(int) const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin, m_end - 1), "cannot increment past rend");
@@ -889,14 +889,14 @@ public:
 		auto result = vector_reverse_iterator{ *this };
 		return ++result;
 	}
-	vector_reverse_iterator operator+(difference_type offset) const noexcept
+	vector_reverse_iterator operator+(difference_type offset) const
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
 		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr - offset, m_begin - 1, m_end - 1), "iterator out of range");
 
 		return vector_reverse_iterator{ m_ptr - offset, m_begin, m_end };
 	}
-	vector_reverse_iterator& operator+=(difference_type offset) noexcept
+	vector_reverse_iterator& operator+=(difference_type offset)
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid iterator");
 		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr - offset, m_begin - 1, m_end - 1), "iterator out of range");
@@ -904,7 +904,7 @@ public:
 		m_ptr -= offset;
 		return *this;
 	}
-	vector_reverse_iterator& operator--() noexcept
+	vector_reverse_iterator& operator--()
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(m_ptr != m_end - 1 && impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cennot decrement past rbegin");
@@ -912,7 +912,7 @@ public:
 		m_ptr += 1;
 		return *this;
 	}
-	vector_reverse_iterator operator--(int) const noexcept
+	vector_reverse_iterator operator--(int) const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(m_ptr != m_end - 1 && impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cennot decrement past rbegin");
@@ -920,7 +920,7 @@ public:
 		auto result = vector_reverse_iterator{ *this };
 		return --result;
 	}
-	difference_type operator-(vector_reverse_iterator rhs) const noexcept
+	difference_type operator-(vector_reverse_iterator rhs) const
 	{
 		AGL_ASSERT((m_ptr == nullptr && rhs.m_ptr == nullptr) || (m_ptr != nullptr && rhs.m_ptr != nullptr), "invalid iterator");
 		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "invalid iterator");
@@ -929,14 +929,14 @@ public:
 
 		return m_ptr - rhs.m_ptr;
 	}
-	vector_reverse_iterator operator-(difference_type offset) const noexcept
+	vector_reverse_iterator operator-(difference_type offset) const
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
 		AGL_ASSERT(m_ptr == nullptr || impl::iterator_in_range(m_ptr + offset, m_begin - 1, m_end - 1), "iterator out of range");
 		
 		return vector_reverse_iterator{ m_ptr + offset, m_begin, m_end };
 	}
-	vector_reverse_iterator& operator-=(difference_type offset) noexcept
+	vector_reverse_iterator& operator-=(difference_type offset)
 	{
 		AGL_ASSERT(!(m_ptr == nullptr && offset != 0), "invalid operation");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr + offset, m_begin - 1, m_end - 1), "iterator out of range");
@@ -944,14 +944,14 @@ public:
 		m_ptr += offset;
 		return *this;
 	}
-	reference operator*() const noexcept
+	reference operator*() const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cannot dereference outside-range iterator");
 
 		return *m_ptr;
 	}
-	pointer operator->() const noexcept
+	pointer operator->() const
 	{
 		AGL_ASSERT(m_ptr != nullptr, "invalid iterator");
 		AGL_ASSERT(impl::iterator_in_range(m_ptr, m_begin - 1, m_end - 1), "cannot dereference outside-range iterator");
@@ -970,22 +970,22 @@ private:
 	friend class vector_reverse_iterator;
 
 	template <typename U, typename W>
-	friend bool operator==(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs) noexcept;
+	friend bool operator==(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator!=(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs) noexcept;
+	friend bool operator!=(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator<(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs) noexcept;
+	friend bool operator<(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator<=(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs) noexcept;
+	friend bool operator<=(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator>(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs) noexcept;
+	friend bool operator>(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs);
 
 	template <typename U, typename W>
-	friend bool operator>=(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs) noexcept;
+	friend bool operator>=(vector_reverse_iterator<U, W> const& lhs, vector_reverse_iterator<U, W> const& rhs);
 
 private:
 	data_pointer m_begin;
@@ -994,32 +994,32 @@ private:
 };
 
 template <typename T, typename U>
-bool operator==(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs) noexcept
+bool operator==(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr == rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator!=(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs) noexcept
+bool operator!=(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr != rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator<(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs) noexcept
+bool operator<(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr > rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator<=(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs) noexcept
+bool operator<=(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr >= rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator>(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs) noexcept
+bool operator>(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr < rhs.m_ptr;
 }
 template <typename T, typename U>
-bool operator>=(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs) noexcept
+bool operator>=(vector_reverse_iterator<T, U> const& lhs, vector_reverse_iterator<T, U> const& rhs)
 {
 	return lhs.m_ptr <= rhs.m_ptr;
 }

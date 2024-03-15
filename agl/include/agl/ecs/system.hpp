@@ -27,15 +27,15 @@ struct signal
 
 struct signal_comp
 {
-	bool operator()(signal const& lhs, std::uint64_t id) const noexcept
+	bool operator()(signal const& lhs, std::uint64_t id) const
 	{
 		return lhs.id < id;
 	}
-	bool operator()(std::uint64_t id, signal const& rhs) const noexcept
+	bool operator()(std::uint64_t id, signal const& rhs) const
 	{
 		return id < rhs.id;
 	}
-	bool operator()(signal const& lhs, signal const& rhs) const noexcept
+	bool operator()(signal const& lhs, signal const& rhs) const
 	{
 		return lhs.id < rhs.id;
 	}
@@ -44,24 +44,24 @@ struct signal_comp
 class system_base
 {
 public:
-	system_base() noexcept;
+	system_base();
 	// TODO: get rid of name parameter and get the name of the class from type_id_t
-	system_base(type_id_t id, std::string const& name, ecs::stage stage) noexcept;
-	system_base(system_base&& other) noexcept;
-	system_base& operator=(system_base&& other) noexcept;
-	virtual ~system_base() noexcept = default;
+	system_base(type_id_t id, std::string const& name, ecs::stage stage);
+	system_base(system_base&& other);
+	system_base& operator=(system_base&& other);
+	virtual ~system_base() = default;
 
-	type_id_t id() const noexcept;
-	std::string const& name() const noexcept;
+	type_id_t id() const;
+	std::string const& name() const;
 	void name(std::string const& name);
 	virtual void on_attach(application*) = 0;
 	virtual void on_detach(application*) = 0;
-	virtual void on_update(application*) noexcept = 0;
-	stage stage() const noexcept;
-	void stage(ecs::stage s) noexcept;
-	bool read_signal(std::uint64_t id) noexcept;
-	void set_signal(std::uint64_t id, bool value) noexcept;
-	organizer& get_organizer() noexcept;
+	virtual void on_update(application*) = 0;
+	stage stage() const;
+	void stage(ecs::stage s);
+	bool read_signal(std::uint64_t id);
+	void set_signal(std::uint64_t id, bool value);
+	organizer& get_organizer();
 
 protected:
 	void create_signal(std::uint64_t id, bool start_value);
@@ -85,25 +85,25 @@ class system
 	: public system_base
 {
 public:
-	system() noexcept
+	system()
 		: system_base()
 	{
 	}
-	system(system&& other) noexcept
+	system(system&& other)
 		: system_base{ std::move(other) }
 	{
 	}
-	system& operator=(system&& other) noexcept
+	system& operator=(system&& other)
 	{
 		this->system_base::operator=(std::move(other));
 		return *this;
 	}
-	system(ecs::stage stage) noexcept
+	system(ecs::stage stage)
 		: system_base{ type_id<T>::get_id(), std::string{ type_id<T>::get_name() }, stage
 }
 	{
 	}
-	virtual ~system() noexcept = default;
+	virtual ~system() = default;
 };
 }
 }

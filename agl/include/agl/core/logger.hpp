@@ -36,28 +36,28 @@ class logger final
 {
 public:
 	template <typename... TArgs>
-	static std::string combine_message(std::string str, TArgs&&... args) noexcept;
+	static std::string combine_message(std::string str, TArgs&&... args);
 	
-	logger() noexcept;
-	logger(logger&& other) noexcept;
-	logger(logger const&) noexcept = delete;
-	logger& operator=(logger const&) noexcept = delete;
-	~logger() noexcept = default;
+	logger();
+	logger(logger&& other);
+	logger(logger const&) = delete;
+	logger& operator=(logger const&) = delete;
+	~logger() = default;
 
 	template <typename... TArgs>
-	void debug(std::string const& message, TArgs&&... args) noexcept;
+	void debug(std::string const& message, TArgs&&... args);
 
 	template <typename... TArgs>
-	void error(std::string const& message, TArgs&&... args) noexcept;
+	void error(std::string const& message, TArgs&&... args);
 
 	template <typename... TArgs>
-	void info(std::string const& message, TArgs&&... args) noexcept;
+	void info(std::string const& message, TArgs&&... args);
 
 	template <typename... TArgs>
-	void trace(std::string const& message, TArgs&&... args) noexcept;
+	void trace(std::string const& message, TArgs&&... args);
 
 	template <typename... TArgs>
-	void warning(std::string const& message, TArgs&&... args) noexcept;
+	void warning(std::string const& message, TArgs&&... args);
 
 private:
 	enum instance_index
@@ -83,24 +83,24 @@ private:
 	};
 
 private:
-	static std::string get_date() noexcept;
-	static const char* get_logger_name(instance_index index) noexcept;
-	bool is_active() const noexcept;
+	static std::string get_date();
+	static const char* get_logger_name(instance_index index);
+	bool is_active() const;
 	virtual void on_attach(application* app) override;
 	virtual void on_detach(application* app) override;
-	virtual void on_update(application* app) noexcept override;
+	virtual void on_update(application* app) override;
 
 	template <typename T>
-	static std::string to_string(T&& v) noexcept;
+	static std::string to_string(T&& v);
 
 	template <typename... TArgs> 
-	void log(instance_index index, std::string const& message, TArgs&&... args) noexcept;
+	void log(instance_index index, std::string const& message, TArgs&&... args);
 
 	template <typename... TArgs>
-	static std::string produce_message(instance_index index, std::string message, TArgs&&... args) noexcept;
+	static std::string produce_message(instance_index index, std::string message, TArgs&&... args);
 
 	template <typename TTuple, std::uint64_t... TSequence>
-	static vector<std::string> parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>) noexcept;
+	static vector<std::string> parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>);
 
 private:
 	std::atomic<std::uint64_t> m_messages_count;
@@ -113,33 +113,33 @@ private:
 };
 
 template <typename... TArgs>
-void logger::debug(std::string const& message, TArgs&&... args) noexcept
+void logger::debug(std::string const& message, TArgs&&... args)
 {
 	log(DEBUG, message, std::forward<TArgs>(args)...);
 }
 template <typename... TArgs>
-void logger::error(std::string const& message, TArgs&&... args) noexcept
+void logger::error(std::string const& message, TArgs&&... args)
 {
 	log(ERROR, message, std::forward<TArgs>(args)...);
 }
 template <typename... TArgs>
-void logger::info(std::string const& message, TArgs&&... args) noexcept
+void logger::info(std::string const& message, TArgs&&... args)
 {
 	log(INFO, message, std::forward<TArgs>(args)...);
 }
 template <typename... TArgs>
-void logger::trace(std::string const& message, TArgs&&... args) noexcept
+void logger::trace(std::string const& message, TArgs&&... args)
 {
 	log(TRACE, message, std::forward<TArgs>(args)...);
 }
 template <typename... TArgs>
-void logger::warning(std::string const& message, TArgs&&... args) noexcept
+void logger::warning(std::string const& message, TArgs&&... args)
 {
 	log(WARNING, message, std::forward<TArgs>(args)...);
 }
 
 template <typename T>
-std::string logger::to_string(T&& v) noexcept
+std::string logger::to_string(T&& v)
 {
 	auto ss = std::stringstream{};
 	ss << v;
@@ -147,7 +147,7 @@ std::string logger::to_string(T&& v) noexcept
 }
 
 template <typename... TArgs>
-void logger::log(instance_index index, std::string const& message, TArgs&&... args) noexcept
+void logger::log(instance_index index, std::string const& message, TArgs&&... args)
 {
 	AGL_ASSERT(m_mutex != nullptr, "operation on uninitialized object");
 	AGL_ASSERT(m_cond_var != nullptr, "operation on uninitialized object");
@@ -164,7 +164,7 @@ void logger::log(instance_index index, std::string const& message, TArgs&&... ar
 }
 
 template <typename... TArgs>
-std::string logger::combine_message(std::string message, TArgs&&... args) noexcept
+std::string logger::combine_message(std::string message, TArgs&&... args)
 {
 	auto const parsed = parse_arguments(std::forward_as_tuple(std::forward<TArgs>(args)...), std::make_index_sequence<sizeof... (TArgs)>{});
 	auto found_l = std::uint64_t{};
@@ -194,7 +194,7 @@ std::string logger::combine_message(std::string message, TArgs&&... args) noexce
 }
 
 template <typename... TArgs>
-std::string logger::produce_message(instance_index index, std::string message, TArgs&&... args) noexcept
+std::string logger::produce_message(instance_index index, std::string message, TArgs&&... args)
 {
 	message = combine_message(message, std::forward<TArgs>(args)...);
 	message.insert(0, "] ");
@@ -203,7 +203,7 @@ std::string logger::produce_message(instance_index index, std::string message, T
 	return message;
 }
 template <typename TTuple, std::uint64_t... TSequence>
-vector<std::string> logger::parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>) noexcept
+vector<std::string> logger::parse_arguments(TTuple&& tuple, std::index_sequence<TSequence...>)
 {
 	auto vec = vector<std::string>{};
 	(vec.push_back(to_string(std::get<TSequence>(tuple))), ...);

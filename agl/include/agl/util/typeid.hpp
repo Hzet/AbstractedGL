@@ -12,53 +12,53 @@ namespace agl
 class type_id_t
 {
 public:
-	constexpr type_id_t() noexcept
+	constexpr type_id_t()
 		: m_id{ 0 }
 	{
 	}
-	constexpr explicit type_id_t(std::uint64_t id) noexcept
+	constexpr explicit type_id_t(std::uint64_t id)
 		: m_id{ id }
 	{
 	}
-	constexpr type_id_t(type_id_t&& other) noexcept
+	constexpr type_id_t(type_id_t&& other)
 		: m_id{ other.m_id }
 	{
 	}
-	constexpr type_id_t(type_id_t const& other) noexcept
+	constexpr type_id_t(type_id_t const& other)
 		: m_id{ other.m_id }
 	{
 	}
-	constexpr type_id_t& operator=(type_id_t&& other) noexcept
+	constexpr type_id_t& operator=(type_id_t&& other)
 	{
 		m_id = other.m_id;
 		return *this;
 	}
-	constexpr type_id_t& operator=(type_id_t const& other) noexcept
+	constexpr type_id_t& operator=(type_id_t const& other)
 	{
 		m_id = other.m_id;
 		return *this;
 	}
-	constexpr bool is_valid() const noexcept
+	constexpr bool is_valid() const
 	{
 		return m_id != 0;
 	}
 
-	constexpr bool operator==(type_id_t other) const noexcept
+	constexpr bool operator==(type_id_t other) const
 	{
 		return m_id == other.m_id;
 	}
 
-	constexpr bool operator!=(type_id_t other) const noexcept
+	constexpr bool operator!=(type_id_t other) const
 	{
 		return m_id != other.m_id;
 	}
 
-	constexpr operator std::uint64_t() const noexcept
+	constexpr operator std::uint64_t() const
 	{
 		return m_id;
 	}
 
-	constexpr std::uint64_t get_value() const noexcept
+	constexpr std::uint64_t get_value() const
 	{
 		return m_id;
 	}
@@ -72,12 +72,12 @@ template <typename T>
 class type_id
 {
 public:
-	static constexpr type_id_t get_id() noexcept
+	static constexpr type_id_t get_id()
 	{
 		return type_id_t{ (std::uint64_t)&m_id };
 	}
 
-	static constexpr std::string_view get_name() noexcept
+	static constexpr std::string_view get_name()
 	{
 		constexpr auto const str = std::string_view{ AGL_FUNC_NAME };
 		constexpr auto const search_offset = str.find("agl::type_id");
@@ -105,11 +105,11 @@ class type_id
 public:
 	using type = std::remove_reference_t<std::remove_const_t<T>>;
 
-	static constexpr type_id_t get_id() noexcept
+	static constexpr type_id_t get_id()
 	{
 		return impl::type_id<type>::get_id();
 	}
-	static constexpr std::string_view get_name() noexcept
+	static constexpr std::string_view get_name()
 	{
 		return impl::type_id<type>::get_name();
 	}
@@ -124,7 +124,7 @@ namespace std
 template <>
 struct hash<agl::type_id_t>
 {
-	size_t operator()(agl::type_id_t uid) const noexcept
+	size_t operator()(agl::type_id_t uid) const
 	{
 		return hash<uint64_t>{}(uid.get_value());
 	}

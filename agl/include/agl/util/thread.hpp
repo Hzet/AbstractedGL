@@ -13,14 +13,14 @@ class threads;
 class thread
 {
 public:
-	thread() noexcept;
-	thread(thread&&) noexcept = default;
-	thread& operator=(thread&&) noexcept = default;
+	thread();
+	thread(thread&&) = default;
+	thread& operator=(thread&&) = default;
 	virtual ~thread()
 	{
 		close();
 	}
-	bool should_close() const noexcept
+	bool should_close() const
 	{
 		return m_should_close;
 	}
@@ -33,30 +33,30 @@ public:
 		if (m_thread->joinable())
 			m_thread->join();
 	}
-	bool is_running() const noexcept
+	bool is_running() const
 	{
 		return m_is_running;
 	}
-	bool is_valid() const noexcept;
-	std::thread::id id() const noexcept
+	bool is_valid() const;
+	std::thread::id id() const
 	{
 		AGL_ASSERT(is_valid(), "invalid object");
 		return m_thread->get_id();
 	}
 	template <typename TFun, typename... TArgs>
-	void start(application* app, std::string const& name, TFun fun, TArgs&&... args) noexcept
+	void start(application* app, std::string const& name, TFun fun, TArgs&&... args)
 	{
 		start_impl(app, true, name, fun, std::forward<TArgs>(args)...);
 	}
 	template <typename TFun, typename... TArgs>
-	void start_no_log(application* app, std::string const& name, TFun fun, TArgs&&... args) noexcept
+	void start_no_log(application* app, std::string const& name, TFun fun, TArgs&&... args)
 	{
 		start_impl(app, false, name, fun, std::forward<TArgs>(args)...);
 	}
 
 private:
 	template <typename TFun, typename... TArgs>
-	void start_impl(application* app, bool log, std::string const& name, TFun fun, TArgs&&... args) noexcept
+	void start_impl(application* app, bool log, std::string const& name, TFun fun, TArgs&&... args)
 	{
 		AGL_ASSERT(!is_running(), "thread already running");
 
@@ -69,7 +69,7 @@ private:
 	}
 
 	template <typename TFun, typename... TArgs>
-	void thread_function(application* app, bool log, TFun&& fun, TArgs&&... args) noexcept
+	void thread_function(application* app, bool log, TFun&& fun, TArgs&&... args)
 	{
 		if (log)
 			app->get_resource<agl::logger>().debug("Starting thread \"{}\" - [{}]", m_name, std::this_thread::get_id());

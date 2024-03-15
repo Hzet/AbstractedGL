@@ -13,16 +13,16 @@ class renderer
 {
 public:
 	renderer();
-	renderer(renderer&& other) noexcept;
-	renderer& operator=(renderer&& other) noexcept;
+	renderer(renderer&& other);
+	renderer& operator=(renderer&& other);
 	
 	virtual agl::window& create_window(glm::uvec2 const& resolution, std::string const& title) override;
-	virtual agl::window& get_window(std::uint64_t index) noexcept override;
+	virtual agl::window& get_window(std::uint64_t index) override;
 
 private:
 	virtual void on_attach(application* app) override;
 	virtual void on_detach(application*) override;
-	virtual void on_update(application*) noexcept override;
+	virtual void on_update(application*) override;
 
 private:
 	ecs::entity m_windows;

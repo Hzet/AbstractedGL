@@ -13,14 +13,14 @@ class application;
 class application_resource
 {
 public:
-	application_resource(type_id_t id = {}) noexcept;
-	application_resource(application_resource&&) noexcept = default;
-	application_resource& operator=(application_resource&&) noexcept = default;
-	virtual ~application_resource() noexcept = default;
+	application_resource(type_id_t id = {});
+	application_resource(application_resource&&) = default;
+	application_resource& operator=(application_resource&&) = default;
+	virtual ~application_resource() = default;
 	virtual void on_attach(application*) = 0;
 	virtual void on_detach(application*) = 0;
-	virtual void on_update(application*) noexcept = 0;
-	type_id_t type() const noexcept;
+	virtual void on_update(application*) = 0;
+	type_id_t type() const;
 
 private:
 	type_id_t m_id;
@@ -32,7 +32,7 @@ class resource
 {
 public:
 	using application_resource::application_resource;
-	resource() noexcept
+	resource()
 		: application_resource{ type_id<T>::get_id() }
 	{
 	}
@@ -64,13 +64,13 @@ public:
 	properties const& get_properties() const;
 
 	template <typename T>
-	T& get_resource() noexcept;
+	T& get_resource();
 
 	template <typename T>
-	bool has_resource() noexcept;
+	bool has_resource();
 
 	void init();
-	bool good() const noexcept;
+	bool good() const;
 
 	template <typename T>
 	void remove_resource();
@@ -90,7 +90,7 @@ private:
 };
 
 template <typename T>
-bool application::has_resource() noexcept
+bool application::has_resource()
 {
 	std::lock_guard<std::mutex> lock{ *m_mutex };
 	return m_resources.find(type_id<T>::get_id()) != m_resources.end();
@@ -127,7 +127,7 @@ void application::remove_resource()
 }
 
 template <typename T>
-T& application::get_resource() noexcept
+T& application::get_resource()
 {
 	AGL_ASSERT(has_resource<T>(), "resource not present");
 

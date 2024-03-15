@@ -18,11 +18,11 @@ renderer::renderer()
 {
 }
 
-renderer::renderer(renderer&& other) noexcept
+renderer::renderer(renderer&& other)
 	: agl::renderer{ std::move(other) }
 {
 }
-renderer& renderer::operator=(renderer&& other) noexcept
+renderer& renderer::operator=(renderer&& other)
 {
 	this->agl::renderer::operator=(std::move(other));
 	return *this;
@@ -57,7 +57,7 @@ void renderer::on_attach(application* app)
 #endif
 }
 // render
-void renderer::on_update(application* app) noexcept
+void renderer::on_update(application* app)
 {
 	
 }
@@ -73,7 +73,7 @@ void renderer::on_detach(application* app)
 	g_logger = nullptr;
 #endif
 }
-agl::window& renderer::get_window(std::uint64_t index) noexcept
+agl::window& renderer::get_window(std::uint64_t index)
 {
 	return m_windows.get_component<window>(index);
 }

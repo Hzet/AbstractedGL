@@ -15,12 +15,12 @@ namespace impl
 class free_space_tracker
 {
 public:
-	bool has_space() const noexcept
+	bool has_space() const
 	{
 		return !m_spaces.empty();
 	}
 	// Adds item to the collection. If the space, that the object represents, overlaps with space of another object, the objects will be joined together.
-	void push(std::byte* ptr, std::uint64_t size) noexcept
+	void push(std::byte* ptr, std::uint64_t size)
 	{
 		// find and merge adjacent spaces
 		size += find_erase_adjacent_right(ptr + size, size);
@@ -34,7 +34,7 @@ public:
 	}
 	// Pops item of 'minimal_size' from the collection. If there are only items having more space than requested, 
 	// the object with requested amount of space will be returned and the remaining space pushed back to the collection.
-	std::byte* pop(std::uint64_t size) noexcept
+	std::byte* pop(std::uint64_t size)
 	{
 		auto it = std::lower_bound(m_spaces.begin(), m_spaces.end(), size, m_spaces.key_value_comp());
 			
@@ -67,7 +67,7 @@ private:
 	using spaces_type = dictionary<std::uint64_t, set<std::byte*>>; // size, pointers to blocks of 'size'
 
 private:
-	std::uint64_t find_erase_adjacent_right(std::byte* ptr, std::uint64_t size) noexcept
+	std::uint64_t find_erase_adjacent_right(std::byte* ptr, std::uint64_t size)
 	{
 		auto original_size = size;
 		auto it_spaces = m_spaces.begin();
@@ -96,7 +96,7 @@ private:
 		return size - original_size;
 	}
 
-	std::uint64_t find_erase_adjacent_left(std::byte* ptr) noexcept
+	std::uint64_t find_erase_adjacent_left(std::byte* ptr)
 	{
 		auto result = std::uint64_t{};
 		for (auto it = m_spaces.begin(); it != m_spaces.end(); ++it)
@@ -159,37 +159,37 @@ public:
 		using size_type = std::uint64_t;
 		using difference_type = std::ptrdiff_t;
 
-		allocator(pool* ptr = nullptr) noexcept
+		allocator(pool* ptr = nullptr)
 			: m_pool{ ptr }
 		{
 			m_alloc_count = 0;
 		}
-		allocator(allocator&& other) noexcept
+		allocator(allocator&& other)
 			: m_pool{ other.m_pool }
 		{
 			m_alloc_count = other.m_alloc_count;
 			other.m_alloc_count = 0;
 		}
 		template <typename U>
-		allocator(allocator<U>&& other) noexcept
+		allocator(allocator<U>&& other)
 			: m_pool{ other.m_pool }
 		{
 			m_alloc_count = other.m_alloc_count;
 			other.m_alloc_count = 0;
 		}
-		allocator(allocator const& other) noexcept
+		allocator(allocator const& other)
 			: m_pool{ other.m_pool }
 		{
 			m_alloc_count = 0;
 		}
 		template <typename U>
-		allocator(allocator<U> const& other) noexcept
+		allocator(allocator<U> const& other)
 			: m_pool{ other.m_pool }
 		{
 			m_alloc_count = 0;
 		}
 		template <typename U>
-		allocator& operator=(allocator<U>&& other) noexcept
+		allocator& operator=(allocator<U>&& other)
 		{
 			if (this == &other)
 				return *this;
@@ -202,7 +202,7 @@ public:
 			return *this;
 		}
 		template <typename U> 
-		allocator& operator=(allocator<U> const& other) noexcept
+		allocator& operator=(allocator<U> const& other)
 		{
 			if (this == &other)
 				return *this;
@@ -213,11 +213,11 @@ public:
 			m_pool = other.m_pool;
 			return *this;
 		}
-		~allocator() noexcept
+		~allocator()
 		{
 			AGL_ASSERT(m_alloc_count == 0, "some memory was not deallocated");
 		}
-		[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type)) noexcept
+		[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type))
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 
@@ -225,7 +225,7 @@ public:
 			return reinterpret_cast<T*>(m_pool->allocate(count * sizeof(T), alignment));
 		}
 		template <typename... TArgs>
-		void construct(pointer buffer, TArgs&&... args) noexcept
+		void construct(pointer buffer, TArgs&&... args)
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 			AGL_ASSERT(buffer != nullptr, "buffer handle is nullptr");
@@ -233,7 +233,7 @@ public:
 
 			new (buffer) T(std::forward<TArgs>(args)...);
 		}
-		void deallocate(pointer ptr, size_type count = 1) noexcept
+		void deallocate(pointer ptr, size_type count = 1)
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 			AGL_ASSERT(m_alloc_count > 0, "invalid deallocation call");
@@ -241,7 +241,7 @@ public:
 			m_alloc_count -= count;
 			m_pool->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
 		}
-		void destruct(pointer ptr) noexcept
+		void destruct(pointer ptr)
 		{
 			AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
 			AGL_ASSERT(ptr != nullptr, "ptr handle is nullptr");
@@ -255,10 +255,10 @@ public:
 		friend class allocator;
 
 		template <typename U, typename W>
-		friend bool operator==(allocator<U> const&, allocator<W> const&) noexcept;
+		friend bool operator==(allocator<U> const&, allocator<W> const&);
 
 		template <typename U, typename W>
-		friend bool operator!=(allocator<U> const&, allocator<W> const&) noexcept;
+		friend bool operator!=(allocator<U> const&, allocator<W> const&);
 
 	private:
 		std::uint64_t m_alloc_count;
@@ -266,14 +266,14 @@ public:
 	};
 
 public:
-	pool() noexcept
+	pool()
 		: resource<pool>{ type_id<pool>::get_id() }
 		, m_buffer{ nullptr }
 		, m_occupancy{ 0 }
 		, m_size{ 0 }
 	{
 	}
-	pool(pool&& other) noexcept
+	pool(pool&& other)
 		: resource<pool>{ std::move(other) }
 		, m_allocator{ std::move(other.m_allocator) }
 		, m_buffer{ other.m_buffer }
@@ -283,7 +283,7 @@ public:
 	{
 		other.m_buffer = nullptr;
 	}
-	pool& operator=(pool&& other) noexcept
+	pool& operator=(pool&& other)
 	{
 		if (this == &other)
 			return *this;
@@ -297,11 +297,11 @@ public:
 		m_size = other.m_size;
 		return *this;
 	}
-	~pool() noexcept
+	~pool()
 	{
 		destroy();
 	}
-	std::byte* allocate(std::uint64_t size, std::uint64_t alignment) noexcept
+	std::byte* allocate(std::uint64_t size, std::uint64_t alignment)
 	{
 		AGL_ASSERT(alignment > 0, "Invalid alignment value");
 		AGL_ASSERT(size <= this->size(), "Not enough memory to store object");
@@ -329,7 +329,7 @@ public:
 		if (m_buffer == nullptr)
 			throw std::exception{ logger::combine_message("Insufficient memory error - requested {} bytes", size).c_str() };
 	}
-	void destroy() noexcept
+	void destroy()
 	{
 		if (m_buffer == nullptr)
 			return;
@@ -343,7 +343,7 @@ public:
 		m_occupancy = 0;
 		m_size = 0;
 	}
-	void deallocate(std::byte* ptr, std::uint64_t size) noexcept
+	void deallocate(std::byte* ptr, std::uint64_t size)
 	{
 		AGL_ASSERT(ptr == nullptr || has_pointer(ptr), "Invalid pointer");
 		AGL_ASSERT(!empty(), "pool is empty");
@@ -352,28 +352,28 @@ public:
 		m_free_spaces.push(ptr, size);
 		m_occupancy -= size;
 	}
-	bool full() const noexcept
+	bool full() const
 	{
 		return occupancy() == size();
 	}
-	bool empty() const noexcept
+	bool empty() const
 	{
 		return occupancy() == 0;
 	}
 	template <typename T>
-	allocator<T> make_allocator() noexcept
+	allocator<T> make_allocator()
 	{
 		return pool::allocator<T>{ this };
 	}
-	std::uint64_t occupancy() const noexcept
+	std::uint64_t occupancy() const
 	{
 		return m_occupancy;
 	}
-	std::uint64_t size() const noexcept
+	std::uint64_t size() const
 	{
 		return m_size;
 	}
-	bool has_pointer(std::byte* ptr) const noexcept
+	bool has_pointer(std::byte* ptr) const
 	{
 		return m_buffer <= ptr && ptr < m_buffer + size();
 	}
@@ -389,7 +389,7 @@ private:
 		auto& log = app->get_resource<agl::logger>();
 		log.info("Pool {} bytes at {}: OFF", size(), m_buffer);
 	}
-	virtual void on_update(application*) noexcept override 
+	virtual void on_update(application*) override 
 	{
 	}
 
@@ -402,13 +402,13 @@ private:
 };
 
 template <typename U, typename W>
-bool operator==(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) noexcept
+bool operator==(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs)
 {
 	return lhs.m_pool == rhs.m_pool;
 }
 
 template <typename U, typename W>
-bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs) noexcept
+bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs)
 {
 	return lhs.m_pool != rhs.m_pool;
 }

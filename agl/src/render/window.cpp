@@ -3,7 +3,7 @@
 
 namespace agl
 {
-window::window() noexcept
+window::window()
 	: m_handle{ nullptr }
 	, m_is_focused{ false }
 	, m_is_maximized{ false }
@@ -12,7 +12,7 @@ window::window() noexcept
 	, m_should_close{ false }
 {
 }
-window::window(window&& other) noexcept
+window::window(window&& other)
 	: m_api_version{ std::move(other.m_api_version) }
 	, m_clear_color{ other.m_clear_color }
 	, m_frame_buffer_size{ other.m_frame_buffer_size }
@@ -28,7 +28,7 @@ window::window(window&& other) noexcept
 {
 	other.m_handle = nullptr;
 }
-window& window::operator=(window&& other) noexcept
+window& window::operator=(window&& other)
 {
 	m_api_version = std::move(other.m_api_version);
 	m_clear_color = other.m_clear_color;
@@ -46,7 +46,7 @@ window& window::operator=(window&& other) noexcept
 	return *this;
 }
 
-window::~window() noexcept
+window::~window()
 {
 	close();
 }
@@ -67,60 +67,60 @@ void window::create(glm::uvec2 resolution, std::string const& title)
 	glfwMakeContextCurrent(m_handle);
 	events::set_window_callbacks(this);
 }
-glm::uvec2 const& window::size() const noexcept
+glm::uvec2 const& window::size() const
 {
 	return m_resolution;
 }
-void window::resize(glm::uvec2 const& size) noexcept
+void window::resize(glm::uvec2 const& size)
 {
 	m_resolution = size;
 }
-GLFWwindow* window::get_handle() noexcept
+GLFWwindow* window::get_handle()
 {
 	return m_handle;
 }
-bool window::is_minimized() const noexcept
+bool window::is_minimized() const
 {
 	return m_is_minimized;
 }
-bool window::is_maximized() const noexcept
+bool window::is_maximized() const
 {
 	return m_is_maximized;
 }
-bool window::is_focused() const noexcept
+bool window::is_focused() const
 {
 	return m_is_focused;
 }
-bool window::is_open() const noexcept
+bool window::is_open() const
 {
 	return m_is_open;
 }
-bool window::should_close() const noexcept
+bool window::should_close() const
 {
 	return m_should_close;
 }
-std::string const& window::get_api_version() const noexcept
+std::string const& window::get_api_version() const
 {
 	return m_api_version;
 }
-std::string const& window::get_shading_language_version() const noexcept
+std::string const& window::get_shading_language_version() const
 {
 	return m_shading_language_version;
 }
-void window::set_version(std::string const& api_version, std::string const& shading_language_version) noexcept
+void window::set_version(std::string const& api_version, std::string const& shading_language_version)
 {
 	m_api_version = api_version;
 	m_shading_language_version = shading_language_version;
 }
-std::string const& window::title() const noexcept
+std::string const& window::title() const
 {
 	return m_title;
 }
-glm::uvec2 window::frame_buffer_size() const noexcept
+glm::uvec2 window::frame_buffer_size() const
 {
 	return m_frame_buffer_size;
 }
-void window::close() noexcept
+void window::close()
 {
 	if (m_handle == nullptr)
 		return;

@@ -19,7 +19,7 @@ namespace impl
 }
 
 	template <typename TNumeric>
-	TNumeric simple_rand(TNumeric min, TNumeric max) noexcept
+	TNumeric simple_rand(TNumeric min, TNumeric max)
 	{
 		static auto state = impl::rnd_state{ 53452u, 432u, 252543u };
 

@@ -12,7 +12,7 @@ public:
 	using ecs::system<renderer>::system;
 
 	virtual window& create_window(glm::uvec2 const& resolution, std::string const& title) = 0;
-	virtual window& get_window(std::uint64_t index = 0) noexcept = 0;
+	virtual window& get_window(std::uint64_t index = 0) = 0;
 
 };
 }

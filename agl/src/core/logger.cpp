@@ -2,7 +2,7 @@
 
 namespace agl
 {
-const char* logger::get_logger_name(instance_index index) noexcept
+const char* logger::get_logger_name(instance_index index)
 {
 	switch (index)
 	{
@@ -15,14 +15,14 @@ const char* logger::get_logger_name(instance_index index) noexcept
 	AGL_ASSERT(false, "invalid logger index");
 	return "UNKNOWN";
 }
-logger::logger() noexcept
+logger::logger()
 	: resource<logger>{ }
 	, m_cond_var{ nullptr }
 	, m_mutex{ nullptr }
 	, m_messages_count{ 0 }
 {
 }
-logger::logger(logger&& other) noexcept
+logger::logger(logger&& other)
 	: resource<logger>{ std::move(other) }
 	, m_messages_count{ other.m_messages_count.load() }
 {
@@ -41,12 +41,12 @@ logger::logger(logger&& other) noexcept
 	if (m_mutex != nullptr)
 		m_mutex->unlock();
 }
-bool logger::is_active() const noexcept
+bool logger::is_active() const
 {
 	AGL_ASSERT(m_thread != nullptr, "invalid thread object");
 	return m_thread->is_valid() && m_thread->is_running();
 }
-std::string logger::get_date() noexcept
+std::string logger::get_date()
 {
 	using namespace date;
 	using namespace std::chrono;
@@ -111,7 +111,7 @@ void logger::on_detach(application* app)
 	threads.delete_condition_variable(*m_cond_var);
 	threads.delete_mutex(*m_mutex);
 }
-void logger::on_update(application* app) noexcept
+void logger::on_update(application* app)
 {
 }
 }

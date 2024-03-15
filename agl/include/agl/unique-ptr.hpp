@@ -21,13 +21,13 @@ public:
 	using const_reference = typename TAlloc::const_reference;
 	using size_type = typename TAlloc::size_type;
 
-	unique_ptr(allocator_type allocator = {}, pointer ptr = nullptr) noexcept
+	unique_ptr(allocator_type allocator = {}, pointer ptr = nullptr)
 		: m_allocator{ std::move(allocator) }
 		, m_data{ ptr }
 	{
 	}
 
-	unique_ptr(unique_ptr&& other) noexcept
+	unique_ptr(unique_ptr&& other)
 		: m_allocator{ std::move(other.m_allocator) }
 		, m_data{ other.m_data }
 	{
@@ -35,14 +35,14 @@ public:
 	}
 
 	template <typename U>//, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
-	unique_ptr(unique_ptr&& other) noexcept
+	unique_ptr(unique_ptr&& other)
 		: m_allocator{ std::move(other.m_allocator) }
 		, m_data{ other.m_data }
 	{
 		other.m_data = nullptr;
 	}
 
-	unique_ptr& operator=(unique_ptr&& other) noexcept
+	unique_ptr& operator=(unique_ptr&& other)
 	{
 		if (this == &other)
 			return *this;
@@ -55,7 +55,7 @@ public:
 	}
 
 	template <typename U>//, typename TEnable = std::enable_if_t<std::is_same_v<T, U>>>
-	unique_ptr& operator=(unique_ptr<U>&& other) noexcept
+	unique_ptr& operator=(unique_ptr<U>&& other)
 	{
 		if (this == &other)
 			return *this;
@@ -67,20 +67,20 @@ public:
 		return *this;
 	}
 
-	unique_ptr& operator=(std::nullptr_t) noexcept
+	unique_ptr& operator=(std::nullptr_t)
 	{
 		reset();
 		return *this;
 	}
 
-	unique_ptr(unique_ptr const&) noexcept = delete;
-	unique_ptr& operator=(unique_ptr const&) noexcept = delete;
-	~unique_ptr() noexcept
+	unique_ptr(unique_ptr const&) = delete;
+	unique_ptr& operator=(unique_ptr const&) = delete;
+	~unique_ptr()
 	{
 		release();
 	}
 
-	void release() noexcept
+	void release()
 	{
 		if (m_data == nullptr)
 			return;
@@ -90,7 +90,7 @@ public:
 	}
 
 	template <typename T, typename... TArgs>
-	void reset(T arg, TArgs&&... args) noexcept
+	void reset(T arg, TArgs&&... args)
 	{
 		if (m_data != nullptr)
 			m_allocator.destruct(m_data);
@@ -98,68 +98,68 @@ public:
 		m_data = m_allocator.construct(std::forward<T>(arg), std::forward<TArgs>(args...));
 	}
 
-	void reset(std::nullptr_t = nullptr) noexcept
+	void reset(std::nullptr_t = nullptr)
 	{
 		if (m_data != nullptr)
 			m_allocator.destruct(m_data);
 		m_data = nullptr;
 	}
 
-	void swap(unique_ptr& other) noexcept
+	void swap(unique_ptr& other)
 	{
 		std::swap(m_allocator, other.m_allocator);
 		std::swap(m_data, other.m_data);
 	}
 
-	pointer get() noexcept
+	pointer get()
 	{
 		return m_data;
 	}
 
-	const_pointer get() const noexcept
+	const_pointer get() const
 	{
 		return m_data;
 	}
 
-	operator bool() const noexcept
+	operator bool() const
 	{
 		return m_data != nullptr;
 	}
 
-	reference operator*() noexcept
+	reference operator*()
 	{
 		AGL_ASSERT(m_data != nullptr, "invalid pointer");
 
 		return *m_data;
 	}
 
-	const_reference operator*() const noexcept
+	const_reference operator*() const
 	{
 		AGL_ASSERT(m_data != nullptr, "invalid pointer");
 
 		return *m_data;
 	}
 
-	pointer operator->() noexcept
+	pointer operator->()
 	{
 		AGL_ASSERT(m_data != nullptr, "invalid pointer");
 		
 		return m_data;
 	}
 
-	const_pointer operator->() const noexcept
+	const_pointer operator->() const
 	{
 		AGL_ASSERT(m_data != nullptr, "invalid pointer");
 		
 		return m_data;
 	}
 
-	bool operator==(std::nullptr_t) const noexcept
+	bool operator==(std::nullptr_t) const
 	{
 		return m_data == nullptr;
 	}
 
-	bool operator!=(std::nullptr_t) const noexcept
+	bool operator!=(std::nullptr_t) const
 	{
 		return m_data != nullptr;
 	}

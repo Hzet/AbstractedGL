@@ -5,7 +5,7 @@ namespace agl
 {
 namespace ecs
 {
-organizer::organizer(mem::pool::allocator<organizer> allocator) noexcept
+organizer::organizer(mem::pool::allocator<organizer> allocator)
 	: resource<organizer>{}
 	, m_allocator{ allocator }
 	, m_components{ allocator }
@@ -13,7 +13,7 @@ organizer::organizer(mem::pool::allocator<organizer> allocator) noexcept
 	, m_systems{ allocator }
 {
 }
-organizer::organizer(organizer&& other) noexcept
+organizer::organizer(organizer&& other)
 	: resource<organizer>{ std::move(other) }
 	, m_allocator{ std::move(other.m_allocator) }
 	, m_components{ std::move(other.m_components) }
@@ -21,7 +21,7 @@ organizer::organizer(organizer&& other) noexcept
 	, m_systems{ std::move(other.m_systems) }
 {
 }
-organizer& organizer::operator=(organizer&& other) noexcept
+organizer& organizer::operator=(organizer&& other)
 {
 	this->resource<organizer>::operator=(std::move(other));
 
@@ -32,25 +32,25 @@ organizer& organizer::operator=(organizer&& other) noexcept
 
 	return *this;
 }
-system_base* organizer::get_system_impl(type_id_t id) noexcept
+system_base* organizer::get_system_impl(type_id_t id)
 {
 	for (auto& sys : m_systems)
 		if (sys->id() == id)
 			return sys.get();
 	return nullptr;
 }
-system_base const* organizer::get_system_impl(type_id_t id) const noexcept
+system_base const* organizer::get_system_impl(type_id_t id) const
 {
 	for (auto const& sys : m_systems)
 		if (sys->id() == id)
 			return sys.get();
 	return nullptr;
 }
-bool organizer::has_system(type_id_t id) const noexcept
+bool organizer::has_system(type_id_t id) const
 {
 	return get_system_impl(id) != nullptr;
 }
-system_base& organizer::get_system(type_id_t id) noexcept
+system_base& organizer::get_system(type_id_t id)
 {
 	AGL_ASSERT(has_system(id), "system not found");
 
@@ -82,7 +82,7 @@ void organizer::destroy_entity(entity& ent)
 	m_entities.erase(m_entities.cbegin() + ent.m_data->m_index);
 	ent = entity{};
 }
-void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t index) noexcept
+void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t index)
 {
 	AGL_ASSERT(m_components.find(type_id) != m_components.end(), "invalid component type");
 	AGL_ASSERT(ent.has_component(type_id), "queried component type is not attached to this entity");
@@ -92,7 +92,7 @@ void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t inde
 	ent.m_data->pop_component(type_id, index);
 	components->pop_component(ptr);
 }
-void organizer::pop_components(type_id_t type_id, entity& ent) noexcept
+void organizer::pop_components(type_id_t type_id, entity& ent)
 {
 	AGL_ASSERT(m_components.find(type_id) != m_components.end(), "invalid component type");
 	AGL_ASSERT(ent.has_component(type_id), "queried component type is not attached to this entity");
@@ -108,7 +108,7 @@ void organizer::pop_components(type_id_t type_id, entity& ent) noexcept
 	ent_components->second.clear();
 	ent.m_data->m_components.erase(ent_components);
 }
-std::uint64_t organizer::get_component_count(type_id_t type_id) const noexcept
+std::uint64_t organizer::get_component_count(type_id_t type_id) const
 {
 	auto found = m_components.find(type_id);
 
@@ -136,12 +136,12 @@ void organizer::on_detach(application* app)
 
 	log.info("ECS: OFF");
 }
-void organizer::on_update(application* app) noexcept
+void organizer::on_update(application* app)
 {
 	for (auto& sys : m_systems)
 		sys->on_update(app);
 }
-typename organizer::allocator_type organizer::get_allocator() const noexcept
+typename organizer::allocator_type organizer::get_allocator() const
 {
 	return m_allocator;
 }

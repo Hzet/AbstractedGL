@@ -29,17 +29,17 @@ public:
 		AGL_ASSERT(is_valid(), "invalid object");
 		return m_mutex.try_lock();
 	}
-	std::uint64_t id() const noexcept
+	std::uint64_t id() const
 	{
 		return m_id;
 	}
-	bool is_valid() const noexcept;
-	operator std::mutex& () noexcept
+	bool is_valid() const;
+	operator std::mutex& ()
 	{
 		AGL_ASSERT(is_valid(), "invalid object");
 		return m_mutex;
 	}
-	operator std::mutex const& () const noexcept
+	operator std::mutex const& () const
 	{
 		AGL_ASSERT(is_valid(), "invalid object");
 		return m_mutex;
@@ -63,11 +63,11 @@ public:
 	condition_variable();
 	condition_variable(condition_variable const&) = delete;
 	condition_variable& operator=(condition_variable const&) = delete;
-	std::uint64_t id() const noexcept
+	std::uint64_t id() const
 	{
 		return m_id;
 	}
-	bool is_valid() const noexcept;
+	bool is_valid() const;
 	void notify_one()
 	{
 		AGL_ASSERT(is_valid(), "invalid object");
@@ -117,12 +117,12 @@ public:
 		AGL_ASSERT(is_valid(), "invalid object");
 		return m_cond_var.wait_until(lock, timeout_time, fun);
 	}
-	operator std::condition_variable& () noexcept
+	operator std::condition_variable& ()
 	{
 		AGL_ASSERT(is_valid(), "invalid object");
 		return m_cond_var;
 	}
-	operator std::condition_variable const& () const noexcept
+	operator std::condition_variable const& () const
 	{
 		AGL_ASSERT(is_valid(), "invalid object");
 		return m_cond_var;

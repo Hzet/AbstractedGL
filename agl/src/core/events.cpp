@@ -37,28 +37,28 @@ events::events()
 	for (auto key : key_types)
 		m_key_pressed.emplace({ key, false });
 }
-void events::push_event(event e) noexcept
+void events::push_event(event e)
 {
 	std::lock_guard<std::mutex> lock{ *m_mutex };
 	m_event_queue.push_back(e);
 }
-void events::set_button_pressed(button_type button, bool status) noexcept
+void events::set_button_pressed(button_type button, bool status)
 {
 	m_button_pressed.at(button) = status;
 }
-void events::set_key_pressed(key_type key, bool status) noexcept
+void events::set_key_pressed(key_type key, bool status)
 {
 	m_key_pressed.at(key) = status;
 }
-bool events::is_button_pressed(button_type button) const noexcept
+bool events::is_button_pressed(button_type button) const
 {
 	return m_button_pressed.at(button);
 }
-bool events::is_key_pressed(key_type key) const noexcept
+bool events::is_key_pressed(key_type key) const
 {
 	return m_key_pressed.at(key);
 }
-event events::poll_event() noexcept
+event events::poll_event()
 {
 	std::lock_guard<std::mutex> lock{ *m_mutex };
 	auto e = m_event_queue.front();
@@ -116,7 +116,7 @@ void events::on_detach(application* app)
 	auto& logger = app->get_resource<agl::logger>();
 	logger.info("GLFW: OFF");
 }
-void events::on_update(application* app) noexcept
+void events::on_update(application* app)
 {
 }
 const vector<button_type> events::button_types = {
