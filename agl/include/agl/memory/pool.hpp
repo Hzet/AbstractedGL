@@ -1,11 +1,245 @@
 #pragma once
 #include <cstddef>
 #include "agl/core/application.hpp"
-#include "agl/core/logger.hpp"
-#include "agl/set.hpp"
-#include "agl/dictionary.hpp"
-#include "agl/memory/allocator.hpp"
+#include "agl/vector.hpp"
 
+namespace agl
+{
+namespace mem
+{
+class pool
+	: public application_resource
+{
+public:
+	template <typename T>
+	class allocator;
+
+public:
+	pool();
+	pool(pool&& other);
+	pool& operator=(pool&& other);
+	~pool() noexcept;
+
+	std::byte* allocate(std::uint64_t size, std::uint64_t alignment);
+	void create(std::uint64_t size);
+	void destroy();
+	void deallocate(std::byte* ptr, std::uint64_t size);
+	bool full() const;
+	bool empty() const;
+	template <typename T>
+	allocator<T> make_allocator();
+	std::uint64_t occupancy() const;
+	std::uint64_t size() const;
+	bool has_pointer(std::byte* ptr) const;
+
+public:
+	template <typename T>
+	class allocator
+	{
+	public:
+		static_assert(!std::is_const_v<T>, "allocator<const T> is ill-formed");
+		static_assert(!std::is_function_v<T>, "[allocator.requirements]");
+		static_assert(!std::is_reference_v<T>, "[allocator.requirements]");
+
+	public:
+		template <typename U>
+		using rebind = allocator<U>;
+		using value_type = T;
+		using pointer = T*;
+		using const_pointer = T const*;
+		using reference = T&;
+		using const_reference = T const&;
+		using size_type = std::uint64_t;
+		using difference_type = std::ptrdiff_t;
+
+		allocator(pool* ptr = nullptr);
+		allocator(allocator&& other);
+		template <typename U>
+		allocator(allocator<U>&& other);
+		allocator(allocator const& other);
+		template <typename U>
+		allocator(allocator<U> const& other);
+		template <typename U>
+		allocator& operator=(allocator<U>&& other);
+		template <typename U>
+		allocator& operator=(allocator<U> const& other);
+		~allocator();
+		[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type));
+		template <typename... TArgs>
+		void construct(pointer buffer, TArgs&&... args);
+		void deallocate(pointer ptr, size_type count = 1);
+		void destruct(pointer ptr);
+
+	private:
+		template <typename U>
+		friend class allocator;
+
+		template <typename U, typename W>
+		friend bool operator==(allocator<U> const&, allocator<W> const&);
+
+		template <typename U, typename W>
+		friend bool operator!=(allocator<U> const&, allocator<W> const&);
+
+	private:
+		std::uint64_t m_alloc_count;
+		pool* m_pool;
+	};
+
+private:
+	struct space
+	{
+		std::byte* ptr;
+		std::uint64_t size;
+	};
+	
+private:
+	static bool free_space_comparator(std::uint64_t size, pool::space const& space);
+	static bool occupied_space_comparator(std::byte* ptr, pool::space const& space);
+
+
+	space pop_free_space(std::uint64_t size);
+	void push_free_space(pool::space space);
+	void pop_occupied_space(std::byte* ptr);
+	void push_occupied_space(pool::space space);
+
+	agl::vector<space>::const_iterator find_free_space(std::uint64_t size) const;
+	agl::vector<space>::const_iterator find_occupied_space(std::byte* ptr) const;
+
+
+	virtual void pool::on_attach(application* app) override;
+	virtual void pool::on_detach(application* app) override;
+	virtual void pool::on_update(application* app) override;
+
+private:
+	std::byte* m_memory;
+	std::uint64_t m_occupancy;
+	std::uint64_t m_size;
+	vector<space> m_free_spaces;
+	vector<space> m_occupied_spaces;
+};
+
+template <typename T>
+pool::allocator<T> pool::make_allocator()
+{
+	return allocator<T>{ this };
+}
+template <typename T>
+pool::allocator<T>::allocator(pool* ptr)
+	: m_pool{ ptr }
+{
+	m_alloc_count = 0;
+}
+template <typename T>
+pool::allocator<T>::allocator(allocator&& other)
+	: m_pool{ other.m_pool }
+{
+	m_alloc_count = other.m_alloc_count;
+	other.m_alloc_count = 0;
+}
+template <typename T>
+template <typename U>
+pool::allocator<T>::allocator(allocator<U>&& other)
+	: m_pool{ other.m_pool }
+{
+	m_alloc_count = other.m_alloc_count;
+	other.m_alloc_count = 0;
+}
+template <typename T>
+pool::allocator<T>::allocator(allocator const& other)
+	: m_pool{ other.m_pool }
+{
+	m_alloc_count = 0;
+}
+template <typename T>
+template <typename U>
+pool::allocator<T>::allocator(allocator<U> const& other)
+	: m_pool{ other.m_pool }
+{
+	m_alloc_count = 0;
+}
+template <typename T>
+template <typename U>
+pool::allocator<T>& pool::allocator<T>::operator=(allocator<U>&& other)
+{
+	if (this == &other)
+		return *this;
+
+	AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
+
+	m_pool = other.m_pool;
+	m_alloc_count = other.m_alloc_count;
+	other.m_alloc_count = 0;
+	return *this;
+}
+template <typename T>
+template <typename U>
+pool::allocator<T>& pool::allocator<T>::operator=(allocator<U> const& other)
+{
+	if (this == &other)
+		return *this;
+
+	AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
+
+	m_alloc_count = 0;
+	m_pool = other.m_pool;
+	return *this;
+}
+template <typename T>
+pool::allocator<T>::~allocator()
+{
+	AGL_ASSERT(m_alloc_count == 0, "some memory was not deallocated");
+}
+template <typename T>
+[[nodiscard]] typename pool::allocator<T>::pointer pool::allocator<T>::allocate(size_type count, std::uint64_t alignment)
+{
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+
+	m_alloc_count += count;
+	return reinterpret_cast<T*>(m_pool->allocate(count * sizeof(T), alignment));
+}
+template <typename T>
+template <typename... TArgs>
+void pool::allocator<T>::construct(pointer buffer, TArgs&&... args)
+{
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+	AGL_ASSERT(buffer != nullptr, "buffer handle is nullptr");
+	AGL_ASSERT(m_alloc_count > 0, "invalid construction call");
+
+	new (buffer) T(std::forward<TArgs>(args)...);
+}
+template <typename T>
+void pool::allocator<T>::deallocate(pointer ptr, size_type count)
+{
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+	AGL_ASSERT(m_alloc_count > 0, "invalid deallocation call");
+
+	m_alloc_count -= count;
+	m_pool->deallocate(reinterpret_cast<std::byte*>(ptr), count * sizeof(T));
+}
+template <typename T>
+void pool::allocator<T>::destruct(pointer ptr)
+{
+	AGL_ASSERT(m_pool != nullptr, "pool handle is nullptr");
+	AGL_ASSERT(ptr != nullptr, "ptr handle is nullptr");
+	AGL_ASSERT(m_alloc_count > 0, "invalid destruction call");
+
+	ptr->~T();
+}
+template <typename U, typename W>
+bool operator==(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs)
+{
+	return lhs.m_pool == rhs.m_pool;
+}
+
+template <typename U, typename W>
+bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs)
+{
+	return lhs.m_pool != rhs.m_pool;
+}
+}
+}
+
+/*
 namespace agl
 {
 namespace mem
@@ -127,15 +361,6 @@ private:
 };
 }
 
-/**
- * @brief 
- * Provides a pool of memory, which can serve as a fast storage. Is not thread-safe.
- * Is a resource.
- * 
- * @dependecies
- * 'application'
- * 'logger'
- */
 class pool
 	: public resource<pool>
 {
@@ -414,3 +639,4 @@ bool operator!=(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs)
 }
 }
 }
+*/
