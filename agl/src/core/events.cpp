@@ -118,6 +118,7 @@ void events::on_detach(application* app)
 }
 void events::on_update(application* app)
 {
+	glfwPollEvents();
 }
 const vector<button_type> events::button_types = {
 	BUTTON_LEFT,

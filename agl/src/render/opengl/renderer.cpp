@@ -1,5 +1,6 @@
 #include "agl/render/opengl/renderer.hpp"
 #include "agl/render/opengl/window.hpp"
+#include "agl/core/logger.hpp"
 #include "agl/core/events.hpp"
 #include "agl/ecs/ecs.hpp"
 
@@ -29,7 +30,8 @@ renderer& renderer::operator=(renderer&& other)
 }
 agl::window& renderer::create_window(glm::uvec2 const& resolution, std::string const& title)
 {
-	auto window = opengl::window{};
+	get_organizer().push_component<opengl::window>(m_windows);
+	auto& window = m_windows.get_component<opengl::window>(m_windows.size<opengl::window>() - 1);
 	window.hint_api_version(4, 3);
 	window.create(resolution, title);
 
@@ -43,8 +45,7 @@ agl::window& renderer::create_window(glm::uvec2 const& resolution, std::string c
 	g_logger->debug("New window: {}, {}", window.get_api_version(), window.get_shading_language_version());
 #endif
 	
-	get_organizer().push_component<opengl::window>(m_windows, std::move(window));
-	return m_windows.get_component<opengl::window>(m_windows.size<opengl::window>() - 1);
+	return window;
 }
 void renderer::on_attach(application* app)
 {
@@ -59,7 +60,25 @@ void renderer::on_attach(application* app)
 // render
 void renderer::on_update(application* app)
 {
-	
+	auto size = m_windows.size<opengl::window>();
+	for (auto i = 0; i < size; ++i)
+	{
+		auto& window = m_windows.get_component<opengl::window>(i);
+		auto* handle = window.get_handle();
+		glfwMakeContextCurrent(handle);
+		
+		if (!window.should_close())
+		{
+			glfwSwapBuffers(handle);
+			glfwPollEvents();
+		}
+		else 
+		{
+			window.close();
+			get_organizer().pop_component<opengl::window>(m_windows, i);
+			--size;
+		}
+	}
 }
 // unload opengl
 void renderer::on_detach(application* app)

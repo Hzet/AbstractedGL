@@ -95,10 +95,6 @@ bool window::is_open() const
 {
 	return m_is_open;
 }
-bool window::should_close() const
-{
-	return m_should_close;
-}
 std::string const& window::get_api_version() const
 {
 	return m_api_version;
@@ -126,6 +122,11 @@ void window::close()
 		return;
 
 	glfwDestroyWindow(m_handle);
+	m_handle = nullptr;
 	m_is_open = false;
+}
+bool window::should_close() const
+{
+	return m_should_close;
 }
 }

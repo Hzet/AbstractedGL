@@ -86,6 +86,7 @@ void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t inde
 {
 	AGL_ASSERT(m_components.find(type_id) != m_components.end(), "invalid component type");
 	AGL_ASSERT(ent.has_component(type_id), "queried component type is not attached to this entity");
+	AGL_ASSERT(index < ent.size(type_id), "queried component type is not attached to this entity");
 
 	auto& components = m_components.at(type_id);
 	auto* ptr = ent.m_data->m_components.at(type_id).at(index);
