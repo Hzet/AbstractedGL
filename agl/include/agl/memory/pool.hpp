@@ -59,6 +59,7 @@ public:
 		allocator(allocator const& other);
 		template <typename U>
 		allocator(allocator<U> const& other);
+		allocator& operator=(allocator&& other);
 		template <typename U>
 		allocator& operator=(allocator<U>&& other);
 		template <typename U>
@@ -69,6 +70,8 @@ public:
 		void construct(pointer buffer, TArgs&&... args);
 		void deallocate(pointer ptr, size_type count = 1);
 		void destruct(pointer ptr);
+		template <typename U>
+		allocator<U> rebind_copy() const;
 
 	private:
 		template <typename U>
@@ -158,6 +161,19 @@ pool::allocator<T>::allocator(allocator<U> const& other)
 	m_alloc_count = 0;
 }
 template <typename T>
+pool::allocator<T>& pool::allocator<T>::operator=(allocator&& other)
+{
+	if (this == &other)
+		return *this;
+
+	AGL_ASSERT(m_pool == nullptr || *this == other, "allocators are not equal");
+
+	m_pool = other.m_pool;
+	m_alloc_count = other.m_alloc_count;
+	other.m_alloc_count = 0;
+	return *this;
+}
+template <typename T>
 template <typename U>
 pool::allocator<T>& pool::allocator<T>::operator=(allocator<U>&& other)
 {
@@ -224,6 +240,12 @@ void pool::allocator<T>::destruct(pointer ptr)
 	AGL_ASSERT(m_alloc_count > 0, "invalid destruction call");
 
 	ptr->~T();
+}
+template <typename T>
+template <typename U>
+pool::allocator<U> pool::allocator<T>::rebind_copy() const
+{
+	return allocator<T>::template rebind<U>{ *this };
 }
 template <typename U, typename W>
 bool operator==(pool::allocator<U> const& lhs, pool::allocator<W> const& rhs)

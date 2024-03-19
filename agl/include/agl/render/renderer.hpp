@@ -1,6 +1,7 @@
 #pragma once
 #include "agl/ecs/system.hpp"
 #include "agl/render/window.hpp"
+#include "agl/render/shader.hpp"
 
 namespace agl
 {
@@ -11,6 +12,7 @@ class renderer
 public:
 	using ecs::system<renderer>::system;
 
+	virtual shader& attach_shader(std::string const& filepath) = 0;
 	virtual window& create_window(glm::uvec2 const& resolution, std::string const& title) = 0;
 	virtual window& get_window(std::uint64_t index = 0) = 0;
 

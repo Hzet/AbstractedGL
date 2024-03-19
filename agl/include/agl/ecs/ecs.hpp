@@ -63,7 +63,7 @@ private:
 	system_base* get_system_impl(type_id_t id);
 	system_base const* get_system_impl(type_id_t id) const;
 	template <typename T>
-	mem::deque<T>& get_storage();
+	component_storage<T>& get_storage();
 	virtual void on_attach(application*) override;
 	virtual void on_detach(application*) override;
 	virtual void on_update(application*) override;
@@ -96,8 +96,8 @@ void organizer::push_component(entity& ent, TArgs... args)
 	AGL_ASSERT(!ent.empty(), "entity is uninitialized");
 
 	auto& storage = get_storage<T>();
-	auto it = storage.emplace_back(std::forward<TArgs>(args)...);
-	ent.m_data->push_component<T>(&(*it));
+	auto* ptr = storage.push_component(std::forward<TArgs>(args)...);
+	ent.m_data->push_component<T>(ptr);
 }
 template <typename T>
 void organizer::pop_component(entity& ent, std::uint64_t index)
@@ -127,18 +127,14 @@ bool organizer::has_system() const
 	return has_system(type_id_t<T>::get_id());
 }
 template <typename T>
-mem::deque<T>& organizer::get_storage()
+component_storage<T>& organizer::get_storage()
 {
 	auto& ptr = m_components[type_id<T>::get_id()];
 	if (ptr == nullptr)
-	{
-		auto storage = component_storage<T>{};
-		storage.storage = mem::deque<T>{ sizeof(T) * 10, get_allocator() };
-		auto allocator = mem::pool::allocator<component_storage<T>>{ get_allocator() };
-		ptr = mem::make_unique<component_storage_base>(allocator, std::move(storage));
-	}
+		ptr = mem::make_unique<component_storage_base>(get_allocator(), component_storage<T>{get_allocator()});
+
 	auto& storage = *dynamic_cast<component_storage<T>*>(ptr.get());
-	return storage.storage;
+	return storage;
 }
 template <typename T>
 void organizer::remove_system(application* app)

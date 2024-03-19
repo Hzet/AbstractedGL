@@ -15,7 +15,8 @@ public:
 	renderer();
 	renderer(renderer&& other);
 	renderer& operator=(renderer&& other);
-	
+
+	virtual agl::shader& attach_shader(std::string const& filepath) override;
 	virtual agl::window& create_window(glm::uvec2 const& resolution, std::string const& title) override;
 	virtual agl::window& get_window(std::uint64_t index) override;
 
@@ -25,6 +26,7 @@ private:
 	virtual void on_update(application*) override;
 
 private:
+	ecs::entity m_shaders;
 	ecs::entity m_windows;
 };
 }

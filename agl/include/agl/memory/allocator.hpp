@@ -71,6 +71,15 @@ public:
 		m_alloc_count = other.m_alloc_count;
 		other.m_alloc_count = 0;
 	}
+	allocator& operator=(allocator&& other)
+	{
+		if (this == &other)
+			return *this;
+
+		m_alloc_count = other.m_alloc_count;
+		other.m_alloc_count = 0;
+		return *this;
+	}
 	template <typename U>
 	allocator& operator=(allocator<U>&& other)
 	{
@@ -79,6 +88,14 @@ public:
 
 		m_alloc_count = other.m_alloc_count;
 		other.m_alloc_count = 0;
+		return *this;
+	}
+	allocator& operator=(allocator const& other)
+	{
+		if (this == &other)
+			return *this;
+
+		m_alloc_count = 0;
 		return *this;
 	}
 	template <typename U>
@@ -123,6 +140,11 @@ public:
 		AGL_ASSERT(m_alloc_count > 0, "invalid destruction call");
 
 		ptr->~T();
+	}
+	template <typename U>
+	allocator<U> rebind_copy() const
+	{
+		return allocator<T>::template rebind<U>{ *this };
 	}
 
 private:

@@ -1,3 +1,4 @@
+#include "agl/render/opengl/shader.hpp"
 #include "agl/render/opengl/renderer.hpp"
 #include "agl/render/opengl/window.hpp"
 #include "agl/core/logger.hpp"
@@ -8,6 +9,8 @@ namespace agl
 {
 namespace opengl
 {
+static std::uint32_t get_opengl_clear_type(clear_type type);
+
 #ifdef AGL_DEBUG
 static agl::logger* g_logger = nullptr;
 
@@ -27,6 +30,14 @@ renderer& renderer::operator=(renderer&& other)
 {
 	this->agl::renderer::operator=(std::move(other));
 	return *this;
+}
+agl::shader& renderer::attach_shader(std::string const& filepath)
+{
+	get_organizer().push_component<opengl::shader>(m_shaders);
+	auto& shader = m_shaders.get_component<opengl::shader>(m_shaders.size<opengl::shader>() - 1);
+	shader.load_from_file(filepath);
+
+	return shader;
 }
 agl::window& renderer::create_window(glm::uvec2 const& resolution, std::string const& title)
 {
@@ -50,12 +61,14 @@ agl::window& renderer::create_window(glm::uvec2 const& resolution, std::string c
 void renderer::on_attach(application* app)
 {
 	auto& logger = app->get_resource<agl::logger>();
+	m_shaders = get_organizer().make_entity();
 	m_windows = get_organizer().make_entity();
-	logger.info("OpenGL renderer: OK");
 
 #ifdef AGL_DEBUG
 	g_logger = &app->get_resource<agl::logger>();
 #endif
+
+	logger.info("OpenGL renderer: OK");
 }
 // render
 void renderer::on_update(application* app)
@@ -69,6 +82,8 @@ void renderer::on_update(application* app)
 		
 		if (!window.should_close())
 		{
+			AGL_OPENGL_CALL(glClearColor(window.get_clear_color().x, window.get_clear_color().y, window.get_clear_color().z, window.get_clear_color().w));
+			AGL_OPENGL_CALL(glClear(get_opengl_clear_type(window.get_clear_type())));
 			glfwSwapBuffers(handle);
 			glfwPollEvents();
 		}
@@ -85,6 +100,7 @@ void renderer::on_detach(application* app)
 {
 	auto& logger = app->get_resource<agl::logger>();
 	logger.info("OpenGL renderer: Exiting");
+	get_organizer().destroy_entity(m_shaders);
 	get_organizer().destroy_entity(m_windows);
 	logger.info("OpenGL renderer: OFF");
 
@@ -95,6 +111,18 @@ void renderer::on_detach(application* app)
 agl::window& renderer::get_window(std::uint64_t index)
 {
 	return m_windows.get_component<window>(index);
+}
+
+std::uint32_t get_opengl_clear_type(clear_type type)
+{
+	switch (type)
+	{
+	case CLEAR_COLOR: return GL_COLOR_BUFFER_BIT;
+	case CLEAR_DEPTH: return GL_DEPTH_BUFFER_BIT;
+	case CLEAR_STENCIL: return GL_STENCIL_BUFFER_BIT;
+	}
+	AGL_ASSERT(false, "invalid clear type");
+	return 0;
 }
 
 #ifdef AGL_DEBUG

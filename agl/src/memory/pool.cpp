@@ -81,6 +81,9 @@ void pool::destroy()
 	std::free(m_memory);
 	m_size = 0;
 	m_occupancy = 0;
+	m_memory = nullptr;
+	m_free_spaces.clear();
+	m_occupied_spaces.clear();
 }
 bool pool::full() const
 {
@@ -173,7 +176,7 @@ void pool::on_detach(application* app)
 {
 	auto& log = app->get_resource<agl::logger>();
 	destroy();
-	log.debug("Pool {} bytes at {}: OFF", size(), m_memory);
+	log.debug("Pool {} bytes: OFF", size());
 }
 void pool::on_update(application* app)
 {

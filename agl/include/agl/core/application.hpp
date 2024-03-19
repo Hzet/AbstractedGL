@@ -66,6 +66,8 @@ public:
 	template <typename T>
 	T& get_resource();
 
+	std::string get_current_path() const;
+
 	template <typename T>
 	bool has_resource();
 

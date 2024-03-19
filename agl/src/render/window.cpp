@@ -103,6 +103,22 @@ std::string const& window::get_shading_language_version() const
 {
 	return m_shading_language_version;
 }
+void window::set_clear_type(clear_type type)
+{
+	m_clear_type = type;
+}
+clear_type window::get_clear_type() const
+{
+	return m_clear_type;
+}
+void window::set_clear_color(glm::vec4 const& color)
+{
+	m_clear_color = color;
+}
+glm::vec4 const& window::get_clear_color() const
+{
+	return m_clear_color;
+}
 void window::set_version(std::string const& api_version, std::string const& shading_language_version)
 {
 	m_api_version = api_version;

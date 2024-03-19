@@ -9,7 +9,7 @@ organizer::organizer(mem::pool::allocator<organizer> allocator)
 	: resource<organizer>{}
 	, m_allocator{ allocator }
 	, m_components{ allocator }
-	, m_entities{ 1024, allocator }
+	, m_entities{ allocator }
 	, m_systems{ allocator }
 {
 }
@@ -79,7 +79,7 @@ void organizer::destroy_entity(entity& ent)
 	for (auto type_id : type_ids)
 		pop_components(type_id, ent);
 
-	m_entities.erase(m_entities.cbegin() + ent.m_data->m_index);
+	m_entities.erase(ent.m_data);
 	ent = entity{};
 }
 void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t index)

@@ -3,6 +3,7 @@
 #include "agl/core/events.hpp"
 #include "agl/memory/pool.hpp"
 #include "agl/ecs/ecs.hpp"
+#include <filesystem>
 
 namespace agl
 {
@@ -53,7 +54,6 @@ void application::init()
 		auto threads = agl::threads{};
 		add_resource(threads);
 	}
-
 	{ // LOGGER
 		auto log = logger{};
 		add_resource(log);
@@ -62,7 +62,6 @@ void application::init()
 	}
 	{ // MEMORY POOL
 		auto pool = mem::pool{};
-		pool.create(1024 * 1024 * 10); // 10 mb 
 		add_resource(pool);
 	}
 	{ // GLFW Events
@@ -80,6 +79,10 @@ void application::init()
 
 	m_good = true;
 	get_resource<logger>().info("Core: OK");
+}
+std::string application::get_current_path() const
+{
+	return std::filesystem::current_path().string();
 }
 
 void application::run()

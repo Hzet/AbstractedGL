@@ -1,5 +1,6 @@
 #pragma once
 #include <GLFW/glfw3.h>
+#include "agl/render/clear-type.hpp"
 #include "agl/render/feature-type.hpp"
 #include <glm/glm.hpp>
 #include <string>
@@ -37,6 +38,10 @@ public:
 	virtual void resize(glm::uvec2 const& size);
 	glm::uvec2 const& size() const;
 	std::string const& title() const;
+	void set_clear_type(clear_type type);
+	clear_type get_clear_type() const;
+	void set_clear_color(glm::vec4 const& color);
+	glm::vec4 const& get_clear_color() const;
 	virtual std::string const& get_api_version() const;
 	virtual std::string const& get_shading_language_version() const;
 	void set_version(std::string const& api_version, std::string const& shading_language_version);
@@ -57,6 +62,7 @@ private:
 private:
 	std::string m_api_version;
 	glm::vec4 m_clear_color;
+	clear_type m_clear_type;
 	glm::uvec2 m_frame_buffer_size;
 	GLFWwindow* m_handle;
 	bool m_is_focused;
