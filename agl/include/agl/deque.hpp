@@ -372,7 +372,7 @@ public:
 	using reverse_const_iterator = typename deque_const_iterator<typename index_vector::reverse_const_iterator>;
 
 public:
-	deque(size_type block_size = 1024, allocator_type const& allocator = {})
+	deque(allocator_type const& allocator = {}, size_type block_size = (4096 / sizeof(value_type)) * sizeof(value_type))
 		: m_blocks{ block_allocator{ allocator } }
 		, m_indexes{ index_allocator{ allocator } }
 		, m_block_size{ block_size }
@@ -451,12 +451,6 @@ public:
 	{
 		return size() == 0;
 	}
-	void erase(const_pointer ptr)
-	{
-		auto it = find_block(ptr);
-		it->erase(ptr);
-
-	}
 	void erase(const_iterator pos)
 	{
 		AGL_ASSERT(m_indexes.cbegin() <= pos.m_it && pos.m_it < m_indexes.cend(), "Index out of bounds");
@@ -470,7 +464,7 @@ public:
 
 		m_indexes.erase(pos.m_it);
 	}
-	void erase(const_iterator first, const_iterator last)
+	/*void erase(const_iterator first, const_iterator last)
 	{
 		AGL_ASSERT(cbegin() <= first && first <= cend(), "Index out of bounds");
 		AGL_ASSERT(cbegin() <= last && last <= cend(), "Index out of bounds");
@@ -483,6 +477,19 @@ public:
 			if (it_block->empty())
 				m_blocks.erase(it_block);
 		}
+	}*/
+	void erase(const_pointer ptr)
+	{
+		auto it_block = find_block(ptr);
+		AGL_ASSERT(it_block != m_blocks.end(), "provided pointer does not belong to this deque");
+		it_block->erase(ptr);
+		for(auto it = m_indexes.cbegin(); it != m_indexes.cend(); ++it)
+			if (*it == ptr)
+			{
+				m_indexes.erase(it);
+				return;
+			}
+
 	}
 	template <typename... TArgs>
 	iterator emplace(const_iterator pos, TArgs... args)
@@ -970,8 +977,8 @@ struct iterator_traits<agl::deque_const_iterator<T>>
 	using raw_value_type = std::remove_pointer_t<typename T::value_type>;
 	using traits = typename agl::type_traits<raw_value_type>;
 	using value_type = typename traits::value_type;
-	using pointer = typename traits::pointer;
-	using reference = typename traits::reference;
+	using pointer = typename traits::const_pointer;
+	using reference = typename traits::const_reference;
 	using difference_type = typename traits::difference_type;
 	using iterator_category = random_access_iterator_tag;
 };
