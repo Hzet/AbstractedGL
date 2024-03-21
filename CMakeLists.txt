@@ -210,6 +210,11 @@ if(AGL_BUILD_EDITOR)
 		AGL_LIB
 	)
 
+	target_include_directories(
+		AGL_EDITOR
+		PUBLIC "editor/include/"
+	)
+
 	target_link_libraries(
 		AGL_EDITOR
 		PRIVATE AGL_LIB

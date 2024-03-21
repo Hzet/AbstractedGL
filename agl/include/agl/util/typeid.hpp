@@ -14,28 +14,34 @@ class type_id_t
 public:
 	constexpr type_id_t()
 		: m_id{ 0 }
+		, m_name{ "" }
 	{
 	}
-	constexpr explicit type_id_t(std::uint64_t id)
+	constexpr explicit type_id_t(std::uint64_t id, std::string_view name)
 		: m_id{ id }
+		, m_name{ name }
 	{
 	}
 	constexpr type_id_t(type_id_t&& other)
 		: m_id{ other.m_id }
+		, m_name{ other.m_name }
 	{
 	}
 	constexpr type_id_t(type_id_t const& other)
 		: m_id{ other.m_id }
+		, m_name{ other.m_name }
 	{
 	}
 	constexpr type_id_t& operator=(type_id_t&& other)
 	{
 		m_id = other.m_id;
+		m_name = other.m_name;
 		return *this;
 	}
 	constexpr type_id_t& operator=(type_id_t const& other)
 	{
 		m_id = other.m_id;
+		m_name = other.m_name;
 		return *this;
 	}
 	constexpr bool is_valid() const
@@ -63,8 +69,14 @@ public:
 		return m_id;
 	}
 
+	constexpr std::string_view get_name() const
+	{
+		return m_name;
+	}
+
 private:
 	std::uint64_t m_id;
+	std::string_view m_name;
 };
 
 namespace impl {
@@ -74,7 +86,7 @@ class type_id
 public:
 	static constexpr type_id_t get_id()
 	{
-		return type_id_t{ (std::uint64_t)&m_id };
+		return type_id_t{ (std::uint64_t)&m_id, get_name() };
 	}
 
 	static constexpr std::string_view get_name()

@@ -8,7 +8,7 @@ out vec4 color;
 void main()
 {
 	color = vertex_color;
-	glPosition = vec4(layout_position, 1);
+	gl_Position = vec4(vertex_position, 1);
 }
 
 #fragment

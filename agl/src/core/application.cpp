@@ -1,6 +1,7 @@
 #include "agl/render/opengl/renderer.hpp"
-#include "agl/core/threads.hpp"
 #include "agl/core/events.hpp"
+#include "agl/core/threads.hpp"
+#include "agl/core/layer.hpp"
 #include "agl/memory/pool.hpp"
 #include "agl/ecs/ecs.hpp"
 #include <filesystem>
@@ -75,6 +76,9 @@ void application::init()
 		// OpenGL renderer
 		auto renderer = mem::make_unique<ecs::system_base>(pool.make_allocator<opengl::renderer>(), opengl::renderer{});
 		organizer.add_system(this, std::move(renderer));
+	}
+	{ // Layers
+		add_resource(agl::layers{});
 	}
 
 	m_good = true;

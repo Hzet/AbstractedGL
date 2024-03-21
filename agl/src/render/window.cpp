@@ -4,7 +4,8 @@
 namespace agl
 {
 window::window()
-	: m_handle{ nullptr }
+	: m_clear_type{ CLEAR_COLOR }
+	, m_handle{ nullptr }
 	, m_is_focused{ false }
 	, m_is_maximized{ false }
 	, m_is_minimized{ false }

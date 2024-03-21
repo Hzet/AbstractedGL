@@ -390,7 +390,6 @@ public:
 		m_allocator.destruct(m_memory + index);
 		m_allocator.construct(m_memory + index, std::forward<TArgs>(args)...);
 		++m_size;
-
 		return make_iterator<iterator>(m_memory + index);
 	}
 	template <typename... TArgs>
@@ -399,8 +398,16 @@ public:
 		resize(size() + 1);
 		m_allocator.destruct(m_memory + size() - 1);
 		m_allocator.construct(m_memory + size() - 1, std::forward<TArgs>(args)...);
-
 		return make_iterator<iterator>(m_memory + size() - 1);
+	}
+	template <typename... TArgs>
+	iterator emplace_front(TArgs&&... args)
+	{
+		resize(size() + 1);
+		move_elements_right(begin() + 1, begin());
+		m_allocator.destruct(m_memory);
+		m_allocator.construct(m_memory, std::forward<TArgs>(args)...);
+		return begin();
 	}
 	iterator erase(const_iterator pos)
 	{
