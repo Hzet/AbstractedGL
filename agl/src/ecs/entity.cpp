@@ -38,11 +38,14 @@ vector<type_id_t> entity_data::get_component_ids() const
 }
 bool entity_data::is_valid() const
 {
-	return m_index == std::numeric_limits<std::uint64_t>::max();
+	return m_index != std::numeric_limits<std::uint64_t>::max();
 }
 std::uint64_t entity_data::size(type_id_t type_id) const
 {
-	return m_components.at(type_id).size();
+	auto found = m_components.find(type_id);
+	if (found == m_components.cend())
+		return 0;
+	return found->second.size();
 }
 }
 entity::entity(impl::entity_data* data)

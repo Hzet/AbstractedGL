@@ -185,9 +185,9 @@ template <typename T, typename U>
 unique_ptr<T> make_unique(U&& value)
 {
 	using type = std::remove_cv_t<std::remove_reference_t<U>>;
-	auto alloc = unique_ptr<type>::allocator_type{};
-	auto* ptr = alloc.allocate();
-	alloc.construct(ptr, std::move(value));
-	return unique_ptr<T>{ std::move(alloc), static_cast<T*>(ptr) };
+	auto allocator = mem::allocator<type>{};
+	auto* ptr = allocator.allocate();
+	allocator.construct(ptr, std::move(value));
+	return unique_ptr<T>{ std::move(allocator), static_cast<T*>(ptr) };
 }
 }

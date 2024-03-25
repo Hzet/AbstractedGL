@@ -8,7 +8,7 @@ namespace agl
 namespace mem
 {
 class pool
-	: public application_resource
+	: public resource<pool>
 {
 public:
 	template <typename T>

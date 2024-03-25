@@ -55,7 +55,6 @@ agl::window& renderer::create_window(glm::uvec2 const& resolution, std::string c
 	g_logger->debug("OpenGL debug messages: ON");
 	g_logger->debug("New window: {}, {}", window.get_api_version(), window.get_shading_language_version());
 #endif
-	
 	return window;
 }
 void renderer::on_attach(application* app)
@@ -73,8 +72,7 @@ void renderer::on_attach(application* app)
 // render
 void renderer::on_update(application* app)
 {
-	auto size = m_windows.size<opengl::window>();
-	for (auto i = 0; i < size; ++i)
+	for (auto i = 0; i < m_windows.size<opengl::window>(); ++i)
 	{
 		auto& window = m_windows.get_component<opengl::window>(i);
 		auto* handle = window.get_handle();
@@ -91,7 +89,6 @@ void renderer::on_update(application* app)
 		{
 			window.close();
 			get_organizer().pop_component<opengl::window>(m_windows, i);
-			--size;
 		}
 	}
 }

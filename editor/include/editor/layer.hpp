@@ -1,5 +1,6 @@
 #pragma once
 #include "agl/core/layer.hpp"
+#include "agl/render/window.hpp"
 
 namespace agl
 {

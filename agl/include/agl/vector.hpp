@@ -403,6 +403,9 @@ public:
 	template <typename... TArgs>
 	iterator emplace_front(TArgs&&... args)
 	{
+		if (empty())
+			return emplace_back(std::forward<TArgs>(args)...);
+
 		resize(size() + 1);
 		move_elements_right(begin() + 1, begin());
 		m_allocator.destruct(m_memory);
@@ -456,6 +459,24 @@ public:
 	{
 		resize(size() + 1);
 		make_copy(m_memory + size() - 1, value);
+	}
+	void push_front(value_type&& value)
+	{
+		if (empty())
+			return push_back(std::move(value));
+
+		resize(size() + 1);
+		move_elements_right(begin() + 1, begin());
+		make_move(m_memory, std::move(value));
+	}
+	void push_front(const_reference value)
+	{
+		if (empty())
+			return push_back(value);
+
+		resize(size() + 1);
+		move_elements_right(begin() + 1, begin());
+		make_copy(m_memory, value);
 	}
 	void pop_back()
 	{
@@ -535,8 +556,8 @@ private:
 	void move_elements_right(iterator where, iterator from)
 	{
 		AGL_ASSERT(where > from, "Invalid data");
-		AGL_ASSERT(begin() <= where && where < real_end(), "Index out of bounds");
-		AGL_ASSERT(begin() <= from && from <= real_end(), "Index out of bounds");
+		AGL_ASSERT(begin() < where && where < real_end(), "Index out of bounds");
+		AGL_ASSERT(begin() <= from && from < real_end(), "Index out of bounds");
 
 		auto const offset = where - from;
 		auto w = make_internal_iterator<reverse_iterator>(m_memory + size() + offset - 1);

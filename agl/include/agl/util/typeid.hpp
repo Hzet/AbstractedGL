@@ -86,15 +86,19 @@ class type_id
 public:
 	static constexpr type_id_t get_id()
 	{
-		return type_id_t{ (std::uint64_t)&m_id, get_name() };
+		return type_id_t{ (std::uint64_t)&m_id, type_id<T>::get_name() };
 	}
 
 	static constexpr std::string_view get_name()
 	{
 		constexpr auto const str = std::string_view{ AGL_FUNC_NAME };
-		constexpr auto const search_offset = str.find("agl::type_id");
-		constexpr auto const l_offset = str.find_first_of('<', search_offset) + 1;
+		constexpr auto const class_name = std::string_view{ "agl::impl::type_id" };
+		constexpr auto const search_offset = str.find(class_name) + class_name.size();
+		constexpr auto const l_offset = search_offset + 1;
 		constexpr auto const r_offset = str.find_last_of('>');
+
+		constexpr auto const str2 = str.substr(l_offset, r_offset - l_offset);
+		return str2;
 
 		if constexpr (str.at(r_offset - 1) == ' ')
 			return str.substr(l_offset, r_offset - l_offset - 1);
@@ -102,10 +106,10 @@ public:
 	}
 
 private:
-	static constexpr std::uint64_t m_id{};
+	static constexpr const std::string_view m_name = get_name();
+	static constexpr const std::uint64_t m_id{};
 };
 }
-
 /**
  * @brief 
  * Provides a compile time method for users to identify types. Uses 'remove_cvref' on types.

@@ -8,7 +8,7 @@ namespace agl
 
 /**
  * @brief 
- * A facility to provide thread related resources to the users. Requests for the resources are not thread-safe, thus all requests must be made from the main thread.
+ * A facility to provide thread related resources to the users.
  * Each resource that user requests must be then deleted by the user. 
  * 
  * @dependencies

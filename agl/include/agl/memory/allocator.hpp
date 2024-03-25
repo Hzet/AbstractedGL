@@ -111,7 +111,6 @@ public:
 	{
 		AGL_ASSERT(m_alloc_count == 0, "some objects were not destroyed");
 	}
-
 	[[nodiscard]] pointer allocate(size_type count = 1, std::uint64_t alignment = alignof(value_type))
 	{
 		auto const size = count * sizeof(value_type);

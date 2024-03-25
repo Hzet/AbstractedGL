@@ -44,14 +44,32 @@ bool layers::has_layer(layer_base& layer) const
 			return true;
 	return false;
 }
+void layers::push_layer(unique_ptr<layer_base> layer)
+{
+	m_layers_to_push.push_front(std::move(layer));
+}
+void layers::pop_layer()
+{
+	m_pop_layer = true;
+}
 void layers::push_layer(application* app, unique_ptr<layer_base> layer)
 {
 	m_layers.emplace_front(std::move(layer));
 	m_layers.front()->on_attach(app);
+
+#ifdef AGL_DEBUG
+	auto& logger = app->get_resource<agl::logger>();
+	logger.debug("Layers: push {}", m_layers.front()->get_name());
+#endif
 }
 void layers::pop_layer(application* app)
 {
+	m_pop_layer = false;
 	m_layers.front()->on_detach(app);
+#ifdef AGL_DEBUG
+	auto& logger = app->get_resource<agl::logger>();
+	logger.debug("Layers: pop {}", m_layers.front()->get_name());
+#endif
 	m_layers.pop_front();
 }
 void layers::on_attach(application* app)
@@ -69,6 +87,10 @@ void layers::on_detach(application* app)
 }
 void layers::on_update(application* app)
 {
+	for (auto& ptr : m_layers_to_push)
+		push_layer(app, std::move(ptr));
+	m_layers_to_push.clear();
+
 	if (m_layers.empty())
 		return;
 
@@ -77,10 +99,5 @@ void layers::on_update(application* app)
 
 	if (m_pop_layer)
 		pop_layer(app);
-
-	for (auto& ptr : m_layers_to_push)
-		push_layer(app, std::move(ptr));
-
-	m_layers_to_push.clear();
 }
 }

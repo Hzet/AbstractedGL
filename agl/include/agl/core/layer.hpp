@@ -37,7 +37,7 @@ class layer
 {
 public:
 	layer()
-		: layer_base{ type_id<T>::get_id(), type_id<T>::get_name() }
+		: layer_base{ type_id<T>::get_id(), std::string{ type_id<T>::get_name() } }
 	{
 	}
 	layer(layer&& other)
@@ -58,13 +58,15 @@ class layers
 {
 public:
 	bool has_layer(layer_base& layer) const;
-	void push_layer(application* app, unique_ptr<layer_base> layer);
-	void pop_layer(application* app);
-
+	void push_layer(unique_ptr<layer_base> layer);
+	void pop_layer();
+	
 private:
 	virtual void on_attach(application* app) override;
 	virtual void on_detach(application* app) override;
 	virtual void on_update(application* app) override;
+	void push_layer(application* app, unique_ptr<layer_base> layer);
+	void pop_layer(application* app);
 
 private:
 	vector<unique_ptr<layer_base>> m_layers;

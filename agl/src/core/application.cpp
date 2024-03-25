@@ -13,11 +13,11 @@ application::~application()
 	close();
 }
 
-application_resource::application_resource(type_id_t id)
+resource_base::resource_base(type_id_t id)
 	: m_id{ id }
 {
 }
-type_id_t application_resource::type() const
+type_id_t resource_base::type() const
 {
 	return m_id;
 }
@@ -28,13 +28,14 @@ void application::close()
 		auto& log = get_resource<logger>();
 		log.info("Closing...");
 	}
+	
+	std::lock_guard<std::mutex> lock{ *m_mutex };
 
 	while (!m_resources.empty())
 	{
 		auto found = m_resources.find(m_resources_order[m_resources_order.size() - 1]);
 		found->second->on_detach(this);
 		
-		std::lock_guard<std::mutex> lock{ *m_mutex };
 		m_resources.erase(found);
 		m_resources_order.pop_back();
 	}
@@ -47,38 +48,66 @@ bool application::good() const
 {
 	return m_good;
 }
+void application::add_resource(unique_ptr<resource_base> resource)
+{
+	auto it = m_resources.end();
+	{
+		std::lock_guard<std::mutex> lock{ *m_mutex };
+	
+		m_resources_order.push_back(resource->type());
+		it = m_resources.emplace({ resource->type(), std::move(resource) });
+	}
+	it->second->on_attach(this);
+}
+bool application::has_resource(type_id_t type)
+{
+	std::lock_guard<std::mutex> lock{ *m_mutex };
+
+	auto found = m_resources.find(type);
+	return found != m_resources.end();
+}
+void application::remove_resource(type_id_t type)
+{
+	std::lock_guard<std::mutex> lock{ *m_mutex };
+
+	auto found = m_resources.find(type);
+	
+	AGL_ASSERT(found!= m_resources.end(), "Index out of bounds");
+
+	found->second->on_detach(this);
+	m_resources.erase(found);
+}
+resource_base* application::get_resource(type_id_t type)
+{
+	std::lock_guard<std::mutex> lock{ *m_mutex };
+
+	return m_resources.at(type).get();
+}
 void application::init()
 {
 	m_mutex = make_unique<std::mutex>();
 	
 	{ // threads
-		auto threads = agl::threads{};
-		add_resource(threads);
+		add_resource(make_unique<resource_base>(threads{}));
 	}
 	{ // LOGGER
-		auto log = logger{};
-		add_resource(log);
+		add_resource(make_unique<resource_base>(logger{}));
 		get_resource<logger>().info("Core: Initializing");
 		get_resource<logger>().info("Main thread: {}", std::this_thread::get_id());
 	}
 	{ // MEMORY POOL
-		auto pool = mem::pool{};
-		add_resource(pool);
+		add_resource(make_unique<resource_base>(mem::pool{}));
 	}
 	{ // GLFW Events
-		auto events = agl::events{};
-		add_resource(events);
+		add_resource(make_unique<resource_base>(events{}));
 	}
 	{ // ECS
 		auto& pool = get_resource<mem::pool>();
-		add_resource(ecs::organizer{ pool.make_allocator<ecs::organizer>() });
-		auto& organizer = get_resource<ecs::organizer>();
-		// OpenGL renderer
-		auto renderer = mem::make_unique<ecs::system_base>(pool.make_allocator<opengl::renderer>(), opengl::renderer{});
-		organizer.add_system(this, std::move(renderer));
+		auto organizer = make_unique<resource_base>(ecs::organizer{ pool.make_allocator<ecs::organizer>() });
+		add_resource(std::move(organizer));
 	}
 	{ // Layers
-		add_resource(agl::layers{});
+		add_resource(make_unique<resource_base>(agl::layers{}));
 	}
 
 	m_good = true;
