@@ -9,8 +9,8 @@ endif()
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAGL_DEBUG")
 set(BUILD_SHARED_LIBS OFF)
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAGL_DEBUG")
 
 option(AGL_BUILD_TESTS OFF) # if AGL_BUILD_TESTS and AGL_BUILD_EDITOR are both ON, the error will occur
 option(AGL_BUILD_EDITOR OFF) # if AGL_BUILD_TESTS and AGL_BUILD_EDITOR are both ON, the error will occur
@@ -83,8 +83,16 @@ file (
 	"agl/include/*.inl"
 )
 
+file (
+	GLOB_RECURSE
+	AGL_LIB_DEBUG
+	CONFIGUER_DEPENDS
+	"debug/*.natvis"
+)
+
 add_library(
 	AGL_LIB 
+	${AGL_LIB_DEBUG}
 	${AGL_LIB_SOURCES}
 	${AGL_LIB_HEADERS}
 )

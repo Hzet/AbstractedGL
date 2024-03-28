@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+	<Type Name="agl::application">
+		<DisplayString>{{ is_open={m_properties.is_open} }}</DisplayString>
+		<Expand>
+			<Item Name="properties" ExcludeView="simple">m_properties</Item>
+			<Item Name="resources" ExcludeView="simple">m_resources</Item>
+		</Expand>
+	</Type>
+	<Type Name="agl::dictionary&lt;*&gt;">
+		<DisplayString>{{ data={m_data} }}</DisplayString>
+		<Expand>
+			<Item Name="comp" ExcludeView="simple">m_comp</Item>
+			<Item Name="data" ExcludeView="simple">m_data</Item>
+		</Expand>
+	</Type>
+	<Type Name="agl::vector&lt;*&gt;">
+		<DisplayString>{{ size={m_size} }}</DisplayString>
+		<Expand>
+			<Item Name="size" ExcludeView="simple">m_size</Item>
+			<Item Name="capacity" ExcludeView="simple">m_capacity</Item>
+			<ArrayItems>
+				<Size>m_size</Size>
+				<ValuePointer>m_memory</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	<Type Name="agl::vector_iterator&lt;*&gt;">
+		<AlternativeType Name="agl::vector_reverse_iterator&lt;*&gt;"/>
+		<DisplayString>{{ index={m_ptr - m_begin} }}</DisplayString>
+		<Expand>
+			<Item Name="value" ExcludeView="simple">m_ptr</Item>
+		</Expand>
+	</Type>
+	<Type Name="agl::deque&lt;*&gt;">
+		<DisplayString>{{ size={m_size} }}</DisplayString>
+		<Expand>
+			<Item Name="size" ExcludeView="simple">m_size</Item>
+			<Item Name="block_size" ExcludeView="simple">m_size</Item>
+			<ArrayItems>
+				<Size>m_indexes.m_size</Size>
+				<ValuePointer>m_indexes.m_memory</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+	<Type Name="agl::unique_ptr&lt;*&gt;">
+		<DisplayString>{{ data={m_data} }}</DisplayString>
+		<Expand>
+			<Item Name="data" ExcludeView="simple">m_data</Item>
+		</Expand>
+	</Type>
+	<Type Name="agl::type_id_t">
+		<DisplayString>{{ name={m_name} }}</DisplayString>
+	</Type>
+</AutoVisualizer>
