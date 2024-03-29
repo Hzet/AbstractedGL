@@ -17,6 +17,7 @@ private:
 
 private:
 	window* m_window;
+	glm::vec4 m_color;
 };
 }
 }

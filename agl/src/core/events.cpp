@@ -72,7 +72,7 @@ void events::on_attach(application* app)
 	glfw::g_logger = &logger;
 	m_mutex = make_unique<std::mutex>();
 	
-	logger.info("GLFW: Initializing");
+	logger.debug("GLFW: Initializing");
 
 	if (!glfwInit())
 	{
@@ -85,7 +85,7 @@ void events::on_attach(application* app)
 		logger.error("GLFW: {}", str);
 		throw std::exception{ logger::combine_message("Failed to initialize GLFW: {}", str).c_str() };
 	}
-	logger.info("GLFW: OK");
+	logger.debug("GLFW: OK");
 }
 void events::set_window_callbacks(window* window)
 {
@@ -114,7 +114,7 @@ void events::on_detach(application* app)
 	glfw::g_logger = nullptr;
 
 	auto& logger = app->get_resource<agl::logger>();
-	logger.info("GLFW: OFF");
+	logger.debug("GLFW: OFF");
 }
 void events::on_update(application* app)
 {

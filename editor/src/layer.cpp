@@ -29,12 +29,16 @@ void layer::on_detach(application* app)
 }
 void layer::on_update(application* app)
 {
-	auto color = glm::vec4{};
-	color.x = agl::simple_rand(0.f, 1.f);
-	color.y = agl::simple_rand(0.f, 1.f);
-	color.z = agl::simple_rand(0.f, 1.f);
-	color.w = agl::simple_rand(0.f, 1.f);
-	m_window->set_clear_color(color);
+	auto mod = glm::mod(-1.4f, 1.f);
+	auto const ch = simple_rand(0, 2);
+	switch (ch)
+	{
+	case 0: m_color.x = glm::mod(m_color.x + 0.0021f, 1.f); break;
+	case 1: m_color.y = glm::mod(m_color.y + 0.0011f, 1.f); break;
+	case 2: m_color.z = glm::mod(m_color.z + 0.0031f, 1.f); break;
+	}
+
+	m_window->set_clear_color(m_color);
 }
 }
 }

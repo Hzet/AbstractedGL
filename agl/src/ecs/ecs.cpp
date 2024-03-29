@@ -121,7 +121,7 @@ std::uint64_t organizer::get_component_count(type_id_t type_id) const
 void organizer::on_attach(application* app) 
 {
 	auto& log = app->get_resource<agl::logger>();
-	log.info("ECS: OK");
+	log.debug("ECS: OK");
 }
 void organizer::on_detach(application* app) 
 {
@@ -135,7 +135,7 @@ void organizer::on_detach(application* app)
 	m_entities.clear();
 	m_components.clear();
 
-	log.info("ECS: OFF");
+	log.debug("ECS: OFF");
 }
 void organizer::on_update(application* app)
 {

@@ -403,14 +403,7 @@ public:
 	template <typename... TArgs>
 	iterator emplace_front(TArgs&&... args)
 	{
-		if (empty())
-			return emplace_back(std::forward<TArgs>(args)...);
-
-		resize(size() + 1);
-		move_elements_right(begin() + 1, begin());
-		m_allocator.destruct(m_memory);
-		m_allocator.construct(m_memory, std::forward<TArgs>(args)...);
-		return begin();
+		return emplace(cbegin(), std::forward<TArgs>(args)...);
 	}
 	iterator erase(const_iterator pos)
 	{
@@ -462,29 +455,15 @@ public:
 	}
 	void push_front(value_type&& value)
 	{
-		if (empty())
-			return push_back(std::move(value));
-
-		resize(size() + 1);
-		move_elements_right(begin() + 1, begin());
-		make_move(m_memory, std::move(value));
+		insert(cbegin(), std::move(value));
 	}
 	void push_front(const_reference value)
 	{
-		if (empty())
-			return push_back(value);
-
-		resize(size() + 1);
-		move_elements_right(begin() + 1, begin());
-		make_copy(m_memory, value);
+		insert(cbegin(), value);
 	}
 	void pop_back()
 	{
-		AGL_ASSERT(!empty(), "erase on empty vector");
-
-		m_allocator.destruct(m_memory + size() - 1);
-		m_allocator.construct(m_memory + size() - 1);
-		--m_size;
+		erase(cend() - 1);
 	}
 	void pop_front()
 	{

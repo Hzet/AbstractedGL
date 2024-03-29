@@ -109,9 +109,9 @@ private:
 	agl::vector<space>::const_iterator find_occupied_space(std::byte* ptr) const;
 
 
-	virtual void pool::on_attach(application* app) override;
-	virtual void pool::on_detach(application* app) override;
-	virtual void pool::on_update(application* app) override;
+	virtual void on_attach(application* app) override;
+	virtual void on_detach(application* app) override;
+	virtual void on_update(application* app) override;
 
 private:
 	std::byte* m_memory;

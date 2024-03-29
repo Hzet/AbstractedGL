@@ -1,5 +1,6 @@
 #include "agl/memory/pool.hpp"
 #include "agl/core/logger.hpp"
+#include "agl/util/util.hpp"
 
 namespace agl
 {
@@ -170,13 +171,13 @@ void pool::on_attach(application* app)
 {
 	auto& log = app->get_resource<agl::logger>();
 	create(10 * 1024 * 1024);
-	log.debug("Pool {} bytes at {}: OK", size(), m_memory);
+	log.debug("Pool at {} | {}: OK", m_memory, util::ns::memory_size(size()));
 }
 void pool::on_detach(application* app)
 {
 	auto& log = app->get_resource<agl::logger>();
+	log.debug("Pool at {} | {}: OFF", m_memory, util::ns::memory_size(size()));
 	destroy();
-	log.debug("Pool {} bytes: OFF", size());
 }
 void pool::on_update(application* app)
 {

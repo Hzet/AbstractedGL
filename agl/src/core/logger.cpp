@@ -62,6 +62,8 @@ void logger::on_attach(application* app)
 			AGL_ASSERT(m_mutex != nullptr, "invalid mutex");
 			AGL_ASSERT(m_cond_var != nullptr, "invalid cond_var");
 
+			this->debug("Logger: using thread {}", std::this_thread::get_id());
+
 			while (true)
 			{
 				std::unique_lock<std::mutex> lock{ *m_mutex };
@@ -69,25 +71,34 @@ void logger::on_attach(application* app)
 					{
 						return m_messages_count > 0 || m_thread->should_close();
 					};
+				auto log_messages = [&]
+					{
+						auto const messages = m_messages;
+						m_messages.clear();
+						m_messages_count = 0;
+						lock.unlock();
+
+						for (auto& msg : messages)
+						{
+							auto& stream = *m_loggers[msg.destination].m_stream;
+							stream << msg.message << "\n";
+						}
+					};
+
 				m_cond_var->wait(lock, stop_waiting);
 				if (m_messages_count > 0)
 				{
-					auto const messages = m_messages;
-					m_messages.clear();
-					m_messages_count = 0;
-					lock.unlock();
-
-					for (auto& msg : messages)
-					{
-						auto& stream = *m_loggers[msg.destination].m_stream;
-						stream << msg.message << "\n";
-					}
+					log_messages();
 				}
 				else if (m_thread->should_close())
 				{
+					this->debug("Logger: Leaving thread {}", std::this_thread::get_id());
+					if (m_messages_count > 0)
+						log_messages();
 					break;
 				}
 			}
+
 		};
 
 	// init loggers
