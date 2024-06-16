@@ -12,9 +12,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(BUILD_SHARED_LIBS OFF)
 set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -DAGL_DEBUG")
 
-option(AGL_BUILD_TESTS OFF) # if AGL_BUILD_TESTS and AGL_BUILD_EDITOR are both ON, the error will occur
-option(AGL_BUILD_EDITOR OFF) # if AGL_BUILD_TESTS and AGL_BUILD_EDITOR are both ON, the error will occur
+option(AGL_BUILD_TESTS OFF) 
+option(AGL_BUILD_EDITOR OFF)
 #set(AGL_BUILD_TESTS ON CACHE BOOL "" FORCE) # for dev reasons TODO: hash out on realease build
+
 
 # AGL
 # ---
@@ -66,35 +67,20 @@ endif()
 # AGL_LIB
 # -------
 file (
-	GLOB_RECURSE 
-	AGL_LIB_SOURCES #
-	CONFIGURE_DEPENDS 
+	GLOB_RECURSE AGL_LIB_SOURCES
+	LIST_DIRECTORIES FALSE
 	"agl/external/*.c"
-	"agl/src/*.cpp"
-)
-
-file (
-	GLOB_RECURSE 
-	AGL_LIB_HEADERS #
-	CONFIGURE_DEPENDS 
 	"agl/external/*.h"
 	"agl/external/*.hpp"
 	"agl/include/*.hpp" 
 	"agl/include/*.inl"
-)
-
-file (
-	GLOB_RECURSE
-	AGL_LIB_DEBUG
-	CONFIGUER_DEPENDS
+	"agl/src/*.cpp"
 	"debug/*.natvis"
 )
 
 add_library(
-	AGL_LIB 
-	${AGL_LIB_DEBUG}
+	AGL_LIB
 	${AGL_LIB_SOURCES}
-	${AGL_LIB_HEADERS}
 )
 
 add_dependencies(
@@ -120,37 +106,12 @@ target_link_libraries(
 	PUBLIC OpenGL::GL
 )	
 
-# AGL MAIN
-# --------
-file (
-	GLOB_RECURSE 
-	AGL_MAIN_SOURCES #
-	CONFIGURE_DEPENDS 
-	"main/src/*.cpp"
-)
-
-file (
-	GLOB_RECURSE 
-	AGL_MAIN_HEADERS #
-	CONFIGURE_DEPENDS 
-	"main/include/*.hpp" 
-	"main/include/*.inl"
-)
-
-add_executable(
-	AGL_MAIN
-	${AGL_MAIN_HEADERS}
-	${AGL_MAIN_SOURCES}
-)
-
-target_link_libraries(
-	AGL_MAIN
-	PRIVATE AGL_LIB
-)
-
-if(AGL_BUILD_TESTS AND AGL_BUILD_EDITOR)
-	message(FATAL_ERROR "AGL_BUILD_TESTS and AGL_BUILD_EDITOR can not be both set to 'ON'")
-endif()
+foreach(_source IN ITEMS ${AGL_LIB_SOURCES})
+    get_filename_component(_source_path "${_source}" PATH)
+    file(RELATIVE_PATH _source_path_rel "${CMAKE_CURRENT_SOURCE_DIR}/" "${_source_path}")
+    string(REPLACE "/" "\\" _group_path "${_source_path_rel}")
+    source_group("${_group_path}" FILES "${_source}")
+endforeach()
 
 # TESTS
 # -----
@@ -166,12 +127,14 @@ if(AGL_BUILD_TESTS)
 	FetchContent_MakeAvailable(googletest)
 
 	file (
-		GLOB_RECURSE 
-		AGL_LIB_TEST_SOURCES #
-		CONFIGURE_DEPENDS 
+		GLOB_RECURSE AGL_LIB_TEST_SOURCES
+		LIST_DIRECTORIES FALSE 
 		"agl/test/*.hpp" 
 		"agl/test/*.inl"
 		"agl/test/*.cpp"
+		"main/include/*.inl"
+		"main/include/*.hpp" 
+		"main/src/*.cpp"
 	)
 
 	add_executable(
@@ -190,26 +153,27 @@ if(AGL_BUILD_TESTS)
 		COMMAND $<TARGET_FILE:AGL_LIB_TEST>
 	)
 
-endif()
+	foreach(_source IN ITEMS ${AGL_LIB_TEST_SOURCES})
+		get_filename_component(_source_path "${_source}" PATH)
+		file(RELATIVE_PATH _source_path_rel "${CMAKE_CURRENT_SOURCE_DIR}/" "${_source_path}")
+		string(REPLACE "/" "\\" _group_path "${_source_path_rel}")
+		source_group("${_group_path}" FILES "${_source}")
+	endforeach()
+endif() # TESTS
 
+# EDITOR
+# ------
 if(AGL_BUILD_EDITOR)
 	file (
-		GLOB_RECURSE 
-		AGL_EDITOR_HEADERS
-		CONFIGURE_DEPENDS 
-		"editor/include/*.hpp" 
+		GLOB_RECURSE AGL_EDITOR_SOURCES
+		LIST_DIRECTORIES FALSE 
 		"editor/include/*.inl"
-	)
-	file (
-		GLOB_RECURSE 
-		AGL_EDITOR_SOURCES
-		CONFIGURE_DEPENDS 
+		"editor/include/*.hpp" 
 		"editor/src/*.cpp"
 	)
 
 	add_library(
 		AGL_EDITOR
-		${AGL_EDITOR_HEADERS}
 		${AGL_EDITOR_SOURCES}
 	)
 
@@ -225,11 +189,44 @@ if(AGL_BUILD_EDITOR)
 
 	target_link_libraries(
 		AGL_EDITOR
-		PRIVATE AGL_LIB
+		PUBLIC AGL_LIB
+	)
+
+	foreach(_source IN ITEMS ${AGL_EDITOR_SOURCES})
+		get_filename_component(_source_path "${_source}" PATH)
+		file(RELATIVE_PATH _source_path_rel "${CMAKE_CURRENT_SOURCE_DIR}/" "${_source_path}")
+		string(REPLACE "/" "\\" _group_path "${_source_path_rel}")
+		source_group("${_group_path}" FILES "${_source}")
+	endforeach()
+
+	# EDITOR MAIN
+	file (
+		GLOB_RECURSE AGL_EDITOR_MAIN_SOURCES
+		LIST_DIRECTORIES FALSE 
+		"main/include/*.inl"
+		"main/include/*.hpp" 
+		"main/src/*.cpp"
+	)
+
+	add_executable(
+		AGL_EDITOR_MAIN
+		${AGL_EDITOR_MAIN_SOURCES}
 	)
 
 	target_link_libraries(
-		AGL_MAIN
+		AGL_EDITOR_MAIN
 		PRIVATE AGL_EDITOR
 	)
-endif()
+
+	add_dependencies(
+		AGL_EDITOR_MAIN
+		AGL_EDITOR
+	)
+	
+	foreach(_source IN ITEMS ${AGL_EDITOR_MAIN_SOURCES})
+		get_filename_component(_source_path "${_source}" PATH)
+		file(RELATIVE_PATH _source_path_rel "${CMAKE_CURRENT_SOURCE_DIR}/" "${_source_path}")
+		string(REPLACE "/" "\\" _group_path "${_source_path_rel}")
+		source_group("${_group_path}" FILES "${_source}")
+	endforeach()
+endif() # AGL_BUILD_EDITOR
