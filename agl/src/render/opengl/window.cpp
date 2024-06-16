@@ -1,6 +1,7 @@
 #include "agl/render/opengl/call.hpp"
 #include "agl/render/opengl/window.hpp"
 #include "agl/core/events.hpp"
+#include "agl/core/logger.hpp"
 
 namespace agl
 {
@@ -10,7 +11,10 @@ static constexpr std::uint32_t get_opengl_feature_code(feature_type feature);
 
 void window::create(glm::uvec2 resolution, std::string const& title)
 {
-	this->agl::window::create(resolution, title);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	glfw::window::create(resolution, title);
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		throw std::exception{ "Failed to initialize OpenGL context!" };
@@ -19,8 +23,8 @@ void window::create(glm::uvec2 resolution, std::string const& title)
 	auto glsl_version = std::string{};
 	AGL_OPENGL_CALL(gl_version = reinterpret_cast<const char*>(glGetString(GL_VERSION)));
 	AGL_OPENGL_CALL(glsl_version = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
-	gl_version = "OpenGL: " + gl_version;
-	glsl_version = "GLSL: " + glsl_version;
+	gl_version = logger::combine_message("OpenGL: {}", gl_version);
+	gl_version = logger::combine_message("GLSL: {}", glsl_version);
 	set_version(gl_version, glsl_version);
 }
 void window::feature_disable(feature_type feature)
@@ -37,12 +41,6 @@ bool window::feature_status(feature_type feature)
 	AGL_OPENGL_CALL(status = glIsEnabled(get_opengl_feature_code(feature)));
 	return status;
 }
-void window::hint_api_version(std::uint64_t major, std::uint64_t minor)
-{
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, major);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, minor);
-}
-
 static constexpr std::uint32_t get_opengl_feature_code(feature_type feature)
 {
 	switch (feature)

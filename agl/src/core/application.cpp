@@ -99,7 +99,7 @@ void application::init()
 		add_resource(make_unique<resource_base>(mem::pool{}));
 	}
 	{ // GLFW Events
-		add_resource(make_unique<resource_base>(events{}));
+		add_resource(make_unique<resource_base>(glfw::api{}));
 	}
 	{ // ECS
 		auto& pool = get_resource<mem::pool>();

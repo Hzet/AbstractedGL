@@ -43,7 +43,6 @@ agl::window& renderer::create_window(glm::uvec2 const& resolution, std::string c
 {
 	get_organizer().push_component<opengl::window>(m_windows);
 	auto& window = m_windows.get_component<opengl::window>(m_windows.size<opengl::window>() - 1);
-	window.hint_api_version(4, 3);
 	window.create(resolution, title);
 
 #ifdef AGL_DEBUG

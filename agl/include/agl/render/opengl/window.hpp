@@ -14,7 +14,6 @@ public:
 	virtual void feature_disable(feature_type feature) override;
 	virtual void feature_enable(feature_type feature) override;
 	virtual bool feature_status(feature_type feature) override;
-	virtual void hint_api_version(std::uint64_t major, std::uint64_t minor) override;
 };
 }
 }

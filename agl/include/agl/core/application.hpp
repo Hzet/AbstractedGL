@@ -67,7 +67,6 @@ public:
 
 	properties const& get_properties() const;
 
-
 	std::string get_current_path() const;
 
 	template <typename T>
