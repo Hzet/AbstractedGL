@@ -37,7 +37,6 @@ void layer::on_update(application* app)
 	case 1: m_color.y = glm::mod(m_color.y + 0.0011f, 1.f); break;
 	case 2: m_color.z = glm::mod(m_color.z + 0.0031f, 1.f); break;
 	}
-
 	m_window->set_clear_color(m_color);
 }
 }
