@@ -1,5 +1,5 @@
 #pragma once
-#include "agl/util/async.hpp"
+#include <mutex>
 #include "agl/dictionary.hpp"
 #include "agl/util/typeid.hpp"
 #include "agl/unique-ptr.hpp"
@@ -50,7 +50,7 @@ public:
 
 public:
 	application() = default;
-	application(application&&) = default;
+	application(application&&) = delete;
 	application(application const&) = delete;
 	application& operator=(application&&) = delete;
 	application& operator=(application const&) = delete;
@@ -60,10 +60,10 @@ public:
 	bool has_resource(type_id_t type);
 	void remove_resource(type_id_t type);
 	template <typename T>
-	T& get_resource();
+	T* get_resource();
 	resource_base* get_resource(type_id_t type);
-
 	void close();
+	void destroy();
 
 	properties const& get_properties() const;
 
@@ -78,15 +78,18 @@ public:
 	template <typename T>
 	void remove_resource();
 
+	void use_opengl();
+
 private:
-	friend int ::main(int, char**);
+	friend int process_application(unique_ptr<application>&);
 
 private:
 	void run();
+	void deinit_opengl();
 
 private:
 	bool m_good;
-	unique_ptr<std::mutex> m_mutex;
+	std::mutex m_mutex;
 	properties m_properties;
 	dictionary<type_id_t, unique_ptr<resource_base>> m_resources;
 	vector<type_id_t> m_resources_order;
@@ -104,17 +107,15 @@ void application::remove_resource()
 }
 
 template <typename T>
-T& application::get_resource()
+T* application::get_resource()
 {
 	auto* ptr = get_resource(type_id<T>::get_id());
-
-	std::lock_guard<std::mutex> lock{ *m_mutex };
 
 	auto* cast = reinterpret_cast<T*>(ptr);
 
 	AGL_ASSERT(cast != nullptr, "invalid cast!");
 
-	return *cast;
+	return cast;
 }
 
 }

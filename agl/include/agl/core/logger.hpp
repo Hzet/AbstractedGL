@@ -1,10 +1,12 @@
 #pragma once
+#include <condition_variable>
 #include <iostream>
-#include <tuple>
+#include <mutex>
+#include <regex>
 #include <sstream>
+#include <tuple>
 #include "date/date.h"
 #include "agl/core/application.hpp"
-#include "agl/util/async.hpp"
 #include "agl/deque.hpp"
 
 namespace agl
@@ -36,10 +38,9 @@ class logger final
 {
 public:
 	template <typename... TArgs>
-	static std::string combine_message(std::string str, TArgs&&... args);
+	static std::string combine_message(std::string const& message, TArgs&&... args);
 	
 	logger();
-	logger(logger&& other);
 	logger(logger const&) = delete;
 	logger& operator=(logger const&) = delete;
 	~logger() = default;
@@ -83,6 +84,7 @@ private:
 	};
 
 private:
+	static std::string combine_message_impl(std::string const& message, vector<std::string> const& parsed);
 	static std::string get_date();
 	static const char* get_logger_name(instance_index index);
 	bool is_active() const;
@@ -105,11 +107,13 @@ private:
 private:
 	std::atomic<std::uint64_t> m_messages_count;
 	vector<message> m_messages;
-	condition_variable* m_cond_var;
+	std::condition_variable m_cond_var;
 	vector<instance> m_loggers;
-	thread* m_thread;
-	mutex* m_mutex;
-
+	std::thread m_thread;
+	std::mutex m_mutex;
+	bool m_should_close;
+	bool m_thread_finished;
+	bool m_thread_started;
 };
 
 template <typename... TArgs>
@@ -149,48 +153,22 @@ std::string logger::to_string(T&& v)
 template <typename... TArgs>
 void logger::log(instance_index index, std::string const& message, TArgs&&... args)
 {
-	AGL_ASSERT(m_mutex != nullptr, "operation on uninitialized object");
-	AGL_ASSERT(m_cond_var != nullptr, "operation on uninitialized object");
-	AGL_ASSERT(is_active(), "logger is inactive");
-
+//	AGL_ASSERT(is_active(), "logger is inactive");
 	auto const msg = get_date() + " " + produce_message(index, message, std::forward<TArgs>(args)...);
 	auto time = std::chrono::system_clock::now();
 	{
-		std::lock_guard<std::mutex> lock{ *m_mutex };
+		std::lock_guard<std::mutex> lock{ m_mutex };
 		m_messages.push_back({ index, msg });
 	}
 	++m_messages_count;
-	m_cond_var->notify_one();
+	m_cond_var.notify_one();
 }
 
 template <typename... TArgs>
-std::string logger::combine_message(std::string message, TArgs&&... args)
+std::string logger::combine_message(std::string const& message, TArgs&&... args)
 {
 	auto const parsed = parse_arguments(std::forward_as_tuple(std::forward<TArgs>(args)...), std::make_index_sequence<sizeof... (TArgs)>{});
-	auto found_l = std::uint64_t{};
-	auto arg_index = std::uint64_t{};
-	auto current_index = std::uint64_t{};
-
-	for (found_l = message.find_first_of("{"); found_l != std::string::npos; found_l = message.find_first_of("{", found_l + 1))
-	{
-		if (found_l > 0 && message[found_l - 1] == '\\')
-			continue;
-
-		auto found_r = message.find_first_of("}", found_l);
-		AGL_ASSERT(found_r != std::string::npos, "mismatched {} tokens");
-
-		auto const token_size = found_r - found_l + 1;
-		if (token_size > 2)
-			arg_index = std::stoi(message.substr(found_l + 1, found_r - found_l - 1));
-		else
-			arg_index = current_index++;
-
-		AGL_ASSERT(arg_index < parsed.size(), "too few arguments provided");
-		message.replace(message.cbegin() + found_l, message.cbegin() + found_r + 1, parsed[arg_index]);
-
-		found_l += parsed[arg_index].size() - token_size;
-	}
-	return message;
+	return combine_message_impl(message, parsed);
 }
 
 template <typename... TArgs>
