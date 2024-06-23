@@ -5,11 +5,10 @@ namespace agl
 {
 unique_ptr<application> create_application()
 {
-	auto app= make_unique<application>();
+	auto app= unique_ptr<application>::allocate();
 	app->init();
-	auto& layers = app->get_resource<agl::layers>();
-	layers.push_layer(make_unique<layer_base>(editor::layer{}));
-
+	auto* layers = app->get_resource<agl::layers>();
+	layers->push_layer(unique_ptr<layer_base>::polymorphic<editor::layer>());
 	return app;
 }
 }

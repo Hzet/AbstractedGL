@@ -169,14 +169,14 @@ bool pool::occupied_space_comparator(std::byte* ptr, pool::space const& space)
 }
 void pool::on_attach(application* app)
 {
-	auto& log = app->get_resource<agl::logger>();
+	auto* logger = app->get_resource<agl::logger>();
 	create(10 * 1024 * 1024);
-	log.debug("Pool at {} | {}: OK", m_memory, util::ns::memory_size(size()));
+	logger->debug("Pool at {} | {}: OK", m_memory, util::ns::memory_size(size()));
 }
 void pool::on_detach(application* app)
 {
-	auto& log = app->get_resource<agl::logger>();
-	log.debug("Pool at {} | {}: OFF", m_memory, util::ns::memory_size(size()));
+	auto* logger = app->get_resource<agl::logger>();
+	logger->debug("Pool at {} | {}: OFF", m_memory, util::ns::memory_size(size()));
 	destroy();
 }
 void pool::on_update(application* app)

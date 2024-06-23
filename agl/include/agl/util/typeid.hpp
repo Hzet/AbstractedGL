@@ -84,7 +84,7 @@ template <typename T>
 class type_id
 {
 public:
-	static constexpr type_id_t get_id()
+	static constexpr const type_id_t get_id()
 	{
 		return type_id_t{ (std::uint64_t)&m_id, type_id<T>::get_name() };
 	}
@@ -121,11 +121,11 @@ class type_id
 public:
 	using type = std::remove_reference_t<std::remove_const_t<T>>;
 
-	static constexpr type_id_t get_id()
+	static constexpr const type_id_t get_id()
 	{
 		return impl::type_id<type>::get_id();
 	}
-	static constexpr std::string_view get_name()
+	static constexpr const std::string_view get_name()
 	{
 		return impl::type_id<type>::get_name();
 	}

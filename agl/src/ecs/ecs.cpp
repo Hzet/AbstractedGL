@@ -56,14 +56,6 @@ system_base& organizer::get_system(type_id_t id)
 
 	return *get_system_impl(id);
 }
-void organizer::add_system(application* app, mem::unique_ptr<system_base> sys)
-{
-	AGL_ASSERT(!has_system(sys->id()), "System already present");
-
-	m_systems.emplace_back(std::move(sys));
-	m_systems.back()->set_organizer(this);
-	m_systems.back()->on_attach(app);
-}
 entity organizer::make_entity()
 {
 	auto data = impl::entity_data{ get_allocator(), m_entities.size() };
@@ -120,12 +112,12 @@ std::uint64_t organizer::get_component_count(type_id_t type_id) const
 }
 void organizer::on_attach(application* app) 
 {
-	auto& log = app->get_resource<agl::logger>();
-	log.debug("ECS: OK");
+	auto* logger = app->get_resource<agl::logger>();
+	logger->debug("ECS: OK");
 }
 void organizer::on_detach(application* app) 
 {
-	auto& log = app->get_resource<agl::logger>();
+	auto* logger = app->get_resource<agl::logger>();
 
 	while (!m_systems.empty())
 	{
@@ -135,7 +127,7 @@ void organizer::on_detach(application* app)
 	m_entities.clear();
 	m_components.clear();
 
-	log.debug("ECS: OFF");
+	logger->debug("ECS: OFF");
 }
 void organizer::on_update(application* app)
 {

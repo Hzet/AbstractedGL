@@ -274,7 +274,7 @@ public:
 	}
 	const_pointer data() const
 	{
-		return m_memory
+		return m_memory;
 	}
 	bool empty() const
 	{

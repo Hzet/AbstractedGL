@@ -1,6 +1,6 @@
 #pragma once
 #include "agl/core/layer.hpp"
-#include "agl/render/window.hpp"
+#include "agl/core/window.hpp"
 
 namespace agl
 {
@@ -11,13 +11,12 @@ class layer
 {
 public:
 private:
-	virtual void on_attach(application* app) override;
-	virtual void on_detach(application* app) override;
-	virtual void on_update(application* app) override;
+	void on_attach(application* app) override;
+	void on_detach(application* app) override;
+	void on_update(application* app) override;
 
 private:
-	window* m_window;
-	glm::vec4 m_color;
+	unique_ptr<window> m_window;
 };
 }
 }

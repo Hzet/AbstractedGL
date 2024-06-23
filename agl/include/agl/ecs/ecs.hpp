@@ -29,9 +29,10 @@ public:
 	organizer& operator=(organizer&& other);
 	~organizer() = default;
 
-	void add_system(application* app, mem::unique_ptr<system_base> sys);
+	template <typename T>
+	void add_system(application* app);
 	template <typename T, typename = is_system_t<T>>
-	T& get_system();
+	T* get_system();
 	system_base& get_system(type_id_t id);
 	template <typename T, typename = is_system_t<T>>
 	bool has_system() const;
@@ -74,15 +75,25 @@ private:
 	mem::deque<impl::entity_data> m_entities;
 	mem::vector<mem::unique_ptr<system_base>> m_systems;
 };
+
+template <typename T>
+void organizer::add_system(application* app)
+{
+	AGL_ASSERT(!has_system(type_id<T>::get_id()), "System already present");
+
+	auto sys = mem::unique_ptr<system_base>::polymorphic_a(get_allocator().rebind_copy<T>(), this);
+	m_systems.emplace_back(std::move(sys));
+	m_systems.back()->on_attach(app);
+}
 template <typename T, typename>
-T& organizer::get_system()
+T* organizer::get_system()
 {
 	auto* ptr = get_system_impl(type_id<T>::get_id());
 	auto* result = reinterpret_cast<T*>(ptr);
 
 	AGL_ASSERT(result != nullptr, "invalid system cast");
 
-	return *result;
+	return result;
 }
 
 template <typename T>

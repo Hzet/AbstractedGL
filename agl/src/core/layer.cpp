@@ -58,8 +58,8 @@ void layers::push_layer(application* app, unique_ptr<layer_base> layer)
 	m_layers.front()->on_attach(app);
 
 #ifdef AGL_DEBUG
-	auto& logger = app->get_resource<agl::logger>();
-	logger.debug("Layers: push {}", m_layers.front()->get_name());
+	auto* logger = app->get_resource<agl::logger>();
+	logger->debug("Layers: push {}", m_layers.front()->get_name());
 #endif
 }
 void layers::pop_layer(application* app)
@@ -67,23 +67,23 @@ void layers::pop_layer(application* app)
 	m_pop_layer = false;
 	m_layers.front()->on_detach(app);
 #ifdef AGL_DEBUG
-	auto& logger = app->get_resource<agl::logger>();
-	logger.debug("Layers: pop {}", m_layers.front()->get_name());
+	auto* logger = app->get_resource<agl::logger>();
+	logger->debug("Layers: pop {}", m_layers.front()->get_name());
 #endif
 	m_layers.pop_front();
 }
 void layers::on_attach(application* app)
 {
-	auto& logger = app->get_resource<agl::logger>();
-	logger.debug("Layers: ON");
+	auto* logger = app->get_resource<agl::logger>();
+	logger->debug("Layers: ON");
 }
 void layers::on_detach(application* app)
 {
 	while (!m_layers.empty())
 		pop_layer(app);
 
-	auto& logger = app->get_resource<agl::logger>();
-	logger.debug("Layers: OFF");
+	auto* logger = app->get_resource<agl::logger>();
+	logger->debug("Layers: OFF");
 }
 void layers::on_update(application* app)
 {

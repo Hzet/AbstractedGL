@@ -46,7 +46,7 @@ class system_base
 public:
 	system_base();
 	// TODO: get rid of name parameter and get the name of the class from type_id_t
-	system_base(type_id_t id, std::string const& name, ecs::stage stage);
+	system_base(organizer* organizer, type_id_t id, std::string const& name, ecs::stage stage);
 	system_base(system_base&& other);
 	system_base& operator=(system_base&& other);
 	virtual ~system_base() = default;
@@ -61,7 +61,7 @@ public:
 	void stage(ecs::stage s);
 	bool read_signal(std::uint64_t id);
 	void set_signal(std::uint64_t id, bool value);
-	organizer& get_organizer();
+	organizer* get_organizer();
 
 protected:
 	void create_signal(std::uint64_t id, bool start_value);
@@ -86,7 +86,7 @@ class system
 {
 public:
 	system()
-		: system_base()
+		: system_base{}
 	{
 	}
 	system(system&& other)
@@ -98,9 +98,8 @@ public:
 		this->system_base::operator=(std::move(other));
 		return *this;
 	}
-	system(ecs::stage stage)
-		: system_base{ type_id<T>::get_id(), std::string{ type_id<T>::get_name() }, stage
-}
+	system(organizer* organizer, ecs::stage stage)
+		: system_base{ organizer, type_id<T>::get_id(), std::string{ type_id<T>::get_name() }, stage }
 	{
 	}
 	virtual ~system() = default;

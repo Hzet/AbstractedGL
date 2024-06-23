@@ -9,11 +9,11 @@ system_base::system_base()
 	: m_organizer{ nullptr }
 {
 }
-system_base::system_base(type_id_t id, std::string const& name, ecs::stage stage)
+system_base::system_base(organizer* organizer, type_id_t id, std::string const& name, ecs::stage stage)
 	: m_id{ id }
 	, m_name{ name }
 	, m_stage{ stage }
-	, m_organizer{ nullptr }
+	, m_organizer{ organizer }
 {
 }
 system_base::system_base(system_base&& other)
@@ -66,11 +66,9 @@ void system_base::create_signal(std::uint64_t id, bool start_value)
 {
 	m_signals.emplace(id, start_value);
 }
-organizer& system_base::get_organizer()
+organizer* system_base::get_organizer()
 {
-	AGL_ASSERT(m_organizer != nullptr, "invalid organizer pointer");
-
-	return *m_organizer;
+	return m_organizer;
 }
 void system_base::set_organizer(organizer* org)
 {
