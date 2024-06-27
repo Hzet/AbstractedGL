@@ -29,7 +29,7 @@ int process_application(unique_ptr<application>& app)
 		return EXIT_FAILURE;
 	}
 
-	if (!app->good())
+	if (!app->is_good())
 	{
 		std::cerr << "Unknown application error\n";
 		return EXIT_FAILURE;

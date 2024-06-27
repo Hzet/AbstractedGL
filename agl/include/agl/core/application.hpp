@@ -46,60 +46,44 @@ public:
 	struct properties
 	{
 		bool is_open;
+		bool is_good;
 	};
 
 public:
-	application() = default;
-	application(application&&) = delete;
-	application(application const&) = delete;
-	application& operator=(application&&) = delete;
-	application& operator=(application const&) = delete;
-	~application();
-	
-	void add_resource(unique_ptr<resource_base> resource);
-	bool has_resource(type_id_t type);
-	void remove_resource(type_id_t type);
+	                  application() = default;
+	                  application(application&&) = delete;
+	                  application(application const&) = delete;
+	                  application& operator=(application&&) = delete;
+	                  application& operator=(application const&) = delete;
+	                  ~application();
+	void              add_resource(unique_ptr<resource_base> resource);
 	template <typename T>
-	T* get_resource();
-	resource_base* get_resource(type_id_t type);
-	void close();
-	void destroy();
-
+	T*                get_resource();
+	resource_base*    get_resource(type_id_t type);
+	void              close();
+	void              destroy();
+	bool              is_good() const;
+	bool              is_open() const;
 	properties const& get_properties() const;
-
-	std::string get_current_path() const;
-
+	std::string       get_current_path() const;
+	bool              good() const;
+	void              init();
 	template <typename T>
-	bool has_resource();
-
-	void init();
-	bool good() const;
-
-	template <typename T>
-	void remove_resource();
-
-	void use_opengl();
+	void              remove_resource();
+	void              remove_resource(type_id_t type);
 
 private:
 	friend int process_application(unique_ptr<application>&);
 
 private:
-	void run();
-	void deinit_opengl();
+	void              run();
 
 private:
-	bool m_good;
-	std::mutex m_mutex;
-	properties m_properties;
-	dictionary<type_id_t, unique_ptr<resource_base>> m_resources;
-	vector<type_id_t> m_resources_order;
+	std::mutex                        m_mutex;
+	properties                        m_properties;
+	vector<unique_ptr<resource_base>> m_resources;
 };
 
-template <typename T>
-bool application::has_resource()
-{
-	return has_resource(type_id<T>::get_id());
-}
 template <typename T>
 void application::remove_resource()
 {

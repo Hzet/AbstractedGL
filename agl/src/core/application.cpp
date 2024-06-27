@@ -36,67 +36,48 @@ void application::destroy()
 	close();
 	while (!m_resources.empty())
 	{
-		m_mutex.lock();
-		auto found = m_resources.find(m_resources_order[m_resources_order.size() - 1]);
-		m_mutex.unlock();
-
-		found->second->on_detach(this);
+		m_resources.back()->on_detach(this);
 		
 		m_mutex.lock();
-		m_resources.erase(found);
-		m_resources_order.pop_back();
+		m_resources.pop_back();
 		m_mutex.unlock();
 	}
+}
+bool application::is_good() const
+{
+	return m_properties.is_good;
+}
+bool application::is_open() const
+{
+	return m_properties.is_open;
 }
 application::properties const& application::get_properties() const
 {
 	return m_properties;
 }
-bool application::good() const
-{
-	return m_good;
-}
-void application::use_opengl()
-{
-	deinit_opengl();
-}
-void application::deinit_opengl()
-{
-
-}
 void application::add_resource(unique_ptr<resource_base> resource)
 {
-	auto it = m_resources.end();
-	{
-		std::lock_guard<std::mutex> lock{ m_mutex };
-		m_resources_order.push_back(resource->type());
-		it = m_resources.emplace({ resource->type(), std::move(resource) });
-	}
-	it->second->on_attach(this);
-}
-bool application::has_resource(type_id_t type)
-{
-	std::lock_guard<std::mutex> lock{ m_mutex };
-	auto found = m_resources.find(type);
-	return found != m_resources.end();
+	 m_mutex.lock();
+     m_resources.emplace_back(std::move(resource));
+	 m_mutex.unlock();
+
+     m_resources.back()->on_attach(this);
 }
 void application::remove_resource(type_id_t type)
 {
-	m_mutex.lock();
-	auto found = m_resources.find(type);
-	AGL_ASSERT(found!= m_resources.end(), "Index out of bounds");
-	m_mutex.unlock();
-
-	found->second->on_detach(this);
+	m_resources.back()->on_detach(this);
 
 	m_mutex.lock();
-	m_resources.erase(found);
+	m_resources.pop_back();
 	m_mutex.unlock();
 }
 resource_base* application::get_resource(type_id_t type)
 {
 	std::lock_guard<std::mutex> lock{ m_mutex };
-	return m_resources.at(type).get();
+	for (auto& ptr : m_resources)
+		if (ptr->type() == type)
+			return ptr.get();
+	return nullptr;
 }
 void application::init()
 {
@@ -120,7 +101,7 @@ void application::init()
 		add_resource(unique_ptr<resource_base>::polymorphic<agl::layers>());
 	}
 
-	m_good = true;
+	m_properties.is_good = true;
 	get_resource<logger>()->info("Core: OK");
 }
 std::string application::get_current_path() const
@@ -135,14 +116,14 @@ void application::run()
 	m_properties.is_open = true;
 
 	int i = 0;
-	while (m_properties.is_open)
+	while (is_open())
 	{
 		for (auto& r : m_resources)
 		{
-			if (!m_properties.is_open)
+			if (!is_open())
 				break;
 
-			r.second->on_update(this);
+			r->on_update(this);
 		}
 	}
 }
