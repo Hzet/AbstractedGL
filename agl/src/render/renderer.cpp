@@ -31,7 +31,7 @@ mem::vector<window*> const& renderer::get_windows() const
 {
 	return m_windows;
 }
-void renderer::remove_shader(shader const& shader)
+void renderer::remove_shader(shader& shader)
 {
 	auto found = find_shader(shader);
 	m_shaders.erase(found);
@@ -49,7 +49,7 @@ void renderer::on_detach(application* app)
 	for (auto* wnd : m_windows)
 		destroy_window(wnd);
 
-	for (auto const& sh : m_shaders)
+	for (auto& sh : m_shaders)
 		remove_shader(sh);
 }
 }

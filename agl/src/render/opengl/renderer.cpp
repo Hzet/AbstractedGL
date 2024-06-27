@@ -1,4 +1,4 @@
-#include "agl/render/opengl/util.hpp"
+#include "agl/render/opengl/util.hpp"	
 #include "agl/render/opengl/renderer.hpp"
 #include "agl/core/logger.hpp"
 #include "agl/core/events.hpp"
@@ -49,18 +49,6 @@ void renderer::init_vertex_array(vertex_array& v_array)
 
 	v_array.set_state(buffer_state::READY);
 }
-
-	/*
-#ifdef AGL_DEBUG
-	wnd.feature_enable(FEATURE_DEBUG_OUTPUT);
-	wnd.feature_enable(FEATURE_DEBUG_OUTPUT_SYNCHRONOUS);
-
-	AGL_OPENGL_CALL(glDebugMessageCallback(gl_debug_callback, nullptr));
-	AGL_OPENGL_CALL(glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE));
-	g_logger->debug("OpenGL debug messages: ON");
-	g_logger->debug("New window: {}, {}", wnd.get_api_version(), wnd.get_shading_language_version());
-#endif
-*/
 void renderer::on_attach(application* app)
 {
 	auto* logger = app->get_resource<agl::logger>();
@@ -74,11 +62,23 @@ void renderer::on_attach(application* app)
 // render
 void renderer::on_update(application* app)
 {
+	for (auto i = 0; i < m_event_system->get_events_count(); ++i)
+	{
+		auto e = m_event_system->view_event(i);
+		switch (e.get_type())
+		{
+		case WINDOW_SHOULD_CLOSE: destroy_window(e.get_window()); break;
+		}
+	}
+
+	if (get_windows().empty())
+		app->close();
+
 	for(auto* wnd : m_event_system->get_windows())
 	{
-		glfwMakeContextCurrent(wnd->get_handle());
-		//AGL_OPENGL_CALL(glClearColor(111, 111, 111, 255));
-		//AGL_OPENGL_CALL(glClear(GL_CLEAR));
+		m_event_system->set_current_context(wnd);
+		AGL_OPENGL_CALL(glClearColor(111, 111, 111, 255));
+		AGL_OPENGL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 		glfwSwapBuffers(wnd->get_handle());
 	}
 }
@@ -96,14 +96,14 @@ void renderer::on_update_vertex_array(vertex_array& v_array)
 void renderer::on_detach(application* app)
 {
 	auto* logger = app->get_resource<agl::logger>();
-	logger->info("OpenGL renderer: Exiting");
+	logger->debug("OpenGL renderer: Exiting");
 	
-	m_event_system = nullptr;
 #ifdef AGL_DEBUG
 	g_logger = nullptr;
 #endif
+	m_event_system = nullptr;
 	agl::renderer::on_detach(app);
-	logger->info("OpenGL renderer: OFF");
+	logger->debug("OpenGL renderer: OFF");
 }
 #ifdef AGL_DEBUG
 void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
@@ -133,6 +133,8 @@ static vector<shader_source> parse_shader_source(std::string const& source);
 void renderer::add_shader(shader const& shader)
 {
 	auto subshaders = vector<std::uint32_t>{};
+	auto error_message = std::string{};
+	auto error_subshader_type = SHADER_INVALID;
 	auto success = std::int32_t{};
 	auto file_content = load_from_file(shader.get_filepath());
 	auto sources = parse_shader_source(file_content);
@@ -140,42 +142,42 @@ void renderer::add_shader(shader const& shader)
 	{
 		auto d = compile_subshader(src.type, src.source);
 		AGL_OPENGL_CALL(glGetShaderiv(d, GL_COMPILE_STATUS, &success));
-
 		if (!success)
 		{
+			error_subshader_type = src.type;
 			auto length = std::int32_t{};
-			auto message = std::string{};
 			AGL_OPENGL_CALL(glGetShaderiv(d, GL_INFO_LOG_LENGTH, &length));
 
-			message.resize(length);
-			AGL_OPENGL_CALL(glGetShaderInfoLog(d, length, nullptr, &message[0]));
-
-			for (auto& sub : subshaders)
-				AGL_OPENGL_CALL(glDeleteShader(sub));
-
-			throw std::exception{ logger::combine_message("Failed to compile subshader {}: {}", get_shader_type_name(src.type), message).c_str() };
+			error_message.resize(length);
+			AGL_OPENGL_CALL(glGetShaderInfoLog(d, length, nullptr, &error_message[0]));
 		}
 		
 		subshaders.push_back(d);
 	}
+	
+	if (!success)
+	{
+		for (auto& sub : subshaders)
+			AGL_OPENGL_CALL(glDeleteShader(sub));
+		throw std::exception{ logger::combine_message("Failed to compile subshader {}: {}", get_shader_type_name(error_subshader_type), error_message).c_str() };
+	}
 
 	auto descriptor = link_shader(subshaders);
 	AGL_OPENGL_CALL(glGetProgramiv(descriptor, GL_LINK_STATUS, &success));
-	for (auto& d : subshaders)
-		AGL_OPENGL_CALL(glDeleteShader(d));
-	
-	subshaders.clear();
 	if (!success)
 	{
 		auto length = std::int32_t{};
 		AGL_OPENGL_CALL(glGetProgramiv(descriptor, GL_INFO_LOG_LENGTH, &length));
 
-		auto message = std::string{};
-		message.resize(length);
-
-		AGL_OPENGL_CALL(glGetProgramInfoLog(descriptor, length, NULL, &message[0u]));
-		throw std::exception{ logger::combine_message("Failed to link shader program: \"{}\"", message).c_str() };
+		error_message.resize(length);
+		AGL_OPENGL_CALL(glGetProgramInfoLog(descriptor, length, NULL, &error_message[0u]));
 	}
+
+	for (auto& d : subshaders)
+		AGL_OPENGL_CALL(glDeleteShader(d));
+
+	if(!success)
+		throw std::exception{ logger::combine_message("Failed to link shader program: \"{}\"", error_message).c_str() };
 
 	agl::renderer::add_shader(agl::shader{shader.get_filepath(), descriptor});
 }
@@ -190,21 +192,33 @@ void renderer::create_window(window* wnd)
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		throw std::exception{ "Failed to initialize OpenGL context!" };
 
+#ifdef AGL_DEBUG
+	AGL_OPENGL_CALL(glEnable(GL_DEBUG_OUTPUT));
+	AGL_OPENGL_CALL(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
+
+	AGL_OPENGL_CALL(glDebugMessageCallback(gl_debug_callback, nullptr));
+	AGL_OPENGL_CALL(glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE));
+	g_logger->debug("OpenGL debug messages: ON");
+#endif
+
 	agl::renderer::create_window(wnd);
 }
 void renderer::destroy_window(window* wnd)
 {
-	m_event_system->destroy_window(wnd);
 	agl::renderer::destroy_window(wnd);
 }
-void renderer::remove_shader(shader const& shader)
+void renderer::remove_shader(shader& shader)
 {
 	auto found = find_shader(shader);
 	if (found == get_shaders().cend() || found->get_id() == 0)
 		return;
+		
+	shader = *found;
+	auto id = static_cast<std::uint32_t>(found->get_id());
+	AGL_OPENGL_CALL(glDeleteProgram(id));
 
-	AGL_OPENGL_CALL(glDeleteProgram(static_cast<std::uint32_t>(found->get_id())));
-	agl::renderer::remove_shader(*found);
+	shader = agl::shader{ shader.get_filepath() };
+	agl::renderer::remove_shader(shader);
 }
 std::uint32_t compile_subshader(shader_type type, std::string const& source)
 {

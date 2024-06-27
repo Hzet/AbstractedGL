@@ -83,6 +83,10 @@ event event::window_restored_event(window* wnd)
 {
 	return event{ WINDOW_RESTORED, wnd };
 }
+event event::window_should_close_event(window* wnd)
+{
+	return event{ WINDOW_SHOULD_CLOSE, wnd };
+}
 event_type event::get_type() const
 {
 	return m_type;

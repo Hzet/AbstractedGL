@@ -5,7 +5,8 @@
 namespace agl
 {
 window::window()
-	: m_event_system{ nullptr }
+	: m_close_next_frame{ false }
+	, m_event_system{ nullptr }
 	, m_handle{ nullptr }
 	, m_is_focused{ false }
 	, m_is_maximized{ false }
@@ -22,6 +23,10 @@ window::window(glm::uvec2 resolution, std::string const& title)
 void window::set_title(std::string const& title)
 {
 	m_title = title;
+}
+bool window::should_close() const
+{
+	return m_should_close;
 }
 glm::uvec2 const& window::get_resolution() const
 {
@@ -97,6 +102,7 @@ glm::uvec2 window::get_frame_buffer_size() const
 }
 void window::close()
 {
-	m_event_system->push_event(event::window_closed_event(this));
+	m_event_system->push_event(event::window_should_close_event(this));
+	m_should_close = true;
 }
 }

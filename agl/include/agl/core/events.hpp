@@ -10,15 +10,20 @@ namespace agl
 class window_event_system
 {
 public:
+	virtual                ~window_event_system();
 	bool				   create_window(window* wnd);
 	void				   destroy_window(window* wnd);
+	window*                get_current_context();
+	window const*          get_current_context() const;
 	std::uint64_t		   get_events_count() const;
 	glm::uvec2             get_framebuffer_size(window* wnd);
 	vector<window*> const& get_windows() const;
 	bool				   poll_event(event& e);
+	void                   set_current_context(window* wnd);
 	event				   view_event(std::uint64_t index);
 
-protected:		  
+protected:
+	void                   destroy_windows();
 	void				   clear_events();
 	void				   process_event(event e);
 						   
@@ -31,6 +36,7 @@ private:
 	void				   window_maximize(event e);
 	void				   window_minimize(event e);
 	void				   window_restore(event e);
+	void                   window_should_close(event e);
 
 private:
 	friend class window;
@@ -49,6 +55,7 @@ private:
 	friend void  window_size_callback(GLFWwindow*, int, int);
 
 private:
+	window*         m_current_context;
 	vector<event>   m_events;
 	vector<event>   m_internal_events;
 	vector<window*> m_windows;
@@ -59,13 +66,19 @@ class event_system
 	, public window_event_system
 {
 public:
-	     event_system();
-		 event_system(event_system&& other) noexcept;
-	     ~event_system() noexcept;
+	          event_system();
+		      event_system(event_system&& other) noexcept;
+	          ~event_system() noexcept;
+		 bool is_glfw_initialized() const;
 
 private:
+	void initialize();
+	void deinitialize();
 	void on_attach(application* app) override;
 	void on_detach(application* app) override;
 	void on_update(application* app) override;
+
+private:
+	bool m_glfw_initialized;
 };
 }

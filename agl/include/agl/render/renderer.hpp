@@ -17,7 +17,7 @@ public:
 	virtual void                         destroy_window(window* wnd);
 	mem::vector<shader> const&           get_shaders() const;
 	mem::vector<window*> const&          get_windows() const;
-	virtual void                         remove_shader(shader const& shader);
+	virtual void                         remove_shader(shader& shader);
 
 protected:
 	mem::vector<shader>::const_iterator  find_shader(shader const& shader) const;

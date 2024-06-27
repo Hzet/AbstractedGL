@@ -30,20 +30,19 @@ static logger* g_logger = nullptr;
 event_system::event_system()
 	: resource<event_system>{}
 {
+	m_glfw_initialized = false;
 	g_api = this;
 }
 event_system::~event_system() noexcept
 {
 	g_api = nullptr;
 }
-void event_system::on_attach(application* app)
+bool event_system::is_glfw_initialized() const
 {
-	auto* logger = app->get_resource<agl::logger>();
-#ifdef AGL_DEBUG
-	g_logger = logger;
-#endif
-	logger->debug("GLFW: Initializing");
-
+	return m_glfw_initialized;
+}
+void event_system::initialize()
+{
 	if (!glfwInit())
 	{
 		const char* description;
@@ -52,15 +51,35 @@ void event_system::on_attach(application* app)
 		if (description != nullptr)
 			str = description;
 
-		logger->error("GLFW: {}", str);
 		throw std::exception{ logger::combine_message("Failed to initialize GLFW: {}", str).c_str() };
 	}
+	m_glfw_initialized = true;
+}
+void event_system::deinitialize()
+{
+	if (!is_glfw_initialized())
+		return;
+	
+	destroy_windows();
+	glfwTerminate();
+	m_glfw_initialized = false;
+}
+void event_system::on_attach(application* app)
+{
+	AGL_CORE_ASSERT(!is_glfw_initialized(), "glfw must be deinitialized upon reaching this method");
+	auto* logger = app->get_resource<agl::logger>();
+#ifdef AGL_DEBUG
+	g_logger = logger;
+#endif
+	logger->debug("GLFW: Initializing");
+	initialize();
 	logger->debug("GLFW: OK");
 }
 void event_system::on_detach(application* app)
 {
-	glfwTerminate();
+	deinitialize();
 
+	m_glfw_initialized = false;
 #ifdef AGL_DEBUG
 	g_logger = nullptr;
 #endif
@@ -84,6 +103,12 @@ bool window_event_system::poll_event(event& e)
 	m_events.pop_front();
 	return true;
 }
+void window_event_system::set_current_context(window* wnd)
+{
+	AGL_CORE_ASSERT(wnd != nullptr, "invalid window pointer");
+	glfwMakeContextCurrent(wnd->get_handle());
+	m_current_context = wnd;
+}
 vector<window*> const& window_event_system::get_windows() const
 {
 	return m_windows;
@@ -101,7 +126,7 @@ void window_event_system::process_event(event e)
 {
 	switch (e.get_type())
 	{
-	case WINDOW_CLOSED:		  destroy_window(e.get_window()); break;
+	case WINDOW_SHOULD_CLOSE: window_should_close(e); break;
 	case WINDOW_GAINED_FOCUS: window_gain_focus(e); break;
 	case WINDOW_LOST_FOCUS:	  window_lose_focus(e); break;
 	case WINDOW_MAXIMIZED:    window_maximize(e); break;
@@ -119,7 +144,7 @@ void window_event_system::destroy_window(window* wnd)
 	if (wnd == nullptr || wnd->get_handle() == nullptr)
 		return;
 
-	auto found = std::find_if(m_windows.cbegin(), m_windows.cend(), [wnd](auto const* w) { return w == wnd; });
+	auto found = std::find_if(m_windows.cbegin(), m_windows.cend(), [wnd] (auto const* w) { return w == wnd; });
 	AGL_CORE_ASSERT(found != m_windows.cend(), "window was not created by this api");
 
 #ifdef AGL_DEBUG
@@ -128,12 +153,22 @@ void window_event_system::destroy_window(window* wnd)
 
 	glfwDestroyWindow(wnd->get_handle());
 	wnd->m_handle = nullptr;
+	wnd->m_close_next_frame = false;
 	wnd->m_is_focused = false;
 	wnd->m_is_maximized = false;
 	wnd->m_is_minimized = false;
 	wnd->m_is_open = false;
 	m_windows.erase(found);
+	m_current_context = (m_windows.empty() ? nullptr : m_windows.back());
 	m_internal_events.push_back(event::window_closed_event(wnd));
+}
+window* window_event_system::get_current_context()
+{
+	return m_current_context;
+}
+window const* window_event_system::get_current_context() const
+{
+	return m_current_context;
 }
 std::uint64_t window_event_system::get_events_count() const
 {
@@ -148,6 +183,15 @@ glm::uvec2 window_event_system::get_framebuffer_size(window* wnd)
 	glfwGetFramebufferSize(wnd->get_handle(), &ivec2.x, &ivec2.y);
 	return ivec2;
 }
+window_event_system::~window_event_system()
+{
+	destroy_windows();
+}
+void window_event_system::destroy_windows()
+{
+	for (auto* wnd : m_windows)
+		destroy_window(wnd);
+}
 bool window_event_system::create_window(window* wnd)
 {
 	for (auto const& h : wnd->get_hints())
@@ -158,7 +202,7 @@ bool window_event_system::create_window(window* wnd)
 	if (wnd->get_handle() == nullptr) 
 		return false;
 
-	glfwMakeContextCurrent(wnd->get_handle());
+	set_current_context(wnd);
 	set_window_callbacks(wnd);
 	wnd->m_event_system = this;
 	wnd->m_frame_buffer_size = get_framebuffer_size(wnd);
@@ -205,6 +249,14 @@ void window_event_system::window_restore(event e)
 
 	glfwRestoreWindow(e.get_window()->get_handle());
 	e.get_window()->m_is_minimized = false;
+}
+void window_event_system::window_should_close(event e)
+{
+	AGL_CORE_ASSERT(e.get_window() != nullptr, "event is invalid");
+
+	if (e.get_window()->m_close_next_frame)
+		return destroy_window(e.get_window());
+	e.get_window()->m_close_next_frame = true;
 }
 void window_event_system::window_hint(window::hint hint)
 {
@@ -281,7 +333,7 @@ void window_char_callback(GLFWwindow* glfw_handle, unsigned int codepoint)
 void window_close_callback(GLFWwindow* glfw_handle)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::window_closed_event(wnd));
+	g_api->push_event(event::window_should_close_event(wnd));
 }
 void window_cursor_enter_callback(GLFWwindow* glfw_handle, int entered)
 {

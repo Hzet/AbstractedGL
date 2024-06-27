@@ -25,9 +25,6 @@ void layer::on_attach(application* app)
 }
 void layer::on_detach(application* app)
 {
-	auto* ecs = app->get_resource<ecs::organizer>();
-	auto* renderer = ecs->get_system<agl::renderer>();
-	renderer->destroy_window(m_window.get());
 }
 void layer::on_update(application* app)
 {

@@ -28,6 +28,7 @@ enum event_type
 	WINDOW_RESCALED,
 	WINDOW_RESIZED,
 	WINDOW_RESTORED,
+	WINDOW_SHOULD_CLOSE,
 };
 
 enum key_type
@@ -195,6 +196,7 @@ public:
 	static event  window_rescaled_event(window* wnd, glm::dvec2 const& scale);
 	static event  window_resized_event(window* wnd, glm::uvec2 const& size);
 	static event  window_restored_event(window* wnd);
+	static event  window_should_close_event(window* wnd);
 				  
 				  event();
 				  ~event() noexcept = default;

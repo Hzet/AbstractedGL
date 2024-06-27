@@ -34,12 +34,14 @@ public:
 	void				minimize();
 	void				set_resolution(glm::uvec2 const& size);
 	void				set_title(std::string const& title);
+	bool                should_close() const;
 	void				unfocus();
 
 private:
 	friend class window_event_system;
 
 private:
+	bool                 m_close_next_frame; // flag for the befriended class
 	window_event_system* m_event_system;
 	glm::uvec2			 m_frame_buffer_size;
 	GLFWwindow*			 m_handle;
@@ -48,6 +50,7 @@ private:
 	bool				 m_is_maximized;
 	bool				 m_is_minimized;
 	bool				 m_is_open;
+	bool                 m_should_close;
 	glm::uvec2			 m_resolution;
 	std::string			 m_title;
 
