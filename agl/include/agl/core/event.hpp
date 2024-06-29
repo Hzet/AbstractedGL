@@ -2,18 +2,20 @@
 #include <cstdint>
 #include <glm/glm.hpp>
 #include "agl/memory/allocator.hpp"
+#include "agl/util/timestamp.hpp"
 
 namespace agl
 {
 enum event_type
 {
-	INVALID_EVENT,
+	APPLICATION_CLOSE,
 	BUTTON_PRESSED,
 	BUTTON_RELEASED,
 	KEY_PRESSED,
 	KEY_RELEASED,
 	KEY_REPEATED,
 	FRAMEBUFFER_RESIZED,
+	INVALID_EVENT,
 	MOUSE_SCROLL_MOVED,
 	MOUSE_MOVED,
 	MOUSE_ENTERED,
@@ -176,6 +178,7 @@ public:
 	struct button;
 	struct key;
 	struct window_hint;
+	static event  application_close_event();
 	static event  button_pressed_event(window* wnd, button button);
 	static event  button_released_event(window* wnd, button button);
 	static event  framebuffer_resized_event(window* wnd, glm::uvec2 const& size);
@@ -206,6 +209,7 @@ public:
 	glm::uvec2    get_resolution() const;
 	glm::dvec2    get_scale_factor() const;
 	glm::ivec2    get_scroll_offset() const;
+	timestamp     get_timestamp() const;
 	event_type    get_type() const;
 	window*       get_window();
 
@@ -245,6 +249,7 @@ private:
 
 private:
 	parameter			  m_param;
+	timestamp             m_timestamp;
 	event_type			  m_type   = INVALID_EVENT;
 	window*				  m_window = nullptr;
 

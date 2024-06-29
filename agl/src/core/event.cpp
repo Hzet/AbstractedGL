@@ -1,8 +1,14 @@
 #include "agl/core/event.hpp"
 #include "agl/core/window.hpp"
+#include "agl/util/clock.hpp"
+
 
 namespace agl
 {
+event event::application_close_event()
+{
+	return event{ APPLICATION_CLOSE, nullptr };
+}
 event event::button_pressed_event(window* wnd, button button)
 {
 	return event{ BUTTON_PRESSED, wnd, button };
@@ -103,6 +109,10 @@ glm::ivec2 event::get_scroll_offset() const
 {
 	return m_param.ivec2;
 }
+timestamp event::get_timestamp() const
+{
+	return m_timestamp;
+}
 glm::dvec2 event::get_mouse_position() const
 {
 	return m_param.uvec2;
@@ -120,15 +130,17 @@ glm::uvec2 event::get_resolution() const
 	return m_param.uvec2;
 }
 event::event()
-	: m_type{ INVALID_EVENT }
+	: m_param{ button_type{} }
+	, m_timestamp{ clock::get_current_time() }
+	, m_type{ INVALID_EVENT }
 	, m_window{ nullptr }
-	, m_param{ button_type{} }
 {
 }
 event::event(event_type type, window* wnd)
-	: m_type{ type }
+	: m_param{ button_type{} }
+	, m_timestamp{ clock::get_current_time() }
+	, m_type{ type }
 	, m_window{ wnd }
-	, m_param{ button_type{} }
 {
 }
 event::event(event_type type, window* wnd, button button)
