@@ -111,19 +111,19 @@ timestamp& timestamp::operator*=(std::uint64_t factor)
 	m_nano *= factor;
 	return *this;
 }
-timestamp& operator+(timestamp lhs, timestamp rhs)
+timestamp operator+(timestamp lhs, timestamp rhs)
 {
 	return timestamp{ lhs.get_nano() + rhs.get_nano() };
 }
-timestamp& operator-(timestamp lhs, timestamp rhs)
+timestamp operator-(timestamp lhs, timestamp rhs)
 {
 	return timestamp{ lhs.get_nano() - rhs.get_nano() };
 }
-timestamp& operator/(timestamp lhs, std::uint64_t factor)
+timestamp operator/(timestamp lhs, std::uint64_t factor)
 {
 	return timestamp{ lhs.get_nano() / factor };
 }
-timestamp& operator*(timestamp lhs, std::uint64_t factor)
+timestamp operator*(timestamp lhs, std::uint64_t factor)
 {
 	return timestamp{ lhs.get_nano() * factor };
 }
