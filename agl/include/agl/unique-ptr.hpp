@@ -188,6 +188,11 @@ public:
 		return m_data == nullptr;
 	}
 
+	bool operator==(pointer rhs) const
+	{
+		return m_data == rhs;
+	}
+
 	bool operator!=(std::nullptr_t) const
 	{
 		return m_data != nullptr;
