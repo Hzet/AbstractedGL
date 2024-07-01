@@ -13,13 +13,14 @@ class renderer
 public:
 							             renderer(ecs::organizer* organizer = nullptr, ecs::stage stage = {});
 	virtual void                         add_shader(shader const& shader);
-	virtual void                         init_window(window* wnd);
-	virtual void                         deinit_window(window* wnd);
+	virtual window*                      create_window(window wnd) = 0;
+	virtual void                         destroy_window(window* wnd);
 	mem::vector<shader> const&           get_shaders() const;
 	mem::vector<window*> const&          get_windows() const;
 	virtual void                         remove_shader(shader& shader);
 
 protected:
+	void                                 add_window(window* wnd);
 	mem::vector<shader>::const_iterator  find_shader(shader const& shader) const;
 	mem::vector<window*>::const_iterator find_window(window* wnd) const;
 	void                                 on_detach(application* app) override;

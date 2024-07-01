@@ -17,6 +17,9 @@ public:
 	glm::uvec2                        get_framebuffer_size(window* wnd);
 	window*                           get_window(std::uint64_t index);
 	vector<unique_ptr<window>> const& get_windows() const;
+	void                              hint_default();
+	void				              hint_int(std::uint64_t hint, std::int64_t value);
+	void				              hint_string(std::uint64_t hint, const char* value);
 	void                              set_current_context(window* wnd);
 	                                  windows_event_resource();
 	virtual                           ~windows_event_resource();
@@ -29,7 +32,6 @@ protected:
 private:				              
 	void				              push_event(window* wnd, event e);
 	void				              set_window_callbacks(window* wnd);
-	void				              window_hint(window::hint hint);
 	void				              window_gain_focus(event e);
 	void				              window_lose_focus(event e);
 	void				              window_maximize(event e);

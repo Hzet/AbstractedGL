@@ -108,6 +108,18 @@ vector<unique_ptr<window>> const& windows_event_resource::get_windows() const
 {
 	return m_windows;
 }
+void windows_event_resource::hint_default()
+{
+	glfwDefaultWindowHints();
+}
+void windows_event_resource::hint_int(std::uint64_t hint, std::int64_t value)
+{
+	glfwWindowHint(static_cast<int>(hint), static_cast<int>(value));
+}
+void windows_event_resource::hint_string(std::uint64_t hint, const char* value)
+{
+	glfwWindowHintString(static_cast<int>(hint), value);
+}
 void windows_event_resource::clear_events()
 {
 	for (auto& wnd : m_windows)
@@ -187,9 +199,6 @@ void windows_event_resource::destroy_windows()
 window* windows_event_resource::create_window(window const& wnd)
 {
 	auto result = unique_ptr<window>::allocate(wnd);
-	for (auto const& h : result->get_hints())
-		window_hint(h);
-
 	result->m_handle = glfwCreateWindow(result->get_resolution().x, result->get_resolution().y, result->get_title().c_str(), nullptr, nullptr);
 
 	if (result->get_handle() == nullptr)
@@ -248,16 +257,6 @@ void windows_event_resource::window_should_close(event e)
 	if (e.get_window()->m_close_next_frame)
 		return destroy_window(e.get_window());
 	e.get_window()->m_close_next_frame = true;
-}
-void windows_event_resource::window_hint(window::hint hint)
-{
-	switch (hint.type)
-	{
-	case window::hint::DEFAULT: glfwDefaultWindowHints(); break;
-	case window::hint::INT:	    glfwWindowHint(static_cast<int>(hint.hint), static_cast<int>(hint.value.integer)); break;
-	case window::hint::STRING:  glfwWindowHintString(static_cast<int>(hint.hint), hint.value.string); break;
-	default: break;
-	}
 }
 void windows_event_resource::set_window_callbacks(window* wnd)
 {

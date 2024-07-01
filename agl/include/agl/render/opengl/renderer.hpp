@@ -16,24 +16,24 @@ class renderer
 	: public agl::renderer
 {
 public:
-	                 renderer(ecs::organizer* organizer = nullptr);
-	                 renderer(renderer&& other);
-	                 renderer& operator=(renderer&& other);
-	void             add_shader(shader const& shader) override;
-	void             init_window(window* wnd) override;
-	void             deinit_window(window* wnd) override;
-	void             remove_shader(shader& index) override;
-		             
-private:             
-	void             init_vertex_array(vertex_array& v_array);
-	void             on_update_vertex_array(vertex_array& v_array);
-	void             on_attach(application* app) override;
-	void             on_detach(application*) override;
-	void             on_update(application*) override;
-	void             process_events(window* wnd);
+	                  renderer(ecs::organizer* organizer = nullptr);
+	                  renderer(renderer&& other);
+	                  renderer& operator=(renderer&& other);
+	void              add_shader(shader const& shader) override;
+	window*           create_window(window wnd) override;
+	void              destroy_window(window* wnd) override;
+	void              remove_shader(shader& index) override;
+		              
+private:              
+	void              init_vertex_array(vertex_array& v_array);
+	void              on_update_vertex_array(vertex_array& v_array);
+	void              on_attach(application* app) override;
+	void              on_detach(application*) override;
+	void              on_update(application*) override;
+	void              process_events(window* wnd);
 
 private:
-	windows_resource* m_event_system;
+	windows_resource* m_windows_resource;
 };
 }
 }

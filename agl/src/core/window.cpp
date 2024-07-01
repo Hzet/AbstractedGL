@@ -66,21 +66,7 @@ void window::unfocus()
 {
 	m_events.push_back(event::window_lost_focus_event(this));
 }
-void window::hint_default()
-{
-	m_hints.clear();
-	m_hints.push_back(hint{ hint::DEFAULT });
-}
-void window::hint_int(std::uint64_t hint, std::int64_t value)
-{
-	m_hints.push_back({ hint, hint::INT, value });
-}
-void window::hint_string(std::uint64_t hint, const char* value)
-{
-	auto h = window::hint{ hint, hint::STRING };
-	h.value.string = value;
-	m_hints.push_back(h);
-}
+
 vector<window::hint> const& window::get_hints() const
 {
 	return m_hints;

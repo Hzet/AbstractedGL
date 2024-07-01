@@ -14,11 +14,11 @@ void renderer::add_shader(shader const& shader)
 {
 	m_shaders.push_back(shader);
 }
-void renderer::init_window(window* wnd)
+void renderer::add_window(window* wnd)
 {
 	m_windows.push_back(wnd);
 }
-void renderer::deinit_window(window* wnd)
+void renderer::destroy_window(window* wnd)
 {
 	auto found = find_window(wnd);
 	m_windows.erase(found);
@@ -47,7 +47,7 @@ mem::vector<window*>::const_iterator renderer::find_window(window* wnd) const
 void renderer::on_detach(application* app)
 {
 	for (auto* wnd : m_windows)
-		deinit_window(wnd);
+		destroy_window(wnd);
 
 	for (auto& sh : m_shaders)
 		remove_shader(sh);

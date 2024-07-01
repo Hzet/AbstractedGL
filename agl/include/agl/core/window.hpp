@@ -17,9 +17,6 @@ public:
 						 window();
 						 window(glm::uvec2 resolution, std::string const& title = "");
 	void				 close();
-	void                 hint_default();
-	void				 hint_int(std::uint64_t hint, std::int64_t value);
-	void				 hint_string(std::uint64_t hint, const char* value);
 	void				 focus();
 	glm::uvec2			 get_frame_buffer_size() const;
 	vector<event> const& get_events() const;

@@ -61,18 +61,18 @@ void renderer::on_attach(application* app)
 #ifdef AGL_OPENGL_DEBUG
 	g_logger = app->get_resource<agl::logger>();
 #endif
-	m_event_system = app->get_resource<agl::windows_resource>();
+	m_windows_resource = app->get_resource<agl::windows_resource>();
 	logger->info("OpenGL: renderer OK");
 }
 // render
 void renderer::on_update(application* app)
 {
-	auto const size = m_event_system->get_windows().size();
+	auto const size = m_windows_resource->get_windows().size();
 	for(auto i = 0; i < size; ++i)
 	{
-		auto* wnd = m_event_system->get_window(i);
+		auto* wnd = m_windows_resource->get_window(i);
 		process_events(wnd);
-		m_event_system->set_current_context(wnd);
+		m_windows_resource->set_current_context(wnd);
 		AGL_OPENGL_CALL(glClearColor(111, 111, 111, 255));
 		AGL_OPENGL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 		glfwSwapBuffers(wnd->get_handle());
@@ -99,7 +99,7 @@ void renderer::on_detach(application* app)
 #ifdef AGL_OPENGL_DEBUG
 	g_logger = nullptr;
 #endif
-	m_event_system = nullptr;
+	m_windows_resource = nullptr;
 	agl::renderer::on_detach(app);
 	logger->debug("OpenGL: renderer OFF");
 }
@@ -109,7 +109,7 @@ void renderer::process_events(window* wnd)
 	{
 		switch (e.get_type())
 		{
-		case WINDOW_SHOULD_CLOSE: deinit_window(e.get_window()); break;
+		case WINDOW_SHOULD_CLOSE: destroy_window(e.get_window()); break;
 		}
 	}
 }
@@ -196,29 +196,38 @@ void renderer::add_shader(shader const& shader)
 #endif
 }
 
-void renderer::init_window(window* wnd)
+window* renderer::create_window(window wnd)
 {
-	wnd->hint_int(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	wnd->hint_int(GLFW_CONTEXT_VERSION_MAJOR, 4);
-	wnd->hint_int(GLFW_CONTEXT_VERSION_MINOR, 3);
+	m_windows_resource->hint_int(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
+	m_windows_resource->hint_int(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	m_windows_resource->hint_int(GLFW_CONTEXT_VERSION_MINOR, 3);
+
+	auto* ptr = m_windows_resource->create_window(std::move(wnd)); // wnd destructed
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		throw std::exception{ "Failed to initialize OpenGL context!" };
 
 #ifdef AGL_OPENGL_DEBUG
+	auto gl_version = std::string{};
+	auto glsl_version = std::string{};
+	AGL_OPENGL_CALL(gl_version = reinterpret_cast<const char*>(glGetString(GL_VERSION)));
+	AGL_OPENGL_CALL(glsl_version = reinterpret_cast<const char*>(glGetString(GL_SHADING_LANGUAGE_VERSION)));
+	g_logger->debug(logger::combine_message("OpenGL: {}", gl_version));
+	g_logger->debug(logger::combine_message("GLSL: {}", glsl_version));
+
 	AGL_OPENGL_CALL(glEnable(GL_DEBUG_OUTPUT));
 	AGL_OPENGL_CALL(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
 
 	AGL_OPENGL_CALL(glDebugMessageCallback(gl_debug_callback, nullptr));
 	AGL_OPENGL_CALL(glDebugMessageControl(GL_DONT_CARE, GL_DONT_CARE, GL_DEBUG_SEVERITY_NOTIFICATION, 0, NULL, GL_FALSE));
-	g_logger->debug("OpenGL debug messages: ON");
+	g_logger->debug("OpenGL: debug messages ON");
 #endif
 
-	agl::renderer::init_window(wnd);
+	add_window(ptr);
 }
-void renderer::deinit_window(window* wnd)
+void renderer::destroy_window(window* wnd)
 {
-	agl::renderer::deinit_window(wnd);
+	agl::renderer::destroy_window(wnd);
 }
 void renderer::remove_shader(shader& shader)
 {
