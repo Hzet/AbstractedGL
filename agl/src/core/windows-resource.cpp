@@ -141,7 +141,7 @@ void windows_event_resource::destroy_window(window* wnd)
 	AGL_CORE_ASSERT(found != m_windows.cend(), "window was not created by this api");
 
 #ifdef AGL_DEBUG
-	g_logger->debug("Window destroyed: {} \\{{}, {}\\}", wnd->get_title(), wnd->get_resolution().x, wnd->get_resolution().y);
+	g_logger->debug("GLFW: window destroyed {} \\{{}, {}\\}", wnd->get_title(), wnd->get_resolution().x, wnd->get_resolution().y);
 #endif
 
 	glfwDestroyWindow(wnd->get_handle());
