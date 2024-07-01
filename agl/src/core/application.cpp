@@ -1,5 +1,5 @@
 #include "agl/render/opengl/renderer.hpp"
-#include "agl/core/events.hpp"
+#include "agl/core/windows-resource.hpp"
 #include "agl/core/layer.hpp"
 #include "agl/core/logger.hpp"
 #include "agl/memory/pool.hpp"
@@ -51,10 +51,6 @@ bool application::is_open() const
 {
 	return m_properties.is_open;
 }
-application::properties const& application::get_properties() const
-{
-	return m_properties;
-}
 void application::add_resource(unique_ptr<resource_base> resource)
 {
 	 m_mutex.lock();
@@ -90,7 +86,7 @@ void application::init()
 		add_resource(unique_ptr<resource_base>::polymorphic<mem::pool>());
 	}
 	{ // GLFW Events
-		add_resource(unique_ptr<resource_base>::polymorphic<event_system>());
+		add_resource(unique_ptr<resource_base>::polymorphic<windows_resource>());
 	}
 	{ // ECS
 		auto* pool = get_resource<mem::pool>();
