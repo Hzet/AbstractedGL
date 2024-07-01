@@ -7,7 +7,7 @@ using ::std::chrono::time_point;
 
 timestamp clock::get_current_time()
 {
-	return timestamp{ steady_clock::now().time_since_epoch().count() };
+	return timestamp::from_nano(steady_clock::now().time_since_epoch().count());
 }
 timestamp clock::get_elapsed() const
 {
