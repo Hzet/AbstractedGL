@@ -60,23 +60,23 @@ std::uint64_t timestamp::get_seconds() const
 }
 std::uint64_t timestamp::get_minutes() const
 {
-	return m_nano / (1000 * 1000 * 1000 * 60);
+	return m_nano / (1000 * 1000 * 1000) * 60;
 }
 std::uint64_t timestamp::get_hours() const
 {
-	return m_nano / (1000 * 1000 * 1000 * 60 * 60);
+	return m_nano / (1000 * 1000 * 1000) * (60 * 60);
 }
 std::uint64_t timestamp::get_days() const
 {
-	return m_nano / (1000 * 1000 * 1000 * 60 * 60 * 24);
+	return m_nano / (1000 * 1000 * 1000) * (60 * 60 * 24);
 }
 std::uint64_t timestamp::get_months() const
 {
-	return m_nano / (1000 * 1000 * 1000 * 60 * 60 * 24 * 30);
+	return m_nano / (1000 * 1000 * 1000) * (60 * 60 * 24 * 30);
 }
 std::uint64_t timestamp::get_years() const
 {
-	return m_nano / (1000 * 1000 * 1000 * 60 * 60 * 24 * 30 * 365);
+	return m_nano / (1000 * 1000 * 1000) * (60 * 60 * 24 * 30 * 365);
 }
 timestamp& timestamp::operator=(timestamp other)
 {
