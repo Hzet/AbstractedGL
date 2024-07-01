@@ -1,5 +1,5 @@
 #pragma once
-#include <cstdint>
+#include <string>
 #include <glm/glm.hpp>
 #include "agl/memory/allocator.hpp"
 #include "agl/util/timestamp.hpp"
@@ -202,14 +202,18 @@ public:
 				  event();
 				  ~event() noexcept = default;
 	button        get_button() const;
+	const char*   get_button_name() const;
 	key           get_key() const;
+	const char*   get_key_name() const;
 	glm::dvec2    get_mouse_position() const;
+	const char*   get_name() const;
 	glm::uvec2    get_resolution() const;
 	glm::dvec2    get_scale_factor() const;
 	glm::ivec2    get_scroll_offset() const;
 	timestamp     get_timestamp() const;
 	event_type    get_type() const;
 	window*       get_window() const;
+	std::string   to_string() const;
 
 public:
 	struct button
@@ -250,6 +254,5 @@ private:
 	timestamp             m_timestamp;
 	event_type			  m_type   = INVALID_EVENT;
 	window*				  m_window = nullptr;
-
 };
 }
