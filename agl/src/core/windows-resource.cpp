@@ -200,7 +200,7 @@ window* windows_event_resource::create_window(window const& wnd)
 	result->m_frame_buffer_size = get_framebuffer_size(result.get());
 	result->m_is_open = true;
 #ifdef AGL_DEBUG
-	g_logger->debug("Window created: {} \\{{}, {}\\}", result->get_title(), result->get_resolution().x, result->get_resolution().y);
+	g_logger->debug("GLFW: new window {} \\{{}, {}\\}", result->get_title(), result->get_resolution().x, result->get_resolution().y);
 #endif
 	m_windows.push_back(std::move(result));
 	return m_windows.back().get();

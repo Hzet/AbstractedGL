@@ -10,7 +10,7 @@ namespace agl
 {
 namespace opengl
 {
-#ifdef AGL_DEBUG
+#if defined(AGL_DEBUG) || defined(AGL_OPENGL_DEBUG)
 static agl::logger* g_logger = nullptr;
 
 static void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam);
@@ -47,6 +47,10 @@ void renderer::init_vertex_array(vertex_array& v_array)
 	}
 
 	v_array.set_state(buffer_state::READY);
+
+#ifdef AGL_OPENGL_DEBUG
+	g_logger->debug("OpenGL: new vertex array of size {}", agl::util::ns::memory_size(v_array.get_bytes_size()));
+#endif
 }
 void renderer::on_attach(application* app)
 {
@@ -184,6 +188,10 @@ void renderer::add_shader(shader const& shader)
 		throw std::exception{ logger::combine_message("Failed to link shader program: \"{}\"", error_message).c_str() };
 
 	agl::renderer::add_shader(agl::shader{shader.get_filepath(), descriptor});
+
+#ifdef AGL_OPENGL_DEBUG
+	g_logger->debug("OpenGL: new shader \"{}\"", shader.get_filepath());
+#endif
 }
 
 void renderer::init_window(window* wnd)
@@ -195,7 +203,7 @@ void renderer::init_window(window* wnd)
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		throw std::exception{ "Failed to initialize OpenGL context!" };
 
-#ifdef AGL_DEBUG
+#ifdef AGL_OPENGL_DEBUG
 	AGL_OPENGL_CALL(glEnable(GL_DEBUG_OUTPUT));
 	AGL_OPENGL_CALL(glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS));
 
