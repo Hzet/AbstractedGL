@@ -25,8 +25,6 @@ private:
 
 public:
 	organizer(mem::pool::allocator<organizer> allocator);
-	organizer(organizer&& other);
-	organizer& operator=(organizer&& other);
 	~organizer() = default;
 
 	template <typename T>

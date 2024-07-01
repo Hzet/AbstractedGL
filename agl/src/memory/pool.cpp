@@ -12,28 +12,6 @@ pool::pool()
 	, m_size{ 0 }
 {
 }
-pool::pool(pool&& other)
-	: m_free_spaces{ std::move(other.m_free_spaces) }
-	, m_memory{ other.m_memory }
-	, m_occupancy{ other.m_occupancy}
-	, m_occupied_spaces{ std::move(other.m_occupied_spaces) }
-	, m_size{ other.m_size }
-{
-	other.m_memory = nullptr;
-}
-pool& pool::operator=(pool&& other)
-{
-	if (&other == this)
-		return *this;
-
-	m_free_spaces = std::move(other.m_free_spaces);
-	m_memory = other.m_memory;
-	m_occupancy = other.m_occupancy;
-	m_occupied_spaces = std::move(other.m_occupied_spaces);
-	m_size = other.m_size;
-	other.m_memory = nullptr;
-	return *this;
-}
 pool::~pool() noexcept
 {
 	destroy();

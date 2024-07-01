@@ -41,9 +41,6 @@ public:
 	static std::string combine_message(std::string const& message, TArgs&&... args);
 	
 	logger();
-	logger(logger const&) = delete;
-	logger& operator=(logger const&) = delete;
-	~logger() = default;
 
 	template <typename... TArgs>
 	void debug(std::string const& message, TArgs&&... args);

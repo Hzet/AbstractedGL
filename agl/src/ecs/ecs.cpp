@@ -13,25 +13,6 @@ organizer::organizer(mem::pool::allocator<organizer> allocator)
 	, m_systems{ allocator }
 {
 }
-organizer::organizer(organizer&& other)
-	: resource<organizer>{ std::move(other) }
-	, m_allocator{ std::move(other.m_allocator) }
-	, m_components{ std::move(other.m_components) }
-	, m_entities{ std::move(other.m_entities) }
-	, m_systems{ std::move(other.m_systems) }
-{
-}
-organizer& organizer::operator=(organizer&& other)
-{
-	this->resource<organizer>::operator=(std::move(other));
-
-	m_allocator = std::move(other.m_allocator);
-	m_components = std::move(other.m_components);
-	m_entities = std::move(other.m_entities);
-	m_systems = std::move(other.m_systems);
-
-	return *this;
-}
 system_base* organizer::get_system_impl(type_id_t id)
 {
 	for (auto& sys : m_systems)

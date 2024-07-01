@@ -16,8 +16,6 @@ public:
 
 public:
 	pool();
-	pool(pool&& other);
-	pool& operator=(pool&& other);
 	~pool() noexcept;
 
 	std::byte* allocate(std::uint64_t size, std::uint64_t alignment);
