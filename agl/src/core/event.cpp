@@ -2,13 +2,8 @@
 #include "agl/core/window.hpp"
 #include "agl/util/clock.hpp"
 
-
 namespace agl
 {
-event event::application_close_event()
-{
-	return event{ APPLICATION_CLOSE, nullptr };
-}
 event event::button_pressed_event(window* wnd, button button)
 {
 	return event{ BUTTON_PRESSED, wnd, button };
@@ -117,7 +112,7 @@ glm::dvec2 event::get_mouse_position() const
 {
 	return m_param.uvec2;
 }
-window* event::get_window()
+window* event::get_window() const
 {
 	return m_window;
 }

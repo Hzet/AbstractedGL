@@ -8,7 +8,6 @@ namespace agl
 {
 enum event_type
 {
-	APPLICATION_CLOSE,
 	BUTTON_PRESSED,
 	BUTTON_RELEASED,
 	KEY_PRESSED,
@@ -178,7 +177,6 @@ public:
 	struct button;
 	struct key;
 	struct window_hint;
-	static event  application_close_event();
 	static event  button_pressed_event(window* wnd, button button);
 	static event  button_released_event(window* wnd, button button);
 	static event  framebuffer_resized_event(window* wnd, glm::uvec2 const& size);
@@ -211,7 +209,7 @@ public:
 	glm::ivec2    get_scroll_offset() const;
 	timestamp     get_timestamp() const;
 	event_type    get_type() const;
-	window*       get_window();
+	window*       get_window() const;
 
 public:
 	struct button

@@ -2,7 +2,7 @@
 #include "editor/layer.hpp"
 #include "agl/ecs/ecs.hpp"
 #include "agl/core/logger.hpp"
-#include "agl/core/events.hpp"
+#include "agl/core/windows-resource.hpp"
 #include "agl/core/window.hpp"
 #include "agl/render/opengl/renderer.hpp"
 #include "agl/util/random.hpp"
@@ -17,10 +17,11 @@ void layer::on_attach(application* app)
 	auto* ecs = app->get_resource<ecs::organizer>();
 	ecs->add_system<opengl::renderer>(app);
 	auto* renderer = ecs->get_system<agl::renderer>();
+	auto* windows = app->get_resource<windows_resource>();
 
-	m_window = unique_ptr<window>::allocate(glm::uvec2{1280, 1024}, "Editor");
+	m_window = windows->create_window({ glm::uvec2{ 1280, 1024 }, "Editor" });
 	auto shader = agl::shader{ "E:\\dev\\c++\\AbstractedGL\\resources\\shader\\basic.glsl" };
-	renderer->create_window(m_window.get());
+	renderer->init_window(m_window);
 	renderer->add_shader(shader);
 }
 void layer::on_detach(application* app)

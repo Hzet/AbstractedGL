@@ -6,7 +6,7 @@
 
 namespace agl
 {
-class window_event_system;
+class windows_event_resource;
 class event;
 class window
 {
@@ -14,35 +14,37 @@ public:
 	struct hint;
 
 public:
-						window();
-						window(glm::uvec2 resolution, std::string const& title = "");
-	void				close();
-	void                hint_default();
-	void				hint_int(std::uint64_t hint, std::int64_t value);
-	void				hint_string(std::uint64_t hint, const char* value);
-	vector<hint> const&	get_hints() const;
-	void				focus();
-	glm::uvec2			get_frame_buffer_size() const;
-	GLFWwindow*			get_handle();
-	glm::uvec2 const&	get_resolution() const;
-	std::string const&	get_title() const;
-	bool				is_open() const;
-	bool				is_minimized() const;
-	bool				is_maximized() const;
-	bool				is_focused() const;
-	void				maximize();
-	void				minimize();
-	void				set_resolution(glm::uvec2 const& size);
-	void				set_title(std::string const& title);
-	bool                should_close() const;
-	void				unfocus();
+						 window();
+						 window(glm::uvec2 resolution, std::string const& title = "");
+	void				 close();
+	void                 hint_default();
+	void				 hint_int(std::uint64_t hint, std::int64_t value);
+	void				 hint_string(std::uint64_t hint, const char* value);
+	void				 focus();
+	glm::uvec2			 get_frame_buffer_size() const;
+	vector<event> const& get_events() const;
+	GLFWwindow*			 get_handle();
+	vector<hint> const&	 get_hints() const;
+	glm::uvec2 const&	 get_resolution() const;
+	std::string const&	 get_title() const;
+	bool				 is_open() const;
+	bool				 is_minimized() const;
+	bool				 is_maximized() const;
+	bool				 is_focused() const;
+	void				 maximize();
+	void				 minimize();
+	bool                 poll_event(event& e);
+	void				 set_resolution(glm::uvec2 const& size);
+	void				 set_title(std::string const& title);
+	bool                 should_close() const;
+	void				 unfocus();
 
 private:
-	friend class window_event_system;
+	friend class         windows_event_resource;
 
 private:
 	bool                 m_close_next_frame; // flag for the befriended class
-	window_event_system* m_event_system;
+	vector<event>        m_events;
 	glm::uvec2			 m_frame_buffer_size;
 	GLFWwindow*			 m_handle;
 	vector<hint>	     m_hints;
@@ -67,12 +69,12 @@ public:
 		union hint_value
 		{
 			std::int64_t integer;
-			const char* string;
+			const char*  string;
 		};
 
-		std::uint64_t hint;
-		hint_type     type;
-		hint_value    value;
+		std::uint64_t    hint;
+		hint_type        type;
+		hint_value       value;
 	};
 };
 }

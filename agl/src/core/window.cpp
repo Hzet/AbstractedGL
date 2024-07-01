@@ -1,12 +1,11 @@
 #include "agl/core/window.hpp"
-#include "agl/core/events.hpp"
+#include "agl/core/windows-resource.hpp"
 #include "agl/core/event.hpp"
 
 namespace agl
 {
 window::window()
 	: m_close_next_frame{ false }
-	, m_event_system{ nullptr }
 	, m_handle{ nullptr }
 	, m_is_focused{ false }
 	, m_is_maximized{ false }
@@ -35,7 +34,11 @@ glm::uvec2 const& window::get_resolution() const
 void window::set_resolution(glm::uvec2 const& size)
 {
 	m_resolution = size;
-	m_event_system->push_event(event::window_resized_event(this, size));
+	m_events.push_back(event::window_resized_event(this, size));
+}
+vector<event> const& window::get_events() const
+{
+	return m_events;
 }
 GLFWwindow* window::get_handle()
 {
@@ -43,19 +46,25 @@ GLFWwindow* window::get_handle()
 }
 void window::maximize()
 {
-	m_event_system->push_event(event::window_maximized_event(this));
+	m_events.push_back(event::window_maximized_event(this));
 }
 void window::minimize()
 {
-	m_event_system->push_event(event::window_minimized_event(this));
+	m_events.push_back(event::window_minimized_event(this));
+}
+bool window::poll_event(event& e)
+{
+	e = m_events.front();
+	m_events.pop_front();
+	return !m_events.empty();
 }
 void window::focus()
 {
-	m_event_system->push_event(event::window_gained_focus_event(this));
+	m_events.push_back(event::window_gained_focus_event(this));
 }
 void window::unfocus()
 {
-	m_event_system->push_event(event::window_lost_focus_event(this));
+	m_events.push_back(event::window_lost_focus_event(this));
 }
 void window::hint_default()
 {
@@ -102,7 +111,7 @@ glm::uvec2 window::get_frame_buffer_size() const
 }
 void window::close()
 {
-	m_event_system->push_event(event::window_should_close_event(this));
+	m_events.push_back(event::window_should_close_event(this));
 	m_should_close = true;
 }
 }

@@ -16,7 +16,7 @@ private:
 	void on_update(application* app) override;
 
 private:
-	unique_ptr<window> m_window;
+	window* m_window;
 };
 }
 }

@@ -1,4 +1,4 @@
-#include "agl/core/events.hpp"
+#include "agl/core/windows-resource.hpp"
 #include "agl/core/logger.hpp"
 
 namespace agl
@@ -21,27 +21,28 @@ static void window_scroll_input_callback(GLFWwindow* window, double xoffset, dou
 static void window_size_callback(GLFWwindow* window, int width, int height);
 
 
-static event_system* g_api = nullptr;
+static windows_resource* g_api = nullptr;
 #ifdef AGL_DEBUG
 static logger* g_logger = nullptr;
 #endif
 
 
-event_system::event_system()
-	: resource<event_system>{}
+windows_resource::windows_resource()
+	: resource<windows_resource>{}
+	, windows_event_resource{}
 {
 	m_glfw_initialized = false;
 	g_api = this;
 }
-event_system::~event_system() noexcept
+windows_resource::~windows_resource() noexcept
 {
 	g_api = nullptr;
 }
-bool event_system::is_glfw_initialized() const
+bool windows_resource::is_glfw_initialized() const
 {
 	return m_glfw_initialized;
 }
-void event_system::initialize()
+void windows_resource::initialize()
 {
 	if (!glfwInit())
 	{
@@ -55,7 +56,7 @@ void event_system::initialize()
 	}
 	m_glfw_initialized = true;
 }
-void event_system::deinitialize()
+void windows_resource::deinitialize()
 {
 	if (!is_glfw_initialized())
 		return;
@@ -64,7 +65,7 @@ void event_system::deinitialize()
 	glfwTerminate();
 	m_glfw_initialized = false;
 }
-void event_system::on_attach(application* app)
+void windows_resource::on_attach(application* app)
 {
 	AGL_CORE_ASSERT(!is_glfw_initialized(), "glfw must be deinitialized upon reaching this method");
 	auto* logger = app->get_resource<agl::logger>();
@@ -75,7 +76,7 @@ void event_system::on_attach(application* app)
 	initialize();
 	logger->debug("GLFW: OK");
 }
-void event_system::on_detach(application* app)
+void windows_resource::on_detach(application* app)
 {
 	deinitialize();
 
@@ -87,64 +88,56 @@ void event_system::on_detach(application* app)
 	auto* logger = app->get_resource<agl::logger>();
 	logger->debug("GLFW: OFF");
 }
-void event_system::on_update(application* app)
+void windows_resource::on_update(application* app)
 {
 	clear_events();
 	glfwPollEvents();
-	for (auto i = 0; i < get_events_count(); ++i)
-		window_event_system::process_event(view_event(i));
+	process_events();
 }
-bool window_event_system::poll_event(event& e)
-{
-	if (m_events.empty())
-		return false;
-
-	e = m_events.front();
-	m_events.pop_front();
-	return true;
-}
-void window_event_system::set_current_context(window* wnd)
+void windows_event_resource::set_current_context(window* wnd)
 {
 	AGL_CORE_ASSERT(wnd != nullptr, "invalid window pointer");
 	glfwMakeContextCurrent(wnd->get_handle());
 	m_current_context = wnd;
 }
-vector<window*> const& window_event_system::get_windows() const
+window* windows_event_resource::get_window(std::uint64_t index)
+{
+	return m_windows[index].get();
+}
+vector<unique_ptr<window>> const& windows_event_resource::get_windows() const
 {
 	return m_windows;
 }
-event window_event_system::view_event(std::uint64_t index)
+void windows_event_resource::clear_events()
 {
-	return m_events[index];
+	for (auto& wnd : m_windows)
+		wnd->m_events.clear();
 }
-void window_event_system::clear_events()
+void windows_event_resource::process_events()
 {
-	m_events.clear();
-	std::swap(m_events, m_internal_events);
+	for(auto& wnd : m_windows)
+		for(auto const e : wnd->get_events())
+			switch (e.get_type())
+			{
+			case WINDOW_SHOULD_CLOSE: window_should_close(e); break;
+			case WINDOW_GAINED_FOCUS: window_gain_focus(e); break;
+			case WINDOW_LOST_FOCUS:	  window_lose_focus(e); break;
+			case WINDOW_MAXIMIZED:    window_maximize(e); break;
+			case WINDOW_MINIMIZED:	  window_minimize(e); break;
+			case WINDOW_RESTORED:     window_restore(e); break;
+			default: break;
+			}
 }
-void window_event_system::process_event(event e)
+void windows_event_resource::push_event(window* wnd, event e)
 {
-	switch (e.get_type())
-	{
-	case WINDOW_SHOULD_CLOSE: window_should_close(e); break;
-	case WINDOW_GAINED_FOCUS: window_gain_focus(e); break;
-	case WINDOW_LOST_FOCUS:	  window_lose_focus(e); break;
-	case WINDOW_MAXIMIZED:    window_maximize(e); break;
-	case WINDOW_MINIMIZED:	  window_minimize(e); break;
-	case WINDOW_RESTORED:     window_restore(e); break;
-	default: break;
-	}
+	wnd->m_events.push_back(e);
 }
-void window_event_system::push_event(event e)
-{
-	m_events.push_back(e);
-}
-void window_event_system::destroy_window(window* wnd)
+void windows_event_resource::destroy_window(window* wnd)
 {
 	if (wnd == nullptr || wnd->get_handle() == nullptr)
 		return;
 
-	auto found = std::find_if(m_windows.cbegin(), m_windows.cend(), [wnd] (auto const* w) { return w == wnd; });
+	auto found = std::find_if(m_windows.cbegin(), m_windows.cend(), [wnd](auto const& w) { return w == wnd; });
 	AGL_CORE_ASSERT(found != m_windows.cend(), "window was not created by this api");
 
 #ifdef AGL_DEBUG
@@ -159,22 +152,17 @@ void window_event_system::destroy_window(window* wnd)
 	wnd->m_is_minimized = false;
 	wnd->m_is_open = false;
 	m_windows.erase(found);
-	m_current_context = (m_windows.empty() ? nullptr : m_windows.back());
-	m_internal_events.push_back(event::window_closed_event(wnd));
+	m_current_context = (m_windows.empty() ? nullptr : m_windows.back().get());
 }
-window* window_event_system::get_current_context()
+window* windows_event_resource::get_current_context()
 {
 	return m_current_context;
 }
-window const* window_event_system::get_current_context() const
+window const* windows_event_resource::get_current_context() const
 {
 	return m_current_context;
 }
-std::uint64_t window_event_system::get_events_count() const
-{
-	return m_events.size();
-}
-glm::uvec2 window_event_system::get_framebuffer_size(window* wnd)
+glm::uvec2 windows_event_resource::get_framebuffer_size(window* wnd)
 {
 	if (wnd == nullptr || wnd->get_handle() == nullptr)
 		return {};
@@ -183,51 +171,54 @@ glm::uvec2 window_event_system::get_framebuffer_size(window* wnd)
 	glfwGetFramebufferSize(wnd->get_handle(), &ivec2.x, &ivec2.y);
 	return ivec2;
 }
-window_event_system::~window_event_system()
+windows_event_resource::windows_event_resource()
+	: m_current_context{ nullptr }
+{
+}
+windows_event_resource::~windows_event_resource()
 {
 	destroy_windows();
 }
-void window_event_system::destroy_windows()
+void windows_event_resource::destroy_windows()
 {
-	for (auto* wnd : m_windows)
-		destroy_window(wnd);
+	for (auto& wnd : m_windows)
+		destroy_window(wnd.get());
 }
-bool window_event_system::create_window(window* wnd)
+window* windows_event_resource::create_window(window const& wnd)
 {
-	for (auto const& h : wnd->get_hints())
+	auto result = unique_ptr<window>::allocate(wnd);
+	for (auto const& h : result->get_hints())
 		window_hint(h);
 
-	wnd->m_handle = glfwCreateWindow(wnd->get_resolution().x, wnd->get_resolution().y, wnd->get_title().c_str(), nullptr, nullptr);
+	result->m_handle = glfwCreateWindow(result->get_resolution().x, result->get_resolution().y, result->get_title().c_str(), nullptr, nullptr);
 
-	if (wnd->get_handle() == nullptr) 
-		return false;
+	if (result->get_handle() == nullptr)
+		return nullptr;
 
-	set_current_context(wnd);
-	set_window_callbacks(wnd);
-	wnd->m_event_system = this;
-	wnd->m_frame_buffer_size = get_framebuffer_size(wnd);
-	wnd->m_is_open = true;
-	m_internal_events.push_back(event::window_created_event(wnd));
-	m_windows.push_back(wnd);
+	set_current_context(result.get());
+	set_window_callbacks(result.get());
+	result->m_frame_buffer_size = get_framebuffer_size(result.get());
+	result->m_is_open = true;
 #ifdef AGL_DEBUG
-	g_logger->debug("Window created: {} \\{{}, {}\\}", wnd->get_title(), wnd->get_resolution().x, wnd->get_resolution().y);
+	g_logger->debug("Window created: {} \\{{}, {}\\}", result->get_title(), result->get_resolution().x, result->get_resolution().y);
 #endif
-	return true;
+	m_windows.push_back(std::move(result));
+	return m_windows.back().get();
 }
-void window_event_system::window_gain_focus(event e)
+void windows_event_resource::window_gain_focus(event e)
 {
 	AGL_CORE_ASSERT(e.get_window() != nullptr, "event is invalid");
 
 	glfwFocusWindow(e.get_window()->get_handle());
 	e.get_window()->m_is_focused = true;
 }
-void window_event_system::window_lose_focus(event e)
+void windows_event_resource::window_lose_focus(event e)
 {
 	AGL_CORE_ASSERT(e.get_window() != nullptr, "event is invalid");
 
 	e.get_window()->m_is_focused = false;
 }
-void window_event_system::window_maximize(event e)
+void windows_event_resource::window_maximize(event e)
 {
 	AGL_CORE_ASSERT(e.get_window() != nullptr, "event is invalid");
 
@@ -235,7 +226,7 @@ void window_event_system::window_maximize(event e)
 	e.get_window()->m_is_maximized = true;
 	e.get_window()->m_is_minimized = false;
 }
-void window_event_system::window_minimize(event e)
+void windows_event_resource::window_minimize(event e)
 {
 	AGL_CORE_ASSERT(e.get_window() != nullptr, "event is invalid");
 
@@ -243,14 +234,14 @@ void window_event_system::window_minimize(event e)
 	e.get_window()->m_is_maximized = false;
 	e.get_window()->m_is_minimized = true;
 }
-void window_event_system::window_restore(event e)
+void windows_event_resource::window_restore(event e)
 {
 	AGL_CORE_ASSERT(e.get_window() != nullptr, "event is invalid");
 
 	glfwRestoreWindow(e.get_window()->get_handle());
 	e.get_window()->m_is_minimized = false;
 }
-void window_event_system::window_should_close(event e)
+void windows_event_resource::window_should_close(event e)
 {
 	AGL_CORE_ASSERT(e.get_window() != nullptr, "event is invalid");
 
@@ -258,7 +249,7 @@ void window_event_system::window_should_close(event e)
 		return destroy_window(e.get_window());
 	e.get_window()->m_close_next_frame = true;
 }
-void window_event_system::window_hint(window::hint hint)
+void windows_event_resource::window_hint(window::hint hint)
 {
 	switch (hint.type)
 	{
@@ -268,7 +259,7 @@ void window_event_system::window_hint(window::hint hint)
 	default: break;
 	}
 }
-void window_event_system::set_window_callbacks(window* wnd)
+void windows_event_resource::set_window_callbacks(window* wnd)
 {
 	glfwSetCharCallback(wnd->get_handle(), window_char_callback);
 	glfwSetCursorEnterCallback(wnd->get_handle(), window_cursor_enter_callback);
@@ -321,55 +312,55 @@ void window_button_input_callback(GLFWwindow* glfw_handle, int button, int actio
 	auto const b = event::button{ static_cast<std::uint64_t>(mods), static_cast<button_type>(button) };
 	switch (action)
 	{
-	case GLFW_PRESS:   g_api->push_event(event::button_pressed_event(wnd, b)); break;
-	case GLFW_RELEASE: g_api->push_event(event::button_released_event(wnd, b)); break;
+	case GLFW_PRESS:   g_api->push_event(wnd, event::button_pressed_event(wnd, b)); break;
+	case GLFW_RELEASE: g_api->push_event(wnd, event::button_released_event(wnd, b)); break;
 	}
 }
 void window_char_callback(GLFWwindow* glfw_handle, unsigned int codepoint)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::text_entered_event(wnd, codepoint));
+	g_api->push_event(wnd, event::text_entered_event(wnd, codepoint));
 }
 void window_close_callback(GLFWwindow* glfw_handle)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::window_should_close_event(wnd));
+	g_api->push_event(wnd, event::window_should_close_event(wnd));
 }
 void window_cursor_enter_callback(GLFWwindow* glfw_handle, int entered)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
 	switch (entered)
 	{
-	case 0:  g_api->push_event(event::mouse_left_event(wnd)); break;
-	default: g_api->push_event(event::mouse_entered_event(wnd)); break;
+	case 0:  g_api->push_event(wnd, event::mouse_left_event(wnd)); break;
+	default: g_api->push_event(wnd, event::mouse_entered_event(wnd)); break;
 	}
 }
 void window_cursor_position_callback(GLFWwindow* glfw_handle, double xpos, double ypos)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::mouse_moved_event(wnd, { xpos, ypos }));
+	g_api->push_event(wnd, event::mouse_moved_event(wnd, { xpos, ypos }));
 }
 void window_focus_callback(GLFWwindow* glfw_handle, int focused)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
 	switch (focused)
 	{
-	case 0:  g_api->push_event(event::window_lost_focus_event(wnd)); break;
-	default: g_api->push_event(event::window_gained_focus_event(wnd)); break;
+	case 0:  g_api->push_event(wnd, event::window_lost_focus_event(wnd)); break;
+	default: g_api->push_event(wnd, event::window_gained_focus_event(wnd)); break;
 	}
 }
 void window_framebuffer_size_callback(GLFWwindow* glfw_handle, int width, int height)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::framebuffer_resized_event(wnd, { width, height }));
+	g_api->push_event(wnd, event::framebuffer_resized_event(wnd, { width, height }));
 }
 void window_iconify_callback(GLFWwindow* glfw_handle, int iconified)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
 	switch (iconified)
 	{
-	case 0:  g_api->push_event(event::window_restored_event(wnd)); break;
-	default: g_api->push_event(event::window_minimized_event(wnd)); break;
+	case 0:  g_api->push_event(wnd, event::window_restored_event(wnd)); break;
+	default: g_api->push_event(wnd, event::window_minimized_event(wnd)); break;
 	}
 }
 void window_key_input_callback(GLFWwindow* glfw_handle, int key, int scancode, int action, int mods)
@@ -378,9 +369,9 @@ void window_key_input_callback(GLFWwindow* glfw_handle, int key, int scancode, i
 	auto const k = event::key{ static_cast<std::uint64_t>(mods), static_cast<std::uint64_t>(scancode), static_cast<key_type>(key) };
 	switch (action)
 	{
-	case GLFW_PRESS:   g_api->push_event(event::key_pressed_event(wnd, k)); break;
-	case GLFW_RELEASE: g_api->push_event(event::key_released_event(wnd, k)); break;
-	case GLFW_REPEAT:  g_api->push_event(event::key_repeated_event(wnd, k)); break;
+	case GLFW_PRESS:   g_api->push_event(wnd, event::key_pressed_event(wnd, k)); break;
+	case GLFW_RELEASE: g_api->push_event(wnd, event::key_released_event(wnd, k)); break;
+	case GLFW_REPEAT:  g_api->push_event(wnd, event::key_repeated_event(wnd, k)); break;
 	}
 }
 void window_maximize_callback(GLFWwindow* glfw_handle, int maximized)
@@ -388,24 +379,24 @@ void window_maximize_callback(GLFWwindow* glfw_handle, int maximized)
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
 	switch (maximized)
 	{
-	case 0:  g_api->push_event(event::window_restored_event(wnd)); break;
-	default: g_api->push_event(event::window_maximized_event(wnd)); break;
+	case 0:  g_api->push_event(wnd, event::window_restored_event(wnd)); break;
+	default: g_api->push_event(wnd, event::window_maximized_event(wnd)); break;
 	}
 }
 void window_scale_callback(GLFWwindow* glfw_handle, float xscale, float yscale)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::window_rescaled_event(wnd, { xscale, yscale }));
+	g_api->push_event(wnd, event::window_rescaled_event(wnd, { xscale, yscale }));
 }
 
 void window_scroll_input_callback(GLFWwindow* glfw_handle, double xoffset, double yoffset)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::scroll_moved_event(wnd, { xoffset, yoffset }));
+	g_api->push_event(wnd, event::scroll_moved_event(wnd, { xoffset, yoffset }));
 }
 void window_size_callback(GLFWwindow* glfw_handle, int width, int height)
 {
 	auto* wnd = reinterpret_cast<window*>(glfwGetWindowUserPointer(glfw_handle));
-	g_api->push_event(event::framebuffer_resized_event(wnd, { width, height }));
+	g_api->push_event(wnd, event::framebuffer_resized_event(wnd, { width, height }));
 }
 }
