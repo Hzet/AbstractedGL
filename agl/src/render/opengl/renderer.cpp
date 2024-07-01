@@ -224,6 +224,7 @@ window* renderer::create_window(window wnd)
 #endif
 
 	add_window(ptr);
+	return ptr;
 }
 void renderer::destroy_window(window* wnd)
 {
