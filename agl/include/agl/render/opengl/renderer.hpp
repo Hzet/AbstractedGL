@@ -30,6 +30,7 @@ private:
 	void             on_attach(application* app) override;
 	void             on_detach(application*) override;
 	void             on_update(application*) override;
+	void             process_events(window* wnd);
 
 private:
 	windows_resource* m_event_system;

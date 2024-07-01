@@ -61,28 +61,19 @@ void renderer::on_attach(application* app)
 // render
 void renderer::on_update(application* app)
 {
-	for (auto i = 0; i < m_event_system->get_windows().size(); ++i)
-		for (auto e : m_event_system->get_window(i)->get_events())
-		{
-			switch (e.get_type())
-			{
-			case WINDOW_SHOULD_CLOSE: deinit_window(e.get_window()); break;
-			}
-		}
-
-	if (get_windows().empty())
-		app->close();
-
-
 	auto const size = m_event_system->get_windows().size();
 	for(auto i = 0; i < size; ++i)
 	{
 		auto* wnd = m_event_system->get_window(i);
+		process_events(wnd);
 		m_event_system->set_current_context(wnd);
 		AGL_OPENGL_CALL(glClearColor(111, 111, 111, 255));
 		AGL_OPENGL_CALL(glClear(GL_COLOR_BUFFER_BIT));
 		glfwSwapBuffers(wnd->get_handle());
 	}
+
+	if (get_windows().empty())
+		app->close();
 }
 void renderer::on_update_vertex_array(vertex_array& v_array)
 {
@@ -94,7 +85,6 @@ void renderer::on_update_vertex_array(vertex_array& v_array)
 		init_vertex_array(v_array);
 	}
 }
-// unload opengl
 void renderer::on_detach(application* app)
 {
 	auto* logger = app->get_resource<agl::logger>();
@@ -107,6 +97,18 @@ void renderer::on_detach(application* app)
 	agl::renderer::on_detach(app);
 	logger->debug("OpenGL renderer: OFF");
 }
+void renderer::process_events(window* wnd)
+{
+	for (auto e : wnd->get_events())
+	{
+		switch (e.get_type())
+		{
+		case WINDOW_SHOULD_CLOSE: deinit_window(e.get_window()); break;
+		}
+	}
+}
+
+
 #ifdef AGL_DEBUG
 void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
 {
