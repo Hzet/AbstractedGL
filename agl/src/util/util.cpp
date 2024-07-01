@@ -9,7 +9,7 @@ namespace ns
 {
 std::string memory_size(std::uint64_t bytes)
 {
-	const char const* const units[] = {
+	char const* const units[] = {
 		"B",
 		"KB",
 		"MB",
