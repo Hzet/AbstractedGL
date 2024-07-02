@@ -22,6 +22,10 @@ std::uint64_t index_buffer::get_id() const
 {
 	return m_id;
 }
+std::uint64_t index_buffer::get_size() const
+{
+	return m_data.size();
+}
 void index_buffer::set_state(buffer_state state)
 {
 	m_state = state;
@@ -58,6 +62,10 @@ std::uint64_t index_buffer::get(std::uint64_t index) const
 {
 	return m_data[index];
 }
+std::uint64_t index_buffer::get_bytes_size() const
+{
+	return m_data.size() * sizeof(buffer::value_type);
+}
 void index_buffer::reserve(std::uint64_t n)
 {
 	m_data.reserve(n);
@@ -87,7 +95,7 @@ vertex_array::vertex_array(mem::pool::allocator<vertex_array> allocator)
 }
 bool vertex_array::empty() const
 {
-	return size() == 0;
+	return get_size() == 0;
 }
 vertex_array::row_info& vertex_array::get_row_info(std::uint64_t row)
 {
@@ -128,7 +136,7 @@ void vertex_array::clear()
 	m_data.clear();
 	m_row_layout.clear();
 }
-std::uint64_t vertex_array::size() const
+std::uint64_t vertex_array::get_size() const
 {
 	return m_size;
 }
@@ -153,7 +161,7 @@ std::uint64_t vertex_array::get_offset(std::uint64_t row) const
 }
 void vertex_array::resize(std::uint64_t n)
 {
-	if (size() == n)
+	if (get_size() == n)
 		return;
 
 	set_state(buffer_state::CHANGED);
