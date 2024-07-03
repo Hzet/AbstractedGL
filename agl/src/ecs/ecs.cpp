@@ -16,14 +16,14 @@ organizer::organizer(mem::pool::allocator<organizer> allocator)
 system_base* organizer::get_system_impl(type_id_t id)
 {
 	for (auto& sys : m_systems)
-		if (sys->id() == id)
+		if (sys->get_type_id() == id)
 			return sys.get();
 	return nullptr;
 }
 system_base const* organizer::get_system_impl(type_id_t id) const
 {
 	for (auto const& sys : m_systems)
-		if (sys->id() == id)
+		if (sys->get_type_id() == id)
 			return sys.get();
 	return nullptr;
 }
@@ -59,10 +59,15 @@ void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t inde
 {
 	AGL_ASSERT(m_components.find(type_id) != m_components.end(), "invalid component type");
 	AGL_ASSERT(ent.has_component(type_id), "queried component type is not attached to this entity");
-	AGL_ASSERT(index < ent.size(type_id), "queried component type is not attached to this entity");
+	AGL_ASSERT(index < ent.get_count_of(type_id), "queried component type is not attached to this entity");
 
 	auto& components = m_components.at(type_id);
 	auto* ptr = ent.m_data->m_components.at(type_id).at(index);
+	
+	for (auto& sys : m_systems)
+		if (sys->is_signal_registered(type_id, COMPONENT_DETACH))
+			sys->on_component_detach(&ent, type_id, index);
+
 	ent.m_data->pop_component(type_id, index);
 	components->pop_component(ptr);
 }
@@ -76,8 +81,15 @@ void organizer::pop_components(type_id_t type_id, entity& ent)
 
 	AGL_ASSERT(ent_components != ent.m_data->m_components.end(), "entity has no component of type 'type_id'");
 
-	for (auto* ptr : ent_components->second)
-		storage->pop_component(ptr);
+	auto& ptrs = ent_components->second;
+	for (auto i = 0; i < ptrs.size(); ++i)
+	{
+		for (auto& sys : m_systems)
+			if (sys->is_signal_registered(type_id, COMPONENT_DETACH))
+				sys->on_component_detach(&ent, type_id, i);
+
+		storage->pop_component(ptrs[i]);
+	}
 
 	ent_components->second.clear();
 	ent.m_data->m_components.erase(ent_components);

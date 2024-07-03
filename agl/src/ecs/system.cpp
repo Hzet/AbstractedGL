@@ -1,5 +1,6 @@
 #include "agl/ecs/system.hpp"
 #include "agl/ecs/ecs.hpp"
+#include "agl/ecs/entity.hpp"
 
 namespace agl
 {
@@ -9,39 +10,34 @@ system_base::system_base()
 	: m_organizer{ nullptr }
 {
 }
-system_base::system_base(organizer* organizer, type_id_t id, std::string const& name, ecs::stage stage)
-	: m_id{ id }
-	, m_name{ name }
+system_base::system_base(organizer* organizer, type_id_t type_id, ecs::stage stage)
+	: m_type_id{ type_id }
 	, m_stage{ stage }
 	, m_organizer{ organizer }
 {
 }
 system_base::system_base(system_base&& other)
-	: m_id{ other.m_id }
-	, m_name{ other.m_name }
+	: m_type_id{ other.m_type_id }
 	, m_stage{ other.m_stage }
 	, m_organizer{ other.m_organizer }
 {
 }
 system_base& system_base::operator=(system_base&& other)
 {
-	m_id = other.m_id;
-	m_name = m_name;
+	m_type_id = other.m_type_id;
 	m_stage = m_stage;
 	m_organizer = other.m_organizer;
 	return *this;
 }
-std::string const& system_base::name() const
+type_id_t system_base::get_type_id() const
 {
-	return m_name;
+	return m_type_id;
 }
-type_id_t system_base::id() const
+void system_base::on_component_attach(entity* e, type_id_t type_id, std::uint64_t index)
 {
-	return m_id;
 }
-void system_base::name(std::string const& name)
+void system_base::on_component_detach(entity* e, type_id_t type_id, std::uint64_t index)
 {
-	m_name = name;
 }
 stage system_base::stage() const
 {
@@ -51,24 +47,18 @@ void system_base::stage(ecs::stage s)
 {
 	m_stage = s;
 }
-bool system_base::read_signal(std::uint64_t id)
+
+void system_base::register_signal(type_id_t type_id, signal_message_type message)
 {
-	auto found = m_signals.find(id);
-	found->value = !found->value; // switch value 
-	return !found->value; // return previous 
-}
-void system_base::set_signal(std::uint64_t id, bool value)
-{
-	auto found = m_signals.find(id);
-	found->value = value;
-}
-void system_base::create_signal(std::uint64_t id, bool start_value)
-{
-	m_signals.emplace(id, start_value);
+	m_signals.emplace(signal{ message, type_id });
 }
 organizer* system_base::get_organizer()
 {
 	return m_organizer;
+}
+bool system_base::is_signal_registered(type_id_t type_id, signal_message_type message) const
+{
+	return m_signals.find(signal{ message, type_id }) != m_signals.cend();
 }
 void system_base::set_organizer(organizer* org)
 {

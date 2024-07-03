@@ -64,7 +64,7 @@ vector<type_id_t> entity::get_component_ids() const
 {
 	return m_data->get_component_ids();
 }
-std::uint64_t entity::size(type_id_t id) const
+std::uint64_t entity::get_count_of(type_id_t id) const
 {
 	return m_data->size(id);
 }

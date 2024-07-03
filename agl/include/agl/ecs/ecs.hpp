@@ -24,53 +24,51 @@ private:
 	using is_system_t = std::enable_if_t<std::is_base_of_v<system_base, remove_cvref_t<T>>>;
 
 public:
-	organizer(mem::pool::allocator<organizer> allocator);
-	~organizer() = default;
-
+	                      organizer(mem::pool::allocator<organizer> allocator);
+	                      ~organizer() = default;
 	template <typename T>
-	void add_system(application* app);
-	template <typename T, typename = is_system_t<T>>
-	T* get_system();
-	system_base& get_system(type_id_t id);
-	template <typename T, typename = is_system_t<T>>
-	bool has_system() const;
-	bool has_system(type_id_t id) const;
-	entity make_entity();
-	void destroy_entity(entity& ent);
-
-	template <typename T>
-	void pop_components(entity& ent);
-	void pop_components(type_id_t type_id, entity& ent);
-	template <typename T>
-	void pop_component(entity& ent, std::uint64_t index);
-	void pop_component(type_id_t type_id, entity& ent, std::uint64_t index);
-	template <typename T, typename... TArgs>
-	void push_component(entity& ent, TArgs... args);
-	template <typename T>
-	std::uint64_t get_component_count() const;
-	std::uint64_t get_component_count(type_id_t type_id) const;
-
-	template <typename... TArgs>
-	mem::vector<entity> view();
-
-	template <typename T>
-	void remove_system(application* app);
-
-	allocator_type get_allocator() const;
+	void                  add_system(application* app);
+	void                  destroy_entity(entity& ent);
+	allocator_type        get_allocator() const;
+    template <typename T>
+	std::uint64_t         get_component_count() const;
+	std::uint64_t         get_component_count(type_id_t type_id) const;
+	template <typename T, typename = is_system_t<T>> 
+	T*                    get_system();
+	system_base&          get_system(type_id_t id);
+	template <typename T, typename = is_system_t<T>> 
+	bool                  has_system() const;
+	bool                  has_system(type_id_t id) const;
+	entity                make_entity();
+	template <typename T>	
+	void                  pop_components(entity& ent);
+	void                  pop_components(type_id_t type_id, entity& ent);
+	template <typename T> 	
+	void                  pop_component(entity& ent, std::uint64_t index);
+	void                  pop_component(type_id_t type_id, entity& ent, std::uint64_t index);
+	template <typename T, typename... TArgs>         	
+	void                  push_component(entity& ent, TArgs... args);
+	template <typename T>                            	
+    void                  remove_system(application* app);
+	template <typename T>	
+	mem::vector<entity>   view();
 
 private:
-	system_base* get_system_impl(type_id_t id);
-	system_base const* get_system_impl(type_id_t id) const;
-	template <typename T>
+	template <typename T> 
 	component_storage<T>& get_storage();
-	virtual void on_attach(application*) override;
-	virtual void on_detach(application*) override;
-	virtual void on_update(application*) override;
+	system_base*          get_system_impl(type_id_t id);
+	system_base const*    get_system_impl(type_id_t id) const;
+	virtual void          on_attach(application*) override;
+	virtual void          on_detach(application*) override;
+	virtual void          on_update(application*) override;
 
 private:
-	allocator_type m_allocator;
-	mem::dictionary<type_id_t, mem::unique_ptr<component_storage_base>> m_components;
-	mem::deque<impl::entity_data> m_entities;
+	using storage_type = mem::dictionary<type_id_t, mem::unique_ptr<component_storage_base>>;
+
+private:
+	allocator_type                            m_allocator;
+	storage_type                              m_components;
+	mem::deque<impl::entity_data>             m_entities;
 	mem::vector<mem::unique_ptr<system_base>> m_systems;
 };
 
@@ -93,7 +91,6 @@ T* organizer::get_system()
 
 	return result;
 }
-
 template <typename T>
 void organizer::pop_components(entity& ent)
 {
@@ -115,12 +112,12 @@ void organizer::pop_component(entity& ent, std::uint64_t index)
 
 	pop_component(type_id<T>::get_id(), ent, index);
 }
-template <typename... TArgs>
+template <typename T>
 mem::vector<entity> organizer::view()
 {
 	auto result = mem::vector<entity>{};
 	for (auto& e : m_entities)
-		if (e.has_component<TArgs...>())
+		if (e.has_component(type_id<T>::get_id()))
 			result.push_back(entity{ &e });
 
 	return result;
