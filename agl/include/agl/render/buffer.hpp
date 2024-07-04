@@ -79,6 +79,7 @@ public:
 	row_info&              get_row_info(std::uint64_t row);
 	row_info const&        get_row_info(std::uint64_t row) const;
 	std::uint64_t          get_row_layout_size() const; // count of different rows
+	std::uint64_t          get_size() const; // count of elements in one row
 	buffer_state           get_state() const;
 	void                   set_state(buffer_state state);
 	std::uint64_t          get_stride_size() const; // sum of sizes of all rows data types
@@ -105,7 +106,6 @@ public:
 	void                   set_vec2(std::uint64_t row, std::uint64_t index, glm::vec2 const& value);
 	void                   set_vec3(std::uint64_t row, std::uint64_t index, glm::vec3 const& value);
 	void                   set_vec4(std::uint64_t row, std::uint64_t index, glm::vec4 const& value);
-	std::uint64_t          get_size() const; // count of elements in one row
 
 private:
 	std::uint64_t          m_buffer_id;
