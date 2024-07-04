@@ -44,7 +44,7 @@ void renderer::init_vertex_array(vertex_array& v_array)
 	for (auto i = std::uint32_t{}; i < v_array.get_row_layout_size(); ++i)
 	{
 		auto const ri = v_array.get_row_info(i);
-		AGL_OPENGL_CALL(glVertexAttribPointer(i, static_cast<std::uint32_t>(ri.var_count), gl_render_data_type(ri.data_type), ri.normalized, static_cast<std::uint32_t>(v_array.size()), reinterpret_cast<void*>(v_array.get_offset(i))));
+		AGL_OPENGL_CALL(glVertexAttribPointer(i, static_cast<std::uint32_t>(ri.var_count), gl_render_data_type(ri.data_type), ri.normalized, static_cast<std::uint32_t>(v_array.get_size()), reinterpret_cast<void*>(v_array.get_offset(i))));
 		AGL_OPENGL_CALL(glEnableVertexAttribArray(i));
 	}
 
