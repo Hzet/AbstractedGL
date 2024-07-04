@@ -121,7 +121,7 @@ T const* entity::get_component(std::uint64_t index) const
 template <typename T>
 std::uint64_t entity::get_count_of() const
 {
-	return size(type_id<T>::get_id());
+	return get_count_of(type_id<T>::get_id());
 }
 }
 }

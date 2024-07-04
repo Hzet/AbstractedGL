@@ -54,6 +54,7 @@ public:
 	mem::vector<entity>   view();
 
 private:
+	void                  emit_component_signal(signal_message_type message, entity* e, type_id_t type_id, std::uint64_t index);
 	template <typename T> 
 	component_storage<T>& get_storage();
 	system_base*          get_system_impl(type_id_t id);
@@ -104,6 +105,7 @@ void organizer::push_component(entity& ent, TArgs... args)
 	auto& storage = get_storage<T>();
 	auto* ptr = storage.push_component(std::forward<TArgs>(args)...);
 	ent.m_data->push_component<T>(ptr);
+	emit_component_signal(COMPONENT_ATTACH, &ent, type_id<T>::get_id(), ent.get_count_of<T>() - 1);
 }
 template <typename T>
 void organizer::pop_component(entity& ent, std::uint64_t index)
@@ -115,7 +117,7 @@ void organizer::pop_component(entity& ent, std::uint64_t index)
 template <typename T>
 mem::vector<entity> organizer::view()
 {
-	auto result = mem::vector<entity>{};
+	auto result = mem::vector<entity>{ get_allocator() };
 	for (auto& e : m_entities)
 		if (e.has_component(type_id<T>::get_id()))
 			result.push_back(entity{ &e });
@@ -137,7 +139,7 @@ component_storage<T>& organizer::get_storage()
 {
 	auto& ptr = m_components[type_id<T>::get_id()];
 	if (ptr == nullptr)
-		ptr = mem::make_unique<component_storage_base>(get_allocator(), component_storage<T>{get_allocator()});
+		ptr = mem::unique_ptr<component_storage_base>::polymorphic_a<component_storage<T>>(get_allocator(), get_allocator());
 
 	auto& storage = *dynamic_cast<component_storage<T>*>(ptr.get());
 	return storage;

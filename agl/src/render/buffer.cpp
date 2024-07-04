@@ -13,6 +13,10 @@ index_buffer::index_buffer(buffer data)
 	, m_state{ buffer_state::INVALID }
 {
 }
+index_buffer::index_buffer(mem::pool::allocator<std::uint64_t> allocator)
+	: index_buffer{ buffer{allocator} }
+{
+}
 void index_buffer::set_id(std::uint64_t id)
 {
 	set_state(buffer_state::CHANGED);
@@ -86,9 +90,9 @@ vertex_array::vertex_array()
 {
 }
 vertex_array::vertex_array(mem::pool::allocator<vertex_array> allocator)
-	: m_data{ allocator.rebind_copy<std::byte>() }
+	: m_data{ allocator }
 	, m_id{ 0 }
-	, m_row_layout{ allocator.rebind_copy<row_info>() }
+	, m_row_layout{ allocator }
 	, m_size{ 0 }
 	, m_state{ buffer_state::INVALID }
 {
@@ -292,7 +296,15 @@ void vertex_array::set_uvec4(std::uint64_t row, std::uint64_t index, glm::uvec4 
 	m_data[get_offset(row) * index] = *reinterpret_cast<std::byte const*>(&value);
 }
 
-
+render_object::render_object(mem::pool::allocator<render_object> allocator)
+	: m_index_buffer{ allocator }
+	, m_vertex_array{ allocator }
+{
+}
+std::uint64_t render_object::get_bytes_size() const
+{
+	return m_index_buffer.get_bytes_size() + m_vertex_array.get_bytes_size();
+}
 index_buffer& render_object::get_index_buffer()
 {
 	return m_index_buffer;

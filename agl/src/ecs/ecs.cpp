@@ -13,6 +13,19 @@ organizer::organizer(mem::pool::allocator<organizer> allocator)
 	, m_systems{ allocator }
 {
 }
+void organizer::emit_component_signal(signal_message_type message, entity* e, type_id_t type_id, std::uint64_t index)
+{
+	for(auto& sys : m_systems)
+		if (sys->is_signal_registered(type_id, message))
+		{
+			switch (message)
+			{
+			case COMPONENT_ATTACH: sys->on_component_attach(e, type_id, index);	break;
+			case COMPONENT_DETACH: sys->on_component_detach(e, type_id, index);	break;
+			default: AGL_CORE_ASSERT(false, "invalid argument"); break;
+			}
+		}
+}
 system_base* organizer::get_system_impl(type_id_t id)
 {
 	for (auto& sys : m_systems)
@@ -64,35 +77,14 @@ void organizer::pop_component(type_id_t type_id, entity& ent, std::uint64_t inde
 	auto& components = m_components.at(type_id);
 	auto* ptr = ent.m_data->m_components.at(type_id).at(index);
 	
-	for (auto& sys : m_systems)
-		if (sys->is_signal_registered(type_id, COMPONENT_DETACH))
-			sys->on_component_detach(&ent, type_id, index);
-
+	emit_component_signal(COMPONENT_DETACH, &ent, type_id, index);
 	ent.m_data->pop_component(type_id, index);
 	components->pop_component(ptr);
 }
 void organizer::pop_components(type_id_t type_id, entity& ent)
 {
-	AGL_ASSERT(m_components.find(type_id) != m_components.end(), "invalid component type");
-	AGL_ASSERT(ent.has_component(type_id), "queried component type is not attached to this entity");
-
-	auto& storage = m_components.at(type_id);
-	auto ent_components = ent.m_data->m_components.find(type_id);
-
-	AGL_ASSERT(ent_components != ent.m_data->m_components.end(), "entity has no component of type 'type_id'");
-
-	auto& ptrs = ent_components->second;
-	for (auto i = 0; i < ptrs.size(); ++i)
-	{
-		for (auto& sys : m_systems)
-			if (sys->is_signal_registered(type_id, COMPONENT_DETACH))
-				sys->on_component_detach(&ent, type_id, i);
-
-		storage->pop_component(ptrs[i]);
-	}
-
-	ent_components->second.clear();
-	ent.m_data->m_components.erase(ent_components);
+	for (auto i = 0; i < ent.get_count_of(type_id); ++i)
+		pop_component(type_id, ent, i);
 }
 std::uint64_t organizer::get_component_count(type_id_t type_id) const
 {
@@ -111,6 +103,9 @@ void organizer::on_attach(application* app)
 void organizer::on_detach(application* app) 
 {
 	auto* logger = app->get_resource<agl::logger>();
+
+	for (auto& e : m_entities)
+		destroy_entity(entity{ &e });
 
 	while (!m_systems.empty())
 	{

@@ -22,25 +22,26 @@ renderer::renderer(ecs::organizer* organizer)
 	: agl::renderer{ organizer, ecs::RENDER }
 {
 }
-renderer::renderer(renderer&& other)
-	: agl::renderer{ std::move(other) }
+void renderer::on_attach_index_buffer(index_buffer& i_buffer)
 {
+	auto id = std::uint32_t{};
+	AGL_OPENGL_CALL(glGenBuffers(1, &id));
+	i_buffer.set_id(id);
+	AGL_OPENGL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, id));
+
+	AGL_OPENGL_CALL(glBufferData(GL_ELEMENT_ARRAY_BUFFER, i_buffer.get_bytes_size(), i_buffer.data(), GL_STATIC_DRAW));
+
+	i_buffer.set_state(buffer_state::READY);
 }
-renderer& renderer::operator=(renderer&& other)
-{
-	this->agl::renderer::operator=(std::move(other));
-	return *this;
-}
-void renderer::init_vertex_array(vertex_array& v_array)
+void renderer::on_attach_vertex_array(vertex_array& v_array)
 {
 	auto id = std::uint32_t{};
 	AGL_OPENGL_CALL(glGenBuffers(1, &id));
 	v_array.set_buffer_id(id);
+	AGL_OPENGL_CALL(glBindBuffer(GL_ARRAY_BUFFER, id));
 	AGL_OPENGL_CALL(glBufferData(GL_ARRAY_BUFFER, v_array.get_bytes_size(), v_array.data(), GL_STATIC_DRAW));
-
-	id = 0;
 	AGL_OPENGL_CALL(glGenVertexArrays(1, &id));
-
+	AGL_OPENGL_CALL(glBindVertexArray(id));
 	for (auto i = std::uint32_t{}; i < v_array.get_row_layout_size(); ++i)
 	{
 		auto const ri = v_array.get_row_info(i);
@@ -62,33 +63,59 @@ void renderer::on_attach(application* app)
 	g_logger = app->get_resource<agl::logger>();
 #endif
 	m_windows_resource = app->get_resource<agl::windows_resource>();
+	register_signal(type_id<render_object>::get_id(), ecs::COMPONENT_DETACH);
+
 	logger->info("OpenGL: renderer OK");
+}
+void renderer::on_component_attach(ecs::entity* e, type_id_t type_id, std::uint64_t index)
+{
+}
+void renderer::on_component_detach(ecs::entity* e, type_id_t type_id, std::uint64_t index)
+{
+	if (type_id == agl::type_id<render_object>::get_id())
+		on_detach_render_object(e->get_component<render_object>(index));
 }
 // render
 void renderer::on_update(application* app)
 {
+	auto render_entities = get_organizer()->view<render_object>();
 	auto const size = m_windows_resource->get_windows().size();
 	for(auto i = 0; i < size; ++i)
 	{
 		auto* wnd = m_windows_resource->get_window(i);
 		process_events(wnd);
 		m_windows_resource->set_current_context(wnd);
-		AGL_OPENGL_CALL(glClearColor(111, 111, 111, 255));
+		AGL_OPENGL_CALL(glClearColor(0.2f, 0.4f, 0.5f, 1.f));
 		AGL_OPENGL_CALL(glClear(GL_COLOR_BUFFER_BIT));
+		for (auto& e : render_entities)
+		{
+			auto const size = e.get_count_of<render_object>();
+			for (auto i = 0; i < size; ++i)
+				render(e.get_component<render_object>(i));
+		}
+
 		glfwSwapBuffers(wnd->get_handle());
 	}
 
 	if (get_windows().empty())
 		app->close();
 }
-void renderer::on_update_vertex_array(vertex_array& v_array)
+void renderer::on_update_index_buffer(index_buffer& i_buffer)
 {
-	auto const state = v_array.get_state();
-	switch (state)
+	switch (i_buffer.get_state())
 	{
 	case buffer_state::INVALID:
 	case buffer_state::CHANGED:
-		init_vertex_array(v_array);
+		on_attach_index_buffer(i_buffer);
+	}
+}
+void renderer::on_update_vertex_array(vertex_array& v_array)
+{
+	switch (v_array.get_state())
+	{
+	case buffer_state::INVALID:
+	case buffer_state::CHANGED:
+		on_attach_vertex_array(v_array);
 	}
 }
 void renderer::on_detach(application* app)
@@ -103,6 +130,43 @@ void renderer::on_detach(application* app)
 	agl::renderer::on_detach(app);
 	logger->debug("OpenGL: renderer OFF");
 }
+void renderer::on_detach_render_object(render_object* r_object) const
+{
+#ifdef AGL_OPENGL_DEBUG
+	if (r_object->get_index_buffer().get_id() != 0
+	    || r_object->get_vertex_array().get_buffer_id() != 0
+	    || r_object->get_vertex_array().get_id() != 0)
+		g_logger->debug("OpenGL: removing render_object {}", util::ns::memory_size(r_object->get_bytes_size()));
+#endif
+
+	auto id = std::uint32_t{};
+	if (r_object->get_index_buffer().get_id() != 0)
+	{
+		id = static_cast<std::uint32_t>(r_object->get_index_buffer().get_id());
+		AGL_OPENGL_CALL(glDeleteBuffers(1, &id));
+		r_object->get_index_buffer().set_id(id);
+		r_object->get_index_buffer().clear();
+		r_object->get_index_buffer().set_state(buffer_state::INVALID);
+	}
+
+	if (r_object->get_vertex_array().get_buffer_id() != 0)
+	{
+		id = static_cast<std::uint32_t>(r_object->get_vertex_array().get_buffer_id());
+		AGL_OPENGL_CALL(glDeleteBuffers(1, &id));
+		r_object->get_vertex_array().set_buffer_id(id);
+		r_object->get_vertex_array().clear();
+		r_object->get_vertex_array().set_state(buffer_state::INVALID);
+	}
+
+	if (r_object->get_vertex_array().get_id() != 0)
+	{
+		id = static_cast<std::uint32_t>(r_object->get_vertex_array().get_id());
+		AGL_OPENGL_CALL(glDeleteVertexArrays(1, &id));
+		r_object->get_vertex_array().set_id(id);
+		r_object->get_vertex_array().clear();
+		r_object->get_vertex_array().set_state(buffer_state::INVALID);
+	}
+}
 void renderer::process_events(window* wnd)
 {
 	for (auto e : wnd->get_events())
@@ -113,7 +177,24 @@ void renderer::process_events(window* wnd)
 		}
 	}
 }
+void renderer::render(render_object* object)
+{
+	on_update_index_buffer(object->get_index_buffer());
+	on_update_vertex_array(object->get_vertex_array());
 
+	if(object->get_index_buffer().get_state() == buffer_state::READY)
+	{
+		AGL_OPENGL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, static_cast<std::uint32_t>(object->get_index_buffer().get_id())));
+		AGL_OPENGL_CALL(glDrawElements(GL_LINES, static_cast<std::uint32_t>(object->get_index_buffer().get_size()), GL_UNSIGNED_INT, 0));
+		AGL_OPENGL_CALL(glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, 0));
+	}
+	else if (object->get_vertex_array().get_state() == buffer_state::READY)
+	{
+		AGL_OPENGL_CALL(glBindVertexArray(static_cast<std::uint32_t>(object->get_vertex_array().get_id())));
+		AGL_OPENGL_CALL(glDrawArrays(GL_LINES, 0, static_cast<std::uint32_t>(object->get_vertex_array().get_size())));
+		AGL_OPENGL_CALL(glBindVertexArray(0));
+	}
+}
 
 #ifdef AGL_OPENGL_DEBUG
 void gl_debug_callback(GLenum source, GLenum type, GLuint id, GLenum severity, GLsizei length, const GLchar* message, const void* userParam)
